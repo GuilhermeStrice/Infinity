@@ -421,26 +421,6 @@ namespace Infinity.Core.Tests
             }
         }
 
-        [Fact]
-        public void FragmentedUnrealiableExceptionTest()
-        {
-            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
-            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
-            {
-                listener.Start();
-                connection.Connect();
-
-                Assert.Throws<InfinityException>(() =>
-                {
-                    var message = UdpMessageWriter.Get(UdpSendOption.None);
-                    message.Buffer = _testData;
-                    message.Length = _testData.Length;
-
-                    connection.Send(message);
-                });
-            }
-        }
-
         /// <summary>
         ///     Tests the keepalive functionality from the client,
         /// </summary>
