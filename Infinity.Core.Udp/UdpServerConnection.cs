@@ -61,10 +61,8 @@ namespace Infinity.Server
         /// <summary>
         ///     Sends a disconnect message to the end point.
         /// </summary>
-        protected override bool SendDisconnect(MessageWriter _data = null)
+        protected override bool SendDisconnect(MessageWriter data = null)
         {
-            var data = (UdpMessageWriter)_data;
-
             lock (this)
             {
                 if (_state != ConnectionState.Connected)

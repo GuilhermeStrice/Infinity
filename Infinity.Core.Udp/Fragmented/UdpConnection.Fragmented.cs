@@ -46,7 +46,7 @@ namespace Infinity.Core.Udp
                 var dataLength = Math.Min(fragmentDataSize, data.Length - fragmentDataSize * i);
                 var buffer = new byte[dataLength + FragmentHeaderSize];
 
-                buffer[0] = (byte)UdpSendOption.Fragment;
+                buffer[0] = (byte)UdpSendOptionInternal.Fragment;
 
                 AttachReliableID(buffer, 1);
 
@@ -91,7 +91,7 @@ namespace Infinity.Core.Udp
                 if (fragmentedMessage.Fragments.Count == fragmentsCount)
                 {
                     var reconstructed = fragmentedMessage.Reconstruct();
-                    InvokeDataReceived(UdpMessageReader.Get(reconstructed), (byte)UdpSendOption.Reliable);
+                    InvokeDataReceived(MessageReader.Get(reconstructed), UdpSendOption.Reliable);
 
                     FragmentedMessage reference;
                     fragmentedMessagesReceived.Remove(fragmentedMessageId, out reference);

@@ -22,10 +22,8 @@ namespace Infinity.Core.Udp
         /// <param name="bytes">The bytes to write.</param>
         public abstract void WriteBytesToConnection(byte[] bytes, int length);
 
-        public override SendErrors Send(MessageWriter _msg)
+        public override SendErrors Send(MessageWriter msg)
         {
-            var msg = (UdpMessageWriter)_msg;
-
             if (_state != ConnectionState.Connected)
             {
                 return SendErrors.Disconnected;
@@ -76,9 +74,9 @@ namespace Infinity.Core.Udp
         /// <returns>The bytes that should actually be sent.</returns>
         protected virtual void HandleSend(byte[] data, byte sendOption, Action ackCallback = null)
         {
-            if (sendOption == (byte)UdpSendOption.Ping || 
-                sendOption == (byte)UdpSendOption.Hello || 
-                sendOption == (byte)UdpSendOption.Reliable)
+            if (sendOption == UdpSendOptionInternal.Ping || 
+                sendOption == UdpSendOptionInternal.Hello || 
+                sendOption == UdpSendOption.Reliable)
             {
                 if (data.Length > FragmentSize)
                 {
@@ -105,42 +103,42 @@ namespace Infinity.Core.Udp
             switch (message.Buffer[0])
             {
                 //Handle reliable receives
-                case (byte)UdpSendOption.Reliable:
+                case UdpSendOption.Reliable:
                     ReliableMessageReceive(message, bytesReceived);
                     break;
 
                 //Handle acknowledgments
-                case (byte)UdpSendOption.Acknowledgement:
+                case UdpSendOptionInternal.Acknowledgement:
                     AcknowledgementMessageReceive(message.Buffer, bytesReceived);
                     message.Recycle();
                     break;
 
                 //We need to acknowledge hello and ping messages but dont want to invoke any events!
-                case (byte)UdpSendOption.Ping:
+                case UdpSendOptionInternal.Ping:
                     ProcessReliableReceive(message.Buffer, 1, out id);
                     Statistics.LogHelloReceive(bytesReceived);
                     message.Recycle();
                     break;
-                case (byte)UdpSendOption.Hello:
+                case UdpSendOptionInternal.Hello:
                     ProcessReliableReceive(message.Buffer, 1, out id);
                     Statistics.LogHelloReceive(bytesReceived);
                     message.Recycle();
                     break;
 
                 //Handle fragmented messages
-                case (byte)UdpSendOption.Fragment:
+                case UdpSendOptionInternal.Fragment:
                     FragmentMessageReceive(message);
                     Statistics.LogFragmentedReceive(message.Length, bytesReceived);
                     message.Recycle(); // at this point we dont care about the message
                     break;
 
-                case (byte)UdpSendOption.Disconnect:
+                case UdpSendOption.Disconnect:
                     message.Offset = 1;
                     message.Position = 0;
                     DisconnectRemote("The remote sent a disconnect request", message);
                     break;
 
-                case (byte)UdpSendOption.None:
+                case UdpSendOption.None:
                     InvokeDataReceived((byte)UdpSendOption.None, message, 1, bytesReceived);
                     Statistics.LogUnreliableReceive(bytesReceived - 1, bytesReceived);
                     break;
@@ -220,7 +218,7 @@ namespace Infinity.Core.Udp
                 Buffer.BlockCopy(bytes, 0, actualBytes, 1, bytes.Length);
             }
 
-            HandleSend(actualBytes, (byte)UdpSendOption.Hello, acknowledgeCallback);
+            HandleSend(actualBytes, UdpSendOptionInternal.Hello, acknowledgeCallback);
         }
 
         protected override void Dispose(bool disposing)

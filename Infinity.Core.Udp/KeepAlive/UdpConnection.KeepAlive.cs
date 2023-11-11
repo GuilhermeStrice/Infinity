@@ -84,7 +84,7 @@
             ushort id = (ushort)Interlocked.Increment(ref lastIDAllocated);
 
             byte[] bytes = new byte[3];
-            bytes[0] = (byte)UdpSendOption.Ping;
+            bytes[0] = UdpSendOptionInternal.Ping;
             bytes[1] = (byte)(id >> 8);
             bytes[2] = (byte)id;
 

@@ -199,9 +199,9 @@ namespace Infinity.Core.Tests
             }
         }
 
-        private static TcpMessageReader ConvertToMessageReader(TcpMessageWriter writer)
+        private static MessageReader ConvertToMessageReader(MessageWriter writer)
         {
-            var output = new TcpMessageReader();
+            var output = new MessageReader();
             output.Buffer = writer.Buffer;
             output.Offset = 1;
             output.Length = writer.Length - output.Offset;
@@ -215,9 +215,9 @@ namespace Infinity.Core.Tests
         /// </summary>
         /// <param name="dataSize">The number of bytes to generate.</param>
         /// <returns>The data.</returns>
-        static TcpMessageWriter BuildData(byte sendOption, int dataSize)
+        static MessageWriter BuildData(byte sendOption, int dataSize)
         {
-            var output = TcpMessageWriter.Get((TcpSendOption)sendOption);
+            var output = MessageWriter.Get(sendOption);
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);

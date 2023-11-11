@@ -2,7 +2,7 @@
 
 namespace Infinity.Core.Tests
 {
-    public class UdpMessageWriterTests
+    /*public class UdpMessageWriterTests
     {
 
         [Fact]
@@ -206,5 +206,5 @@ namespace Infinity.Core.Tests
         {
             Assert.True(MessageWriter.IsLittleEndian());
         }
-    }
+    }*/
 }

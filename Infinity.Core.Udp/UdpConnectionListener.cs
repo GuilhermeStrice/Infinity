@@ -121,7 +121,7 @@ namespace Infinity.Server
             MessageReader message = null;
             try
             {
-                message = UdpMessageReader.GetSized(ReceiveBufferSize);
+                message = MessageReader.GetSized(ReceiveBufferSize);
                 socket.BeginReceiveFrom(message.Buffer, 0, message.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, message);
             }
             catch (SocketException sx)
@@ -204,7 +204,7 @@ namespace Infinity.Server
             StartListeningForData();
 
             bool aware = true;
-            bool isHello = message.Buffer[0] == (byte)UdpSendOption.Hello;
+            bool isHello = message.Buffer[0] == UdpSendOptionInternal.Hello;
 
             // If we're aware of this connection use the one already
             // If this is a new client then connect with them!

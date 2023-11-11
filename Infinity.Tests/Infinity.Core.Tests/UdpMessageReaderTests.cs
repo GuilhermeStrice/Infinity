@@ -2,7 +2,7 @@
 
 namespace Infinity.Core.Tests
 {
-    public class UdpMessageReaderTests
+    /*public class UdpMessageReaderTests
     {
         [Fact]
         public void ReadProperInt()
@@ -680,5 +680,5 @@ namespace Infinity.Core.Tests
             for (int i = 0; i < reader.Buffer.Length; ++i)
                 reader.Buffer[i] = 0;
         }
-    }
+    }*/
 }

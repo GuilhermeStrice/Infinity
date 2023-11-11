@@ -92,7 +92,7 @@ namespace Infinity.Core.Tcp
             tcpConnection.StartReceiving();
         }
 
-        private void TcpConnection_OnHandshake(TcpMessageReader handshakeData, TcpConnection connection)
+        private void TcpConnection_OnHandshake(MessageReader handshakeData, TcpConnection connection)
         {
             if (AcceptConnection != null)
             {

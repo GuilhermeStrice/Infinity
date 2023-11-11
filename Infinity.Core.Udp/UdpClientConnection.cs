@@ -190,7 +190,7 @@ namespace Infinity.Client
             }
 #endif
 
-            var msg = UdpMessageReader.GetSized(ReceiveBufferSize);
+            var msg = MessageReader.GetSized(ReceiveBufferSize);
             try
             {
                 socket.BeginReceive(msg.Buffer, 0, msg.Buffer.Length, SocketFlags.None, ReadCallback, msg);
@@ -297,10 +297,8 @@ namespace Infinity.Client
         ///     Sends a disconnect message to the end point.
         ///     You may include optional disconnect data. The SendOption must be unreliable.
         /// </summary>
-        protected override bool SendDisconnect(MessageWriter _data = null)
+        protected override bool SendDisconnect(MessageWriter data = null)
         {
-            var data = (UdpMessageWriter)_data;
-
             lock (this)
             {
                 if (_state == ConnectionState.NotConnected) 

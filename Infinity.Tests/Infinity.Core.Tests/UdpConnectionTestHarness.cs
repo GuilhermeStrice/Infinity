@@ -41,7 +41,7 @@ namespace Infinity.Core.Tests
 
         public override void WriteBytesToConnection(byte[] bytes, int length)
         {
-            BytesSent.Add(UdpMessageReader.Get(bytes));
+            BytesSent.Add(MessageReader.Get(bytes));
         }
 
         public void Test_Receive(MessageWriter msg)
@@ -49,7 +49,7 @@ namespace Infinity.Core.Tests
             byte[] buffer = new byte[msg.Length];
             Buffer.BlockCopy(msg.Buffer, 0, buffer, 0, msg.Length);
 
-            var data = UdpMessageReader.Get(buffer);
+            var data = MessageReader.Get(buffer);
             HandleReceive(data, data.Length);
         }
     }

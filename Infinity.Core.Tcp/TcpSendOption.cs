@@ -9,19 +9,19 @@ namespace Infinity.Core.Tcp
     /// <summary>
     ///     Extra public states for SendOption enumeration when using TCP.
     /// </summary>
-    public enum TcpSendOption : byte
+    public class TcpSendOption
     {
         /// <summary>
         ///     Hello message for initiating communication.
         /// </summary>
-        Connect = 8,
+        public const byte Connect = 8;
 
         /// <summary>
         ///     Message for discontinuing communication.
         /// </summary>
-        Disconnect = 9,
+        public const byte Disconnect = 9;
 
-        MessageUnordered,
-        MessageOrdered,
+        public const byte MessageUnordered = 15;
+        public const byte MessageOrdered = 16;
     }
 }

@@ -354,7 +354,7 @@ namespace Infinity.Core.Udp
 
             byte[] bytes = new byte[]
             {
-                (byte)UdpSendOption.Acknowledgement,
+                UdpSendOptionInternal.Acknowledgement,
                 (byte)(id >> 8),
                 (byte)(id >> 0),
                 recentPackets

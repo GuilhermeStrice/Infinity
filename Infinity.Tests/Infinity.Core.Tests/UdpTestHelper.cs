@@ -200,9 +200,9 @@ namespace Infinity.Core.Tests
             }
         }
 
-        private static UdpMessageReader ConvertToMessageReader(UdpMessageWriter writer)
+        private static MessageReader ConvertToMessageReader(MessageWriter writer)
         {
-            var output = new UdpMessageReader();
+            var output = new MessageReader();
             output.Buffer = writer.Buffer;
             output.Offset = writer.SendOption == UdpSendOption.None ? 1 : 3;
             output.Length = writer.Length - output.Offset;
@@ -216,9 +216,9 @@ namespace Infinity.Core.Tests
         /// </summary>
         /// <param name="dataSize">The number of bytes to generate.</param>
         /// <returns>The data.</returns>
-        static UdpMessageWriter BuildData(byte sendOption, int dataSize)
+        static MessageWriter BuildData(byte sendOption, int dataSize)
         {
-            var output = UdpMessageWriter.Get((UdpSendOption)sendOption);
+            var output = MessageWriter.Get(sendOption);
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);

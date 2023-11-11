@@ -4,7 +4,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Infinity.Core.Tcp
 {
-    internal delegate void OnHandshake(TcpMessageReader handshakeData, TcpConnection connection);
+    internal delegate void OnHandshake(MessageReader handshakeData, TcpConnection connection);
 
     /// <summary>
     ///     Represents a connection that uses the TCP protocol.
@@ -138,7 +138,7 @@ namespace Infinity.Core.Tcp
         /// <param name="acknowledgeCallback">The callback to invoke when the hello packet is acknowledged.</param>
         protected void SendHello(byte[] bytes, Action acknowledgeCallback)
         {
-            MessageWriter msg = TcpMessageWriter.Get(TcpSendOption.Connect);
+            MessageWriter msg = MessageWriter.Get(TcpSendOption.Connect);
 
             if (bytes != null)
             {
@@ -213,7 +213,7 @@ namespace Infinity.Core.Tcp
 
             Statistics.LogFragmentedReceive(message.Length - 4, message.Length);
 
-            var reader = TcpMessageReader.Get(message);
+            var reader = MessageReader.Get(message);
             switch (message[0])
             {
                 // Connect is only handled by the server for handshake
@@ -433,7 +433,7 @@ namespace Infinity.Core.Tcp
 
         protected override bool SendDisconnect(MessageWriter data = null)
         {
-            MessageWriter msg = TcpMessageWriter.Get(TcpSendOption.Disconnect);
+            MessageWriter msg = MessageWriter.Get(TcpSendOption.Disconnect);
 
             if (data != null)
             {

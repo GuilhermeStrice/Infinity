@@ -15,7 +15,7 @@ namespace Infinity.Core.Tests
                 messagesReceived.Add(evt.Message);
             };
 
-            var data = UdpMessageWriter.Get(UdpSendOption.Reliable);
+            var data = MessageWriter.Get(UdpSendOption.Reliable);
 
             Assert.Equal(ushort.MaxValue, dut.ReliableReceiveLast);
 
@@ -45,7 +45,7 @@ namespace Infinity.Core.Tests
                 messagesReceived.Add(evt.Message);
             };
 
-            var data = UdpMessageWriter.Get(UdpSendOption.Reliable);
+            var data = MessageWriter.Get(UdpSendOption.Reliable);
 
             for (int i = 0; i < ushort.MaxValue * 2; ++i)
             {
@@ -83,7 +83,7 @@ namespace Infinity.Core.Tests
                 messagesReceived.Add(evt.Message);
             };
 
-            var data = UdpMessageWriter.Get(UdpSendOption.Reliable);
+            var data = MessageWriter.Get(UdpSendOption.Reliable);
 
             SetReliableId(data, 1);
             dut.Test_Receive(data);
