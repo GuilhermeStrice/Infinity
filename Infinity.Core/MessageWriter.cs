@@ -5,7 +5,7 @@ namespace Infinity.Core
 {
     public class MessageWriter : IRecyclable
     {
-        public static readonly ObjectPool<MessageWriter> WriterPool = new ObjectPool<MessageWriter>(() => new MessageWriter(BufferSize));
+        internal static readonly ObjectPool<MessageWriter> WriterPool = new ObjectPool<MessageWriter>(() => new MessageWriter(BufferSize));
 
         public static int BufferSize = 64000;
 
@@ -14,8 +14,6 @@ namespace Infinity.Core
         public int Position;
 
         public byte SendOption { get; private set; }
-
-        private Stack<int> messageStarts = new Stack<int>();
 
         public MessageWriter(byte[] buffer)
         {
@@ -210,19 +208,6 @@ namespace Infinity.Core
         }
         #endregion
 
-        public unsafe static bool IsLittleEndian()
-        {
-            byte b;
-            unsafe
-            {
-                int i = 1;
-                byte* bp = (byte*)&i;
-                b = *bp;
-            }
-
-            return b == 1;
-        }
-
         public void Write(MessageWriter msg, bool includeHeader)
         {
             int offset = 0;
@@ -240,16 +225,6 @@ namespace Infinity.Core
             }
 
             Write(msg.Buffer, offset, msg.Length - offset);
-        }
-
-        public bool HasBytes(int expected)
-        {
-            if (SendOption == 1) // Reliable UDP
-            {
-                return Length > 3 + expected;
-            }
-
-            return Length > 1 + expected;
         }
 
         public byte[] ToByteArray(bool includeHeader)
@@ -282,30 +257,6 @@ namespace Infinity.Core
             throw new NotImplementedException();
         }
 
-        public void StartMessage(byte typeFlag)
-        {
-            var messageStart = Position;
-            messageStarts.Push(messageStart);
-            Buffer[messageStart] = 0;
-            Buffer[messageStart + 1] = 0;
-            Position += 2;
-            Write(typeFlag);
-        }
-
-        public void EndMessage()
-        {
-            var lastMessageStart = messageStarts.Pop();
-            ushort length = (ushort)(Position - lastMessageStart - 3); // Minus length and type byte
-            Buffer[lastMessageStart] = (byte)length;
-            Buffer[lastMessageStart + 1] = (byte)(length >> 8);
-        }
-
-        public void CancelMessage()
-        {
-            Position = messageStarts.Pop();
-            Length = Position;
-        }
-
         public static MessageWriter Get(byte sendOption = 0) // None
         {
             var output = WriterPool.GetObject();
@@ -317,7 +268,6 @@ namespace Infinity.Core
         public void Clear(byte sendOption)
         {
             Array.Clear(Buffer, 0, Buffer.Length);
-            messageStarts.Clear();
 
             Buffer[0] = SendOption = sendOption;
 
