@@ -15,7 +15,6 @@ namespace Infinity.Core.Tcp
         ///     The socket we're managing.
         /// </summary>
         Socket socket;
-        public bool isClient = false;
         internal event OnHandshake OnHandshake;
 
         /// <summary>
@@ -138,7 +137,7 @@ namespace Infinity.Core.Tcp
         /// <param name="acknowledgeCallback">The callback to invoke when the hello packet is acknowledged.</param>
         protected void SendHello(byte[] bytes, Action acknowledgeCallback)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOption.Connect);
+            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Connect);
 
             if (bytes != null)
             {
@@ -217,17 +216,17 @@ namespace Infinity.Core.Tcp
             switch (message[0])
             {
                 // Connect is only handled by the server for handshake
-                case (byte)TcpSendOption.Connect:
+                case TcpSendOptionInternal.Connect:
                     OnHandshake.Invoke(reader, this);
                     break;
-                case (byte)TcpSendOption.Disconnect:
+                case TcpSendOptionInternal.Disconnect:
                     DisconnectRemote("The remote sent a disconnect request", reader);
                     break;
-                case (byte)TcpSendOption.MessageUnordered:
-                    InvokeDataReceived((byte)TcpSendOption.MessageUnordered, reader, 1, message.Length);
+                case TcpSendOption.MessageUnordered:
+                    InvokeDataReceived(TcpSendOption.MessageUnordered, reader, 1, message.Length);
                     break;
-                case (byte)TcpSendOption.MessageOrdered:
-                    InvokeDataReceived((byte)TcpSendOption.MessageOrdered, reader, 1, message.Length);
+                case TcpSendOption.MessageOrdered:
+                    InvokeDataReceived(TcpSendOption.MessageOrdered, reader, 1, message.Length);
                     break;
                 default:
                     break;
@@ -433,7 +432,7 @@ namespace Infinity.Core.Tcp
 
         protected override bool SendDisconnect(MessageWriter data = null)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOption.Disconnect);
+            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Disconnect);
 
             if (data != null)
             {
