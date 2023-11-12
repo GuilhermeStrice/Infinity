@@ -1,10 +1,16 @@
 ﻿using Infinity.Core.Udp;
 using System.Net;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public class UdpFragmentationTest
     {
+        public UdpFragmentationTest(ITestOutputHelper output)
+        {
+            UdpTestHelper._output = output;
+        }
+
         private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
 
         [Fact]

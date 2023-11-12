@@ -1,10 +1,12 @@
 ﻿using Infinity.Core.Udp;
-using System.Diagnostics;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public static class UdpTestHelper
     {
+        public static ITestOutputHelper _output;
+
         /// <summary>
         ///     Runs a general test on the given listener and connection.
         /// </summary>

@@ -1,4 +1,4 @@
-﻿namespace Infinity.Core.Udp.Fragmented
+﻿namespace Infinity.Core.Udp
 {
     /// <summary>
     ///     Holding class for the parts of a fragmented message so far received.

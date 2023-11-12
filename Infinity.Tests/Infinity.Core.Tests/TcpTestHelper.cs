@@ -1,10 +1,12 @@
 ﻿using Infinity.Core.Tcp;
-using System.Diagnostics;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
-    public static class TcpTestHelper
+    public class TcpTestHelper
     {
+        public static ITestOutputHelper _output;
+
         /// <summary>
         ///     Runs a general test on the given listener and connection.
         /// </summary>
@@ -28,7 +30,7 @@ namespace Infinity.Core.Tests
             //Setup conneciton
             connection.DataReceived += delegate (DataReceivedEventArgs a)
             {
-                Trace.WriteLine("Data was received correctly.");
+                _output.WriteLine("Data was received correctly.");
 
                 try
                 {
@@ -73,7 +75,7 @@ namespace Infinity.Core.Tests
             {
                 args.Connection.DataReceived += delegate (DataReceivedEventArgs innerArgs)
                 {
-                    Trace.WriteLine("Data was received correctly.");
+                    _output.WriteLine("Data was received correctly.");
 
                     result = innerArgs;
 

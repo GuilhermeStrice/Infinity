@@ -1,10 +1,16 @@
 ﻿using Infinity.Core.Udp;
 using System.Net;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public class UdpOrderingTests
     {
+        public UdpOrderingTests(ITestOutputHelper output)
+        {
+            UdpTestHelper._output = output;
+        }
+
         [Fact]
         public void OrderedTest()
         {

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Infinity.Core
+﻿namespace Infinity.Core
 {
     /// <summary>
     ///     Represents the IP version that a connection or listener will use.

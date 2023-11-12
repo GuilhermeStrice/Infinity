@@ -1,10 +1,16 @@
 ﻿using Infinity.Core.Tcp;
 using System.Net;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public class TcpConnectionTests
     {
+        public TcpConnectionTests(ITestOutputHelper output)
+        {
+            TcpTestHelper._output = output;
+        }
+
         /// <summary>
         ///     Tests the fields on TcpConnection.
         /// </summary>

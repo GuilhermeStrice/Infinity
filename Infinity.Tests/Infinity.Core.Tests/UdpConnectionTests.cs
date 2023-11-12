@@ -1,11 +1,17 @@
 ﻿using Infinity.Core.Udp;
 using System.Net.Sockets;
 using System.Net;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public class UdpConnectionTests
     {
+        public UdpConnectionTests(ITestOutputHelper output)
+        {
+            UdpTestHelper._output = output;
+        }
+
         [Fact]
         public void ServerDisposeDisconnectsTest()
         {

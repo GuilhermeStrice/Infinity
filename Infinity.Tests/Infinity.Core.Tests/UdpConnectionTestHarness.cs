@@ -1,5 +1,4 @@
 ﻿using Infinity.Core.Udp;
-using System.Net.Sockets;
 
 namespace Infinity.Core.Tests
 {
