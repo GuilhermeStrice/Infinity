@@ -73,7 +73,7 @@ namespace Infinity.Core.Udp
             }
         }
 
-        protected void FragmentMessageReceive(MessageReader messageReader)
+        void FragmentMessageReceive(MessageReader messageReader)
         {
             if (ProcessReliableReceive(messageReader.Buffer, 1, out var id))
             {
