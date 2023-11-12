@@ -97,9 +97,15 @@ namespace Infinity.Core.Udp
                 fragment.Id = id;
                 fragment.Data = buffer;
 
-                fragmentedMessage.Fragments.Add(fragment);
+                // locking a HashSet is faster than anything else
+                int fragmentedMessageFragmentsCount = 0;
+                lock (fragmentedMessage.Fragments)
+                {
+                    fragmentedMessage.Fragments.Add(fragment);
+                    fragmentedMessageFragmentsCount = fragmentedMessage.Fragments.Count;
+                }
 
-                if (fragmentedMessage.Fragments.Count == fragmentsCount)
+                if (fragmentedMessageFragmentsCount == fragmentsCount)
                 {
                     var reconstructed = fragmentedMessage.Reconstruct();
                     InvokeDataReceived(MessageReader.Get(reconstructed), UdpSendOption.Reliable);
