@@ -7,6 +7,7 @@ namespace Infinity.Core.Udp
         internal ConcurrentDictionary<int, MessageReader> OrderedMessagesReceived = new ConcurrentDictionary<int, MessageReader>();
 
         internal volatile int nextInSequence = 1;
+        internal bool receivedFirst = false;
 
         internal const int OrderedHeaderSize = sizeof(byte) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
 
@@ -48,31 +49,42 @@ namespace Infinity.Core.Udp
 
                 int beforeId = messageReader.ReadByte();
                 int afterId = messageReader.ReadByte();
-                int myId = afterId - 1;
+                int currentId = afterId - 1;
 
-                OrderedMessagesReceived.TryAdd(myId, messageReader);
+                OrderedMessagesReceived.TryAdd(currentId, messageReader);
                 
-                ProcessMessage(myId, beforeId, afterId);
+                ProcessMessage(beforeId, currentId, afterId);
             }
         }
 
-        void ProcessMessage(int current, int before, int after)
+        void ProcessMessage(int before, int current, int after)
         {
-            if (nextInSequence == current)
+            if (!OrderedMessagesReceived.ContainsKey(before))
             {
-                nextInSequence++;
-
-                OrderedMessagesReceived.Remove(current, out var message);
-
-                InvokeDataReceived(message, UdpSendOption.ReliableOrdered);
-
-                if (OrderedMessagesReceived.ContainsKey(after))
-                    ProcessMessage(after, after - 1, after + 1);
+                if (!receivedFirst)
+                {
+                    receivedFirst = true;
+                    // just process it
+                    InvokeOrderedMessageReceived(current);
+                    return;
+                }
+                else
+                {
+                    // we still havent received the before packet
+                    // do nothing
+                }
             }
-            else if (OrderedMessagesReceived.ContainsKey(before))
+            else
             {
-                ProcessMessage(before, before - 1, current);
+                InvokeOrderedMessageReceived(before);
             }
+        }
+
+        void InvokeOrderedMessageReceived(int current)
+        {
+            OrderedMessagesReceived.Remove(current, out var message);
+
+            InvokeDataReceived(message, UdpSendOption.ReliableOrdered);
         }
     }
 }
