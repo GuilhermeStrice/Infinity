@@ -17,7 +17,7 @@
                     ReliableMessagesSent +
                     FragmentedMessagesSent +
                     AcknowledgementMessagesSent +
-                    HelloMessagesSent;
+                    HandshakeMessagesSent;
             }
         }
 
@@ -94,19 +94,19 @@
         int acknowledgementMessagesSent = 0;
 
         /// <summary>
-        ///     The number of hello messages sent.
+        ///     The number of Handshake messages sent.
         /// </summary>
         /// <remarks>
-        ///     This is the number of hello messages that were sent from the <see cref="Connection"/>, incremented 
-        ///     each time that LogHelloSend is called by the Connection. Messages that caused an error are not 
+        ///     This is the number of Handshake messages that were sent from the <see cref="Connection"/>, incremented 
+        ///     each time that LogHandshakeSend is called by the Connection. Messages that caused an error are not 
         ///     counted and messages are only counted once all other operations in the send are complete.
         /// </remarks>
-        public int HelloMessagesSent => helloMessagesSent;
+        public int HandshakeMessagesSent => handshakeMessagesSent;
 
         /// <summary>
-        ///     The number of hello messages sent.
+        ///     The number of Handshake messages sent.
         /// </summary>
-        int helloMessagesSent = 0;
+        int handshakeMessagesSent = 0;
 
         /// <summary>
         ///     The number of bytes of data sent.
@@ -159,8 +159,8 @@
                 return UnreliableMessagesReceived + 
                     ReliableMessagesReceived + 
                     FragmentedMessagesReceived + 
-                    AcknowledgementMessagesReceived + 
-                    helloMessagesReceived;
+                    AcknowledgementMessagesReceived +
+                    handshakeMessagesReceived;
             }
         }
         
@@ -224,29 +224,29 @@
         ///     The number of ping messages received.
         /// </summary>
         /// <remarks>
-        ///     This is the number of hello messages that were received by the <see cref="Connection"/>, incremented
-        ///     each time that LogHelloReceive is called by the Connection. Messages are counted before the receive event is invoked.
+        ///     This is the number of Handshake messages that were received by the <see cref="Connection"/>, incremented
+        ///     each time that LogHandshakeReceive is called by the Connection. Messages are counted before the receive event is invoked.
         /// </remarks>
         public int PingMessagesReceived => pingMessagesReceived;
 
         /// <summary>
-        ///     The number of hello messages received.
+        ///     The number of Handshake messages received.
         /// </summary>
         int pingMessagesReceived = 0;
 
         /// <summary>
-        ///     The number of hello messages received.
+        ///     The number of Handshake messages received.
         /// </summary>
         /// <remarks>
-        ///     This is the number of hello messages that were received by the <see cref="Connection"/>, incremented
-        ///     each time that LogHelloReceive is called by the Connection. Messages are counted before the receive event is invoked.
+        ///     This is the number of Handshake messages that were received by the <see cref="Connection"/>, incremented
+        ///     each time that LogHandshakeReceive is called by the Connection. Messages are counted before the receive event is invoked.
         /// </remarks>
-        public int HelloMessagesReceived => helloMessagesReceived;
+        public int HandshakeMessagesReceived => handshakeMessagesReceived;
 
         /// <summary>
-        ///     The number of hello messages received.
+        ///     The number of Handshake messages received.
         /// </summary>
-        int helloMessagesReceived = 0;
+        int handshakeMessagesReceived = 0;
 
         /// <summary>
         ///     The number of bytes of data received.
@@ -358,9 +358,9 @@
         /// <remarks>
         ///     This should be called after the data has been sent and should only be called for data that is sent sucessfully.
         /// </remarks>
-        public void LogHelloSend()
+        public void LogHandshakeSend()
         {
-            Interlocked.Increment(ref helloMessagesSent);
+            Interlocked.Increment(ref handshakeMessagesSent);
         }
 
         /// <summary>
@@ -430,7 +430,7 @@
         }
 
         /// <summary>
-        ///     Logs the receiving of a hello data packet in the statistics.
+        ///     Logs the receiving of a Handshake data packet in the statistics.
         /// </summary>
         /// <param name="totalLength">The total number of bytes received.</param>
         /// <remarks>
@@ -443,15 +443,15 @@
         }
 
         /// <summary>
-        ///     Logs the receiving of a hello data packet in the statistics.
+        ///     Logs the receiving of a Handshake data packet in the statistics.
         /// </summary>
         /// <param name="totalLength">The total number of bytes received.</param>
         /// <remarks>
         ///     This should be called before the received event is invoked so it is up to date for subscribers to that event.
         /// </remarks>
-        public void LogHelloReceive(int totalLength)
+        public void LogHandshakeReceive(int totalLength)
         {
-            Interlocked.Increment(ref helloMessagesReceived);
+            Interlocked.Increment(ref handshakeMessagesReceived);
             Interlocked.Add(ref totalBytesReceived, totalLength);
         }
 

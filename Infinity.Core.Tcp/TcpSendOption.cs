@@ -9,9 +9,9 @@ namespace Infinity.Core.Tcp
     internal class TcpSendOptionInternal
     {
         /// <summary>
-        ///     Hello message for initiating communication.
+        ///     Handshake message for initiating communication.
         /// </summary>
-        public const byte Connect = 8;
+        public const byte Handshake = 8;
 
         /// <summary>
         ///     Message for discontinuing communication.

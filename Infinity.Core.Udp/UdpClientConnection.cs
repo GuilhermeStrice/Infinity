@@ -124,7 +124,7 @@ namespace Infinity.Client
         {
             ConnectAsync(bytes);
 
-            //Wait till hello packet is acknowledged and the state is set to Connected
+            //Wait till Handshake packet is acknowledged and the state is set to Connected
             bool timedOut = !WaitOnConnect(timeout);
 
             //If we timed out raise an exception
@@ -171,7 +171,7 @@ namespace Infinity.Client
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             // When acknowledged set the state to connected
-            SendHello(bytes, () =>
+            SendHandshake(bytes, () =>
             {
                 State = ConnectionState.Connected;
                 InitializeKeepAliveTimer();
@@ -206,7 +206,7 @@ namespace Infinity.Client
         {
             try
             {
-                // If the server disconnects you during the hello
+                // If the server disconnects you during the Handshake
                 // you can go straight from Connecting to NotConnected.
                 if (state == ConnectionState.Connected
                     || state == ConnectionState.NotConnected)

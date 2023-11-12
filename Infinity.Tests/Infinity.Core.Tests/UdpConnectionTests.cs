@@ -204,7 +204,7 @@ namespace Infinity.Core.Tests
         }
 
         /// <summary>
-        ///     Tests IPv4 resilience to non-hello connections.
+        ///     Tests IPv4 resilience to non-Handshake connections.
         /// </summary>
         [Fact]
         public void FalseConnectionTest()
@@ -235,9 +235,9 @@ namespace Infinity.Core.Tests
         }
 
         /// <summary>
-        ///     Tests IPv4 resilience to multiple hellos.
+        ///     Tests IPv4 resilience to multiple Handshakes.
         /// </summary>
-        /*[Fact]
+        [Fact]
         public void ConnectLikeAJerkTest()
         {
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -253,7 +253,7 @@ namespace Infinity.Core.Tests
 
                 socket.Bind(new IPEndPoint(IPAddress.Any, 0));
                 var bytes = new byte[2];
-                bytes[0] = (byte)UdpSendOption.Hello;
+                bytes[0] = 8;
                 for (int i = 0; i < 10; ++i)
                 {
                     socket.SendTo(bytes, new IPEndPoint(IPAddress.Loopback, 4296));
@@ -263,7 +263,7 @@ namespace Infinity.Core.Tests
 
                 Assert.Equal(1, connects);
             }
-        }*/
+        }
 
         /// <summary>
         ///     Tests dual mode connectivity.
@@ -582,7 +582,7 @@ namespace Infinity.Core.Tests
 
                 listener.NewConnection += delegate (NewConnectionEventArgs args)
                 {
-                    // As it turns out, the UdpConnectionListener can have an issue on loopback where the disconnect can happen before the hello confirm
+                    // As it turns out, the UdpConnectionListener can have an issue on loopback where the disconnect can happen before the Handshake confirm
                     // Tossing it on a different thread makes this test more reliable. Perhaps something to think about elsewhere though.
                     Task.Run(async () =>
                     {

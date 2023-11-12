@@ -204,19 +204,18 @@ namespace Infinity.Server
             StartListeningForData();
 
             bool aware = true;
-            bool isHello = message.Buffer[0] == UdpSendOptionInternal.Hello;
+            bool isHandshake = message.Buffer[0] == UdpSendOptionInternal.Handshake;
 
             // If we're aware of this connection use the one already
             // If this is a new client then connect with them!
             UdpServerConnection connection;
             if (!allConnections.TryGetValue(remoteEndPoint, out connection))
             {
-                lock (allConnections)
-                {
+                
                     if (!allConnections.TryGetValue(remoteEndPoint, out connection))
                     {
                         // Check for malformed connection attempts
-                        if (!isHello)
+                        if (!isHandshake)
                         {
                             message.Recycle();
                             return;
@@ -243,7 +242,6 @@ namespace Infinity.Server
                             throw new InfinityException("Failed to add a connection. This should never happen.");
                         }
                     }
-                }
             }
 
             // If it's a new connection invoke the NewConnection event.
@@ -251,7 +249,7 @@ namespace Infinity.Server
             // subsequent messages can happen before the NewConnection event sets up OnDataRecieved handlers
             if (!aware)
             {
-                // Skip header and hello byte;
+                // Skip header and Handshake byte;
                 message.Offset = 4;
                 message.Length = bytesReceived - 4;
                 message.Position = 0;

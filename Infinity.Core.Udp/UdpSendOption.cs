@@ -3,9 +3,9 @@
     internal class UdpSendOptionInternal
     {
         /// <summary>
-        ///     Hello message for initiating communication.
+        ///     Handshake message for initiating communication.
         /// </summary>
-        public const byte Hello = 8;
+        public const byte Handshake = 8;
 
         /// <summary>
         /// A single byte of continued existence

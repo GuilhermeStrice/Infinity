@@ -14,7 +14,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(0, statistics.ReliableMessagesSent);
             Assert.Equal(0, statistics.FragmentedMessagesSent);
             Assert.Equal(0, statistics.AcknowledgementMessagesSent);
-            Assert.Equal(0, statistics.HelloMessagesSent);
+            Assert.Equal(0, statistics.HandshakeMessagesSent);
 
             Assert.Equal(10, statistics.DataBytesSent);
 
@@ -25,7 +25,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(1, statistics.ReliableMessagesSent);
             Assert.Equal(0, statistics.FragmentedMessagesSent);
             Assert.Equal(0, statistics.AcknowledgementMessagesSent);
-            Assert.Equal(0, statistics.HelloMessagesSent);
+            Assert.Equal(0, statistics.HandshakeMessagesSent);
 
             Assert.Equal(15, statistics.DataBytesSent);
 
@@ -36,7 +36,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(1, statistics.ReliableMessagesSent);
             Assert.Equal(1, statistics.FragmentedMessagesSent);
             Assert.Equal(0, statistics.AcknowledgementMessagesSent);
-            Assert.Equal(0, statistics.HelloMessagesSent);
+            Assert.Equal(0, statistics.HandshakeMessagesSent);
 
             Assert.Equal(21, statistics.DataBytesSent);
 
@@ -47,18 +47,18 @@ namespace Infinity.Core.Tests
             Assert.Equal(1, statistics.ReliableMessagesSent);
             Assert.Equal(1, statistics.FragmentedMessagesSent);
             Assert.Equal(1, statistics.AcknowledgementMessagesSent);
-            Assert.Equal(0, statistics.HelloMessagesSent);
+            Assert.Equal(0, statistics.HandshakeMessagesSent);
 
             Assert.Equal(21, statistics.DataBytesSent);
 
-            statistics.LogHelloSend();
+            statistics.LogHandshakeSend();
 
             Assert.Equal(5, statistics.MessagesSent);
             Assert.Equal(1, statistics.UnreliableMessagesSent);
             Assert.Equal(1, statistics.ReliableMessagesSent);
             Assert.Equal(1, statistics.FragmentedMessagesSent);
             Assert.Equal(1, statistics.AcknowledgementMessagesSent);
-            Assert.Equal(1, statistics.HelloMessagesSent);
+            Assert.Equal(1, statistics.HandshakeMessagesSent);
 
             Assert.Equal(21, statistics.DataBytesSent);
 
@@ -67,7 +67,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(0, statistics.ReliableMessagesReceived);
             Assert.Equal(0, statistics.FragmentedMessagesReceived);
             Assert.Equal(0, statistics.AcknowledgementMessagesReceived);
-            Assert.Equal(0, statistics.HelloMessagesReceived);
+            Assert.Equal(0, statistics.HandshakeMessagesReceived);
 
             Assert.Equal(0, statistics.DataBytesReceived);
             Assert.Equal(0, statistics.TotalBytesReceived);
@@ -88,7 +88,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(0, statistics.ReliableMessagesReceived);
             Assert.Equal(0, statistics.FragmentedMessagesReceived);
             Assert.Equal(0, statistics.AcknowledgementMessagesReceived);
-            Assert.Equal(0, statistics.HelloMessagesReceived);
+            Assert.Equal(0, statistics.HandshakeMessagesReceived);
 
             Assert.Equal(10, statistics.DataBytesReceived);
             Assert.Equal(11, statistics.TotalBytesReceived);
@@ -100,7 +100,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(1, statistics.ReliableMessagesReceived);
             Assert.Equal(0, statistics.FragmentedMessagesReceived);
             Assert.Equal(0, statistics.AcknowledgementMessagesReceived);
-            Assert.Equal(0, statistics.HelloMessagesReceived);
+            Assert.Equal(0, statistics.HandshakeMessagesReceived);
 
             Assert.Equal(15, statistics.DataBytesReceived);
             Assert.Equal(19, statistics.TotalBytesReceived);
@@ -112,7 +112,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(1, statistics.ReliableMessagesReceived);
             Assert.Equal(1, statistics.FragmentedMessagesReceived);
             Assert.Equal(0, statistics.AcknowledgementMessagesReceived);
-            Assert.Equal(0, statistics.HelloMessagesReceived);
+            Assert.Equal(0, statistics.HandshakeMessagesReceived);
 
             Assert.Equal(21, statistics.DataBytesReceived);
             Assert.Equal(29, statistics.TotalBytesReceived);
@@ -124,19 +124,19 @@ namespace Infinity.Core.Tests
             Assert.Equal(1, statistics.ReliableMessagesReceived);
             Assert.Equal(1, statistics.FragmentedMessagesReceived);
             Assert.Equal(1, statistics.AcknowledgementMessagesReceived);
-            Assert.Equal(0, statistics.HelloMessagesReceived);
+            Assert.Equal(0, statistics.HandshakeMessagesReceived);
 
             Assert.Equal(21, statistics.DataBytesReceived);
             Assert.Equal(33, statistics.TotalBytesReceived);
 
-            statistics.LogHelloReceive(7);
+            statistics.LogHandshakeReceive(7);
 
             Assert.Equal(5, statistics.MessagesReceived);
             Assert.Equal(1, statistics.UnreliableMessagesReceived);
             Assert.Equal(1, statistics.ReliableMessagesReceived);
             Assert.Equal(1, statistics.FragmentedMessagesReceived);
             Assert.Equal(1, statistics.AcknowledgementMessagesReceived);
-            Assert.Equal(1, statistics.HelloMessagesReceived);
+            Assert.Equal(1, statistics.HandshakeMessagesReceived);
 
             Assert.Equal(21, statistics.DataBytesReceived);
             Assert.Equal(40, statistics.TotalBytesReceived);
@@ -146,7 +146,7 @@ namespace Infinity.Core.Tests
             Assert.Equal(0, statistics.ReliableMessagesSent);
             Assert.Equal(0, statistics.FragmentedMessagesSent);
             Assert.Equal(0, statistics.AcknowledgementMessagesSent);
-            Assert.Equal(0, statistics.HelloMessagesSent);
+            Assert.Equal(0, statistics.HandshakeMessagesSent);
 
             Assert.Equal(0, statistics.DataBytesSent);
             Assert.Equal(0, statistics.TotalBytesSent);

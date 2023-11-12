@@ -83,7 +83,7 @@ namespace Infinity.Core.Tcp
                 throw new InfinityException("An exception occured while initiating the first receive operation.", e);
             }
 
-            SendHello(bytes, () =>
+            SendHandshake(bytes, () =>
             {
             });
         }
@@ -121,7 +121,7 @@ namespace Infinity.Core.Tcp
                     throw new InfinityException("An exception occured while initiating the first receive operation.", e);
                 }
 
-                SendHello((byte[])result.AsyncState, () =>
+                SendHandshake((byte[])result.AsyncState, () =>
                 {
                 });
             }
@@ -132,12 +132,12 @@ namespace Infinity.Core.Tcp
         }
 
         /// <summary>
-        ///     Sends a hello packet to the remote endpoint.
+        ///     Sends a Handshake packet to the remote endpoint.
         /// </summary>
-        /// <param name="acknowledgeCallback">The callback to invoke when the hello packet is acknowledged.</param>
-        protected void SendHello(byte[] bytes, Action acknowledgeCallback)
+        /// <param name="acknowledgeCallback">The callback to invoke when the Handshake packet is acknowledged.</param>
+        protected void SendHandshake(byte[] bytes, Action acknowledgeCallback)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Connect);
+            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Handshake);
 
             if (bytes != null)
             {
@@ -216,7 +216,7 @@ namespace Infinity.Core.Tcp
             switch (message[0])
             {
                 // Connect is only handled by the server for handshake
-                case TcpSendOptionInternal.Connect:
+                case TcpSendOptionInternal.Handshake:
                     OnHandshake.Invoke(reader, this);
                     break;
                 case TcpSendOptionInternal.Disconnect:

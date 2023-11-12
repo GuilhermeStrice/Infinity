@@ -75,7 +75,7 @@ namespace Infinity.Core.Udp
         protected virtual void HandleSend(byte[] data, byte sendOption, Action ackCallback = null)
         {
             if (sendOption == UdpSendOptionInternal.Ping || 
-                sendOption == UdpSendOptionInternal.Hello || 
+                sendOption == UdpSendOptionInternal.Handshake || 
                 sendOption == UdpSendOption.Reliable)
             {
                 if (data.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
@@ -113,15 +113,15 @@ namespace Infinity.Core.Udp
                     message.Recycle();
                     break;
 
-                //We need to acknowledge hello and ping messages but dont want to invoke any events!
+                //We need to acknowledge Handshake and ping messages but dont want to invoke any events!
                 case UdpSendOptionInternal.Ping:
                     ProcessReliableReceive(message.Buffer, 1, out id);
-                    Statistics.LogHelloReceive(bytesReceived);
+                    Statistics.LogHandshakeReceive(bytesReceived);
                     message.Recycle();
                     break;
-                case UdpSendOptionInternal.Hello:
+                case UdpSendOptionInternal.Handshake:
                     ProcessReliableReceive(message.Buffer, 1, out id);
-                    Statistics.LogHelloReceive(bytesReceived);
+                    Statistics.LogHandshakeReceive(bytesReceived);
                     message.Recycle();
                     break;
 
@@ -202,10 +202,10 @@ namespace Infinity.Core.Udp
         }
 
         /// <summary>
-        ///     Sends a hello packet to the remote endpoint.
+        ///     Sends a Handshake packet to the remote endpoint.
         /// </summary>
-        /// <param name="acknowledgeCallback">The callback to invoke when the hello packet is acknowledged.</param>
-        protected void SendHello(byte[] bytes, Action acknowledgeCallback)
+        /// <param name="acknowledgeCallback">The callback to invoke when the Handshake packet is acknowledged.</param>
+        protected void SendHandshake(byte[] bytes, Action acknowledgeCallback)
         {
             byte[] actualBytes;
             if (bytes == null)
@@ -218,7 +218,7 @@ namespace Infinity.Core.Udp
                 Buffer.BlockCopy(bytes, 0, actualBytes, 1, bytes.Length);
             }
 
-            HandleSend(actualBytes, UdpSendOptionInternal.Hello, acknowledgeCallback);
+            HandleSend(actualBytes, UdpSendOptionInternal.Handshake, acknowledgeCallback);
         }
 
         protected override void Dispose(bool disposing)
