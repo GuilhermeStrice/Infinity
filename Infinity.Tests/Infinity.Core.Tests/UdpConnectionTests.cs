@@ -366,7 +366,7 @@ namespace Infinity.Core.Tests
 
                         Interlocked.Increment(ref count);
 
-                        if (count == 50 + 1)
+                        if (count == 50)
                             result.SetResult(true);
                     };
                 };
@@ -408,8 +408,8 @@ namespace Infinity.Core.Tests
                         var messageReader = data.Message;
                         Assert.NotNull(data.Message);
 
-                        var received = new byte[messageReader.Length - messageReader.Offset];
-                        Array.Copy(messageReader.Buffer, 0, received, 0, messageReader.Length);
+                        var received = new byte[messageReader.Length];
+                        Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length);
 
                         Assert.Equal(_testData, received);
                         data.Message.Recycle();
@@ -448,14 +448,13 @@ namespace Infinity.Core.Tests
                 {
                     e.Connection.DataReceived += data =>
                     {
-                        //Console.WriteLine("yep");
                         Interlocked.Increment(ref count);
 
                         var messageReader = data.Message;
                         Assert.NotNull(data.Message);
 
-                        var received = new byte[messageReader.Length - messageReader.Offset];
-                        Array.Copy(messageReader.Buffer, 0, received, 0, messageReader.Length);
+                        var received = new byte[messageReader.Length];
+                        Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length);
 
                         Assert.Equal(_testData, received);
 
