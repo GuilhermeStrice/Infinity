@@ -10,8 +10,8 @@ namespace Infinity.Core.Udp.Fragmented
     {
         public static readonly ObjectPool<Fragment> FragmentPool = new ObjectPool<Fragment>(() => new Fragment());
 
-        public int Id { get; set;  }
-        public byte[] Data { get; set;  }
+        public int Id { get; set; }
+        public byte[] Data { get; set; }
 
         public Fragment()
         {
