@@ -93,8 +93,10 @@ namespace Infinity.Core.Udp
                 var buffer = new byte[messageReader.Length - messageReader.Position];
                 Buffer.BlockCopy(messageReader.Buffer, messageReader.Position, buffer, 0, messageReader.Length - messageReader.Position);
 
+                int fragmentId = Interlocked.Increment(ref fragmentedMessage.fragmentIdCounter);
+
                 var fragment = Fragment.Get();
-                fragment.Id = id;
+                fragment.Id = fragmentId;
                 fragment.Data = buffer;
 
                 // locking a HashSet is faster than anything else
