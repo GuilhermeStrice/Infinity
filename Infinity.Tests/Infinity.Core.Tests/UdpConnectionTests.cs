@@ -471,7 +471,8 @@ namespace Infinity.Core.Tests
                 Thread.Sleep(100);
 
                 var message = MessageWriter.Get(UdpSendOption.Reliable);
-                message.WriteBytesAndSize(_testData, _testData.Length);
+                message.Buffer = _testData;
+                message.Length = _testData.Length;
 
                 for (int i = 0; i < 100; i++)
                 {
