@@ -90,12 +90,9 @@ namespace Infinity.Core.Udp
                     fragmentedMessagesReceived.TryAdd(fragmentedMessageId, fragmentedMessage);
                 }
 
-                var buffer = new byte[messageReader.Length - messageReader.Position];
-                Buffer.BlockCopy(messageReader.Buffer, messageReader.Position, buffer, 0, messageReader.Length - messageReader.Position);
-
                 var fragment = Fragment.Get();
                 fragment.Id = id;
-                fragment.Data = buffer;
+                fragment.Data = messageReader;
 
                 // locking a HashSet is faster than anything else
                 lock (fragmentedMessage.Fragments)
@@ -104,18 +101,19 @@ namespace Infinity.Core.Udp
 
                     if (fragmentedMessage.Fragments.Count == fragmentsCount)
                     {
-                        var reconstructed = fragmentedMessage.Reconstruct();
+                        var writer = MessageWriter.Get(UdpSendOption.Reliable);
+                        writer.Position = 1;
+                        writer.Write(fragmentedMessageId);
 
-                        int reader_length = reconstructed.Length + 3;
-                        var reader = MessageReader.GetSized(reader_length);
+                        foreach (var f in fragmentedMessage.Fragments.OrderBy(fragment => fragment.Id))
+                        {
+                            writer.Write(f.Data.Buffer, f.Data.Position, f.Data.Length - f.Data.Position);
+                        }
 
-                        reader.Buffer[0] = UdpSendOption.Reliable;
-                        reader.Buffer[1] = (byte)(fragmentedMessageId << 8);
-                        reader.Buffer[2] = (byte)(fragmentedMessageId);
+                        var reader = writer.AsReader();
+                        writer.Recycle();
 
-                        Array.Copy(reconstructed, 0, reader.Buffer, 3, reconstructed.Length);
-
-                        InvokeDataReceived(UdpSendOption.Reliable, reader, 3, reader_length);
+                        InvokeDataReceived(UdpSendOption.Reliable, reader, 3, reader.Length);
 
                         FragmentedMessage reference;
                         fragmentedMessagesReceived.Remove(fragmentedMessageId, out reference);

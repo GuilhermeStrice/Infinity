@@ -21,26 +21,6 @@
         {
         }
 
-        public byte[] Reconstruct()
-        {
-            if (Fragments.Count != FragmentsCount)
-            {
-                throw new InfinityException("Can't reconstruct a FragmentedMessage until all fragments are received");
-            }
-
-            var buffer = new byte[Fragments.Sum(x => x.Data.Length)];
-
-            var offset = 0;
-            foreach (var fragment in Fragments.OrderBy(fragment => fragment.Id))
-            {
-                var data = fragment.Data;
-                Buffer.BlockCopy(data, 0, buffer, offset, data.Length);
-                offset += data.Length;
-            }
-
-            return buffer;
-        }
-
         public static FragmentedMessage Get()
         {
             return FragmentedMessagePool.GetObject();

@@ -290,5 +290,15 @@ namespace Infinity.Core
             Position = Length = 0;
             WriterPool.PutObject(this);
         }
+
+        public MessageReader AsReader()
+        {
+            var reader = MessageReader.GetSized(Length);
+
+            Array.Copy(Buffer, 0, reader.Buffer, 0, Length);
+            reader.Length = Length;
+
+            return reader;
+        }
     }
 }

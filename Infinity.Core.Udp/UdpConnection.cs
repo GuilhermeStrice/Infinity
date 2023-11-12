@@ -141,7 +141,6 @@ namespace Infinity.Core.Udp
                 case UdpSendOptionInternal.Fragment:
                     FragmentMessageReceive(message);
                     Statistics.LogFragmentedReceive(message.Length, bytesReceived);
-                    message.Recycle(); // at this point we dont care about the message
                     break;
 
                 case UdpSendOption.Disconnect:
