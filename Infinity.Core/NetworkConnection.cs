@@ -304,7 +304,8 @@ namespace Infinity.Core
             }
             else
             {
-                msg.Recycle();
+                if (msg != null)
+                    msg.Recycle();
             }
         }
 
