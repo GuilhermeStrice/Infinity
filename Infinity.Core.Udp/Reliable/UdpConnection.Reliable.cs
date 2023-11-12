@@ -173,7 +173,7 @@ namespace Infinity.Core.Udp
             ushort id;
             if (ProcessReliableReceive(message.Buffer, 1, out id))
             {
-                InvokeDataReceived((byte)UdpSendOption.Reliable, message, 3, bytesReceived);
+                InvokeDataReceived(UdpSendOption.Reliable, message, 3, bytesReceived);
             }
             else
             {
