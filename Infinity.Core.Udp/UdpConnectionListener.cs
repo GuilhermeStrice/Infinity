@@ -211,37 +211,36 @@ namespace Infinity.Server
             UdpServerConnection connection;
             if (!allConnections.TryGetValue(remoteEndPoint, out connection))
             {
-                
-                    if (!allConnections.TryGetValue(remoteEndPoint, out connection))
+                if (!allConnections.TryGetValue(remoteEndPoint, out connection))
+                {
+                    // Check for malformed connection attempts
+                    if (!isHandshake)
                     {
-                        // Check for malformed connection attempts
-                        if (!isHandshake)
+                        message.Recycle();
+                        return;
+                    }
+
+                    if (AcceptConnection != null)
+                    {
+                        if (!AcceptConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
                         {
                             message.Recycle();
+                            if (response != null)
+                            {
+                                SendData(response, response.Length, remoteEndPoint);
+                            }
+
                             return;
                         }
-
-                        if (AcceptConnection != null)
-                        {
-                            if (!AcceptConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
-                            {
-                                message.Recycle();
-                                if (response != null)
-                                {
-                                    SendData(response, response.Length, remoteEndPoint);
-                                }
-
-                                return;
-                            }
-                        }
-
-                        aware = false;
-                        connection = new UdpServerConnection(this, (IPEndPoint)remoteEndPoint, IPMode, Logger);
-                        if (!allConnections.TryAdd(remoteEndPoint, connection))
-                        {
-                            throw new InfinityException("Failed to add a connection. This should never happen.");
-                        }
                     }
+
+                    aware = false;
+                    connection = new UdpServerConnection(this, (IPEndPoint)remoteEndPoint, IPMode, Logger);
+                    if (!allConnections.TryAdd(remoteEndPoint, connection))
+                    {
+                        throw new InfinityException("Failed to add a connection. This should never happen.");
+                    }
+                }
             }
 
             // If it's a new connection invoke the NewConnection event.
