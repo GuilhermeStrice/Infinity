@@ -1,11 +1,6 @@
-﻿using Infinity.Client;
-using Infinity.Core.Udp;
-using Infinity.Server;
+﻿using Infinity.Core.Udp;
 using System.Net.Sockets;
 using System.Net;
-using System.Diagnostics;
-using System.Drawing;
-using System.Diagnostics.Metrics;
 
 namespace Infinity.Core.Tests
 {

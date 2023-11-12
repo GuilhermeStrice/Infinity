@@ -1,12 +1,5 @@
-﻿using Infinity.Client;
-using Infinity.Core.Udp;
-using Infinity.Server;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Infinity.Core.Udp;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infinity.Core.Tests
 {

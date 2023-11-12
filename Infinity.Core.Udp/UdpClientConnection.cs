@@ -1,9 +1,7 @@
-using Infinity.Core;
-using Infinity.Core.Udp;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Infinity.Client
+namespace Infinity.Core.Udp
 {
     /// <summary>
     ///     Represents a client's connection to a server that uses the UDP protocol.

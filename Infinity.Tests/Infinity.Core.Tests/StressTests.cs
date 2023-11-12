@@ -1,5 +1,5 @@
-﻿using System.Net;
-using Infinity.Client;
+﻿using Infinity.Core.Udp;
+using System.Net;
 
 namespace Infinity.Core.Tests
 {

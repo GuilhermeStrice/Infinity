@@ -1,11 +1,9 @@
-﻿using Infinity.Core;
-using Infinity.Core.Udp;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
-namespace Infinity.Server
+namespace Infinity.Core.Udp
 {
     /// <summary>
     ///     Listens for new UDP connections and creates UdpConnections for them.

@@ -1,5 +1,4 @@
 ﻿using Infinity.Core.Udp;
-using Infinity.Server;
 using System.Diagnostics;
 
 namespace Infinity.Core.Tests
