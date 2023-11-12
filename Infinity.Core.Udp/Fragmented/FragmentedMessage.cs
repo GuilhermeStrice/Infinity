@@ -13,13 +13,6 @@
         public int FragmentsCount { get; set; }
 
         /// <summary>
-        ///     Since packets above id 65535 reset the counter to 0,
-        ///     we need to keep track of this and assign a different id to the fragment,
-        ///     otherwise Reconstruct will spill out invalid data
-        /// </summary>
-        internal volatile int fragmentIdCounter = 0;
-
-        /// <summary>
         ///     The fragments received so far.
         /// </summary>
         public HashSet<Fragment> Fragments = new HashSet<Fragment>();
@@ -61,8 +54,6 @@
             }
 
             Fragments.Clear();
-
-            Interlocked.Exchange(ref fragmentIdCounter, 0);
 
             FragmentedMessagePool.PutObject(this);
         }
