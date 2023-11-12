@@ -46,7 +46,7 @@
         /// <summary>
         ///     Requests data be sent reliably ordered
         /// </summary>
-        public const byte ReliableOrdered = 2;
+        public const byte ReliableOrdered = 20;
 
         /// <summary>
         ///     Message for discontinuing communication.

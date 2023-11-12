@@ -215,6 +215,7 @@ namespace Infinity.Core
             {
                 switch (msg.SendOption)
                 {
+                    case 20: // Reliable Ordered UDP
                     case 1: // Reliable UDP different header size
                         offset = 3;
                         break;
@@ -239,6 +240,7 @@ namespace Infinity.Core
             {
                 switch (SendOption)
                 {
+                    case 20: // Reliable Ordered UDP
                     case 1: // Reliable UDP
                         {
                             byte[] output = new byte[Length - 3];
@@ -273,6 +275,7 @@ namespace Infinity.Core
 
             switch (sendOption)
             {
+                case 20: // Reliable Ordered UDP
                 case 1: // Reliable UDP
                     Length = Position = 3;
                     break;

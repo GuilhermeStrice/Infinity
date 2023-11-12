@@ -50,6 +50,14 @@ namespace Infinity.Core.Udp
                         Statistics.LogReliableSend(buffer.Length - 3);
                     }
                 }
+                else if (msg.SendOption == UdpSendOption.ReliableOrdered)
+                {
+                    if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
+                        throw new InfinityException("not allowed");
+                    
+                    OrderedSend(buffer);
+                    Statistics.LogReliableSend(buffer.Length - 3);
+                }
                 else
                 {
                     WriteBytesToConnection(buffer, buffer.Length);
@@ -105,6 +113,10 @@ namespace Infinity.Core.Udp
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
                     ReliableMessageReceive(message, bytesReceived);
+                    break;
+
+                case UdpSendOption.ReliableOrdered:
+                    OrderedMessageReceived(message);
                     break;
 
                 //Handle acknowledgments
