@@ -87,7 +87,7 @@ namespace Infinity.Core.Tests
             using (TcpConnectionListener listener = new TcpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (TcpConnection connection = new TcpConnection(new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                TcpTestHelper.RunServerToClientTest(listener, connection, 10, (byte)TcpSendOption.MessageUnordered);
+                TcpTestHelper.RunServerToClientTest(listener, connection, 10, TcpSendOption.MessageUnordered);
             }
         }
 
@@ -100,7 +100,7 @@ namespace Infinity.Core.Tests
             using (TcpConnectionListener listener = new TcpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (TcpConnection connection = new TcpConnection(new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                TcpTestHelper.RunClientToServerTest(listener, connection, 10, (byte)TcpSendOption.MessageUnordered);
+                TcpTestHelper.RunClientToServerTest(listener, connection, 10, TcpSendOption.MessageUnordered);
             }
         }
 

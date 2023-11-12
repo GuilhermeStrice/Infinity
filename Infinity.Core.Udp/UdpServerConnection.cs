@@ -78,7 +78,7 @@ namespace Infinity.Server
                     throw new ArgumentException("Disconnect messages can only be unreliable.");
 
                 bytes = data.ToByteArray(true);
-                bytes[0] = (byte)UdpSendOption.Disconnect;
+                bytes[0] = UdpSendOption.Disconnect;
             }
 
             try

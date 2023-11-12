@@ -314,7 +314,7 @@ namespace Infinity.Client
 
                 // manually set SendOption
                 bytes = data.ToByteArray(true);
-                bytes[0] = (byte)UdpSendOption.Disconnect;
+                bytes[0] = UdpSendOption.Disconnect;
             }
 
             try

@@ -174,7 +174,7 @@ namespace Infinity.Core.Tcp
         /// <param name="bytes">The data bytes received by the connection.</param>
         void BodyReadCallback(byte[] message)
         {
-            if (message[0] != (byte)TcpSendOption.MessageOrdered)
+            if (message[0] != TcpSendOption.MessageOrdered)
                 HandleMessage(message);
 
             //Begin receiving from the start
@@ -187,7 +187,7 @@ namespace Infinity.Core.Tcp
                 HandleDisconnect(new InfinityException("An exception occured while initiating a header receive operation.", e));
             }
 
-            if (message[0] == (byte)TcpSendOption.MessageOrdered)
+            if (message[0] == TcpSendOption.MessageOrdered)
                 HandleMessage(message);
         }
 

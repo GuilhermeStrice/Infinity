@@ -294,7 +294,7 @@ namespace Infinity.Core.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunServerToClientTest(listener, connection, 10, (byte)UdpSendOption.Unreliable);
+                UdpTestHelper.RunServerToClientTest(listener, connection, 10, UdpSendOption.Unreliable);
             }
         }
 
@@ -307,7 +307,7 @@ namespace Infinity.Core.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunServerToClientTest(listener, connection, 10, (byte)UdpSendOption.Reliable);
+                UdpTestHelper.RunServerToClientTest(listener, connection, 10, UdpSendOption.Reliable);
             }
         }
 
@@ -320,7 +320,7 @@ namespace Infinity.Core.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientToServerTest(listener, connection, 10, (byte)UdpSendOption.Unreliable);
+                UdpTestHelper.RunClientToServerTest(listener, connection, 10, UdpSendOption.Unreliable);
             }
         }
 
@@ -333,7 +333,7 @@ namespace Infinity.Core.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientToServerTest(listener, connection, 10, (byte)UdpSendOption.Reliable);
+                UdpTestHelper.RunClientToServerTest(listener, connection, 10, UdpSendOption.Reliable);
             }
         }
 

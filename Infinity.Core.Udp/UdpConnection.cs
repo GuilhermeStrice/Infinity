@@ -5,7 +5,7 @@ namespace Infinity.Core.Udp
     /// </summary>
     public abstract partial class UdpConnection : NetworkConnection
     {
-        public static readonly byte[] EmptyDisconnectBytes = new byte[] { (byte)UdpSendOption.Disconnect };
+        public static readonly byte[] EmptyDisconnectBytes = new byte[] { UdpSendOption.Disconnect };
 
         public override float AveragePingMs => _pingMs;
         protected readonly ILogger logger;
@@ -139,7 +139,7 @@ namespace Infinity.Core.Udp
                     break;
 
                 case UdpSendOption.Unreliable:
-                    InvokeDataReceived((byte)UdpSendOption.Unreliable, message, 1, bytesReceived);
+                    InvokeDataReceived(UdpSendOption.Unreliable, message, 1, bytesReceived);
                     Statistics.LogUnreliableReceive(bytesReceived - 1, bytesReceived);
                     break;
 
