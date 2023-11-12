@@ -10,7 +10,7 @@
         /// <summary>
         ///     The total number of fragments expected.
         /// </summary>
-        public int FragmentsCount { get; set;  }
+        public int FragmentsCount { get; set; }
 
         /// <summary>
         ///     The fragments received so far.
