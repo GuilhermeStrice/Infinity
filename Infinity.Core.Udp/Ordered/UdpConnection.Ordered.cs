@@ -18,20 +18,22 @@ namespace Infinity.Core.Udp
 
             AttachReliableID(buffer, 1);
 
-            var sequenceId = nextInSequence - 1;
-
-            buffer[3] = (byte)sequenceId;
+            int before;
+            int after;
 
             if (nextInSequence == byte.MaxValue)
             {
-                Interlocked.Exchange(ref nextInSequence, 1);
+                before = nextInSequence;
+                after = Interlocked.Exchange(ref nextInSequence, 1);
             }
             else
             {
-                Interlocked.Increment(ref nextInSequence);
+                before = nextInSequence - 1;
+                after = Interlocked.Increment(ref nextInSequence);
             }
 
-            buffer[4] = (byte)nextInSequence;
+            buffer[3] = (byte)before;
+            buffer[4] = (byte)after;
 
             Buffer.BlockCopy(data, 3, buffer, OrderedHeaderSize, data.Length - 3);
 
