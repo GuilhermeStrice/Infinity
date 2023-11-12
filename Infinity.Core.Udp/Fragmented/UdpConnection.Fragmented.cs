@@ -6,13 +6,24 @@ namespace Infinity.Core.Udp
     partial class UdpConnection
     {
         /// <summary>
-        ///     The amount of data that can be put into a fragment.
+        ///     The amount of data that can be put into a fragment if in IPv4 mode
         /// </summary>
-        public static int FragmentSize
+        public static int FragmentSizeIPv4
         {
             get
             {
-                return 1024;
+                return 576 - FragmentHeaderSize; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791
+            }
+        }
+
+        /// <summary>
+        ///     The amount of data that can be put into a fragment if in IPv6 mode
+        /// </summary>
+        public static int FragmentSizeIPv6
+        {
+            get
+            {
+                return 1280 - FragmentHeaderSize; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460
             }
         }
 
@@ -33,8 +44,8 @@ namespace Infinity.Core.Udp
         void FragmentedSend(byte[] data)
         {
             var id = (ushort)Interlocked.Increment(ref lastFragmentIDAllocated);
-            var fragmentDataSize = FragmentSize - FragmentHeaderSize;
-            var fragmentsCount = (int)Math.Ceiling(data.Length / (double)fragmentDataSize);
+            var mtu = (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6);
+            var fragmentsCount = (int)Math.Ceiling(data.Length / (double)mtu);
 
             if (fragmentsCount >= ushort.MaxValue)
             {
@@ -43,10 +54,10 @@ namespace Infinity.Core.Udp
 
             for (ushort i = 0; i < fragmentsCount; i++)
             {
-                var dataLength = Math.Min(fragmentDataSize, data.Length - fragmentDataSize * i);
+                var dataLength = Math.Min(mtu, data.Length - mtu * i);
                 var buffer = new byte[dataLength + FragmentHeaderSize];
 
-                buffer[0] = (byte)UdpSendOptionInternal.Fragment;
+                buffer[0] = UdpSendOptionInternal.Fragment;
 
                 AttachReliableID(buffer, 1);
 
@@ -56,7 +67,7 @@ namespace Infinity.Core.Udp
                 buffer[5] = (byte)id;
                 buffer[6] = (byte)(id >> 8);
 
-                Buffer.BlockCopy(data, fragmentDataSize * i, buffer, FragmentHeaderSize, dataLength);
+                Buffer.BlockCopy(data, mtu * i, buffer, FragmentHeaderSize, dataLength);
                 
                 WriteBytesToConnection(buffer, buffer.Length);
             }

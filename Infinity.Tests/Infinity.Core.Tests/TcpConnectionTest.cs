@@ -113,7 +113,6 @@ namespace Infinity.Core.Tests
             using (TcpConnectionListener listener = new TcpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (TcpConnection connection = new TcpConnection(new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                connection.isClient = true;
                 TcpTestHelper.RunClientDisconnectTest(listener, connection);
             }
         }

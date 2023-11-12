@@ -38,7 +38,7 @@ namespace Infinity.Core.Udp
                 {
                     ResetKeepAliveTimer();
 
-                    if (msg.Length > FragmentSize)
+                    if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                     {
                         FragmentedSend(buffer);
                         Statistics.LogFragmentedSend(buffer.Length - FragmentHeaderSize);
@@ -78,7 +78,7 @@ namespace Infinity.Core.Udp
                 sendOption == UdpSendOptionInternal.Hello || 
                 sendOption == UdpSendOption.Reliable)
             {
-                if (data.Length > FragmentSize)
+                if (data.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                 {
                     FragmentedSend(data);
                 }
