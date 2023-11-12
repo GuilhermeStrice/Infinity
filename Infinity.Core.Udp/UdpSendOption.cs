@@ -31,10 +31,10 @@
         /// <summary>
         ///     Requests unreliable delivery with no framentation.
         /// </summary>
-        public const byte None = 0;
+        public const byte Unreliable = 0;
 
         /// <summary>
-        ///     Requests data be sent reliably but with no fragmentation.
+        ///     Requests data be sent reliably with automatic fragmentation.
         /// </summary>
         /// <remarks>
         ///     Sending data reliably means that data is guarenteed to arrive and to arrive only once. Reliable delivery
@@ -42,6 +42,11 @@
         ///     a larger number of protocol bytes and can be slower than unreliable delivery.
         /// </remarks>
         public const byte Reliable = 1;
+
+        /// <summary>
+        ///     Requests data be sent reliably ordered
+        /// </summary>
+        public const byte ReliableOrdered = 2;
 
         /// <summary>
         ///     Message for discontinuing communication.

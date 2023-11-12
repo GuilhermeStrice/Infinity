@@ -204,7 +204,7 @@ namespace Infinity.Core.Tests
         {
             var output = new MessageReader();
             output.Buffer = writer.Buffer;
-            output.Offset = writer.SendOption == UdpSendOption.None ? 1 : 3;
+            output.Offset = writer.SendOption == UdpSendOption.Unreliable ? 1 : 3;
             output.Length = writer.Length - output.Offset;
             output.Position = 0;
 

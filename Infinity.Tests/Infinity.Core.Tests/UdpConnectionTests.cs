@@ -145,7 +145,7 @@ namespace Infinity.Core.Tests
 
                 for (int i = 0; i < 4; ++i)
                 {
-                    var msg = MessageWriter.Get(UdpSendOption.None);
+                    var msg = MessageWriter.Get(UdpSendOption.Unreliable);
                     msg.Write(TestData);
                     connection.Send(msg);
                     msg.Recycle();
@@ -291,7 +291,7 @@ namespace Infinity.Core.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunServerToClientTest(listener, connection, 10, (byte)UdpSendOption.None);
+                UdpTestHelper.RunServerToClientTest(listener, connection, 10, (byte)UdpSendOption.Unreliable);
             }
         }
 
@@ -317,7 +317,7 @@ namespace Infinity.Core.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientToServerTest(listener, connection, 10, (byte)UdpSendOption.None);
+                UdpTestHelper.RunClientToServerTest(listener, connection, 10, (byte)UdpSendOption.Unreliable);
             }
         }
 
@@ -587,7 +587,7 @@ namespace Infinity.Core.Tests
                     Task.Run(async () =>
                     {
                         await Task.Delay(1);
-                        MessageWriter writer = MessageWriter.Get(UdpSendOption.None);
+                        MessageWriter writer = MessageWriter.Get(UdpSendOption.Unreliable);
                         writer.Write("Goodbye");
                         args.Connection.Disconnect("Testing", writer);
                     });

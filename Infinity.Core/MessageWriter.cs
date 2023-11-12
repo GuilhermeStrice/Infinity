@@ -257,7 +257,7 @@ namespace Infinity.Core
             throw new NotImplementedException();
         }
 
-        public static MessageWriter Get(byte sendOption = 0) // None
+        public static MessageWriter Get(byte sendOption = 0) // unreliable
         {
             var output = WriterPool.GetObject();
             output.Clear(sendOption);

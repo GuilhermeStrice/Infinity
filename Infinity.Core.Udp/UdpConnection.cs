@@ -138,8 +138,8 @@ namespace Infinity.Core.Udp
                     DisconnectRemote("The remote sent a disconnect request", message);
                     break;
 
-                case UdpSendOption.None:
-                    InvokeDataReceived((byte)UdpSendOption.None, message, 1, bytesReceived);
+                case UdpSendOption.Unreliable:
+                    InvokeDataReceived((byte)UdpSendOption.Unreliable, message, 1, bytesReceived);
                     Statistics.LogUnreliableReceive(bytesReceived - 1, bytesReceived);
                     break;
 
