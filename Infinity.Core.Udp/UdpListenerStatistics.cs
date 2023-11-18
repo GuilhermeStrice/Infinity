@@ -1,6 +1,6 @@
-﻿namespace Infinity.Core
+﻿namespace Infinity.Core.Udp
 {
-    public class ListenerStatistics
+    public class UdpListenerStatistics
     {
         private long _bytesSent;
         public long BytesSent => _bytesSent;
