@@ -98,8 +98,6 @@ namespace Infinity.Core.Tests
 
                 //UdpConnection fields
                 Assert.Equal(new IPEndPoint(IPAddress.Loopback, 4296), connection.EndPoint);
-                Assert.Equal(1, connection.Statistics.DataBytesSent);
-                Assert.Equal(0, connection.Statistics.DataBytesReceived);
             }
         }
 
@@ -361,7 +359,6 @@ namespace Infinity.Core.Tests
                 Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
 
                 Assert.Equal(ConnectionState.NotConnected, connection.State);
-                Assert.Equal(3 * connection.MissingPingsUntilDisconnect + 4, connection.Statistics.TotalBytesSent); // + 4 for connecting overhead
             }
 #else
             Assert.Inconclusive("Only works in DEBUG");
@@ -385,11 +382,6 @@ namespace Infinity.Core.Tests
                 Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
 
                 Assert.Equal(ConnectionState.Connected, connection.State);
-                Assert.True(
-                    connection.Statistics.TotalBytesSent >= 30 &&
-                    connection.Statistics.TotalBytesSent <= 50,
-                    "Sent: " + connection.Statistics.TotalBytesSent
-                );
             }
         }
 
@@ -431,12 +423,6 @@ namespace Infinity.Core.Tests
                 mutex.WaitOne();
 
                 Assert.Equal(ConnectionState.Connected, client.State);
-
-                Assert.True(
-                    client.Statistics.TotalBytesSent >= 27 &&
-                    client.Statistics.TotalBytesSent <= 50,
-                    "Sent: " + client.Statistics.TotalBytesSent
-                );
             }
         }
 

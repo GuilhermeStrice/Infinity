@@ -16,13 +16,15 @@ namespace Infinity.Core.Tcp
         Socket socket;
         internal event OnHandshake OnHandshake;
 
+        public TcpConnectionStatistics Statistics { get; private set; }
+
         /// <summary>
         ///     Creates a TcpConnection from a given TCP Socket.
         /// </summary>
         /// <param name="socket">The TCP socket to wrap.</param>
         internal TcpConnection(Socket socket)
         {
-            Statistics = new ConnectionStatistics();
+            Statistics = new TcpConnectionStatistics();
 
             //Check it's a TCP socket
             if (socket.ProtocolType != ProtocolType.Tcp)
@@ -41,7 +43,7 @@ namespace Infinity.Core.Tcp
         /// <param name="remoteEndPoint">A <see cref="NetworkEndPoint"/> to connect to.</param>
         public TcpConnection(IPEndPoint endPoint, IPMode ipMode = IPMode.IPv4, ILogger logger = null)
         {
-            Statistics = new ConnectionStatistics();
+            Statistics = new TcpConnectionStatistics();
 
             if (State != ConnectionState.NotConnected)
                 throw new InvalidOperationException("Cannot connect as the Connection is already connected.");
@@ -209,7 +211,7 @@ namespace Infinity.Core.Tcp
         {
             // check if server accepted connection
 
-            Statistics.LogFragmentedReceive(message.Length - 4, message.Length);
+            Statistics.LogStreamSent(message.Length);
 
             var reader = MessageReader.Get(message);
             switch (message[0])
@@ -447,7 +449,7 @@ namespace Infinity.Core.Tcp
         {
             try
             {
-                Statistics.LogStreamSent(buffer.Length - 4, buffer.Length);
+                Statistics.LogStreamSent(buffer.Length);
                 socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, HandleSendBytes, callback);
             }
             catch (Exception e)
