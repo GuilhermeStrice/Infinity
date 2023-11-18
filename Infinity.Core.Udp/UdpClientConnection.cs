@@ -22,11 +22,6 @@ namespace Infinity.Core.Udp
 
         private Timer reliablePacketTimer;
 
-#if DEBUG
-        public event Action<byte[], int> ?DataSentRaw;
-        public event Action<byte[], int> ?DataReceivedRaw;
-#endif
-
         /// <summary>
         ///     Creates a new UdpClientConnection.
         /// </summary>
@@ -74,10 +69,6 @@ namespace Infinity.Core.Udp
 
         private void WriteBytesToConnectionReal(byte[] bytes, int length)
         {
-#if DEBUG
-            DataSentRaw?.Invoke(bytes, length);
-#endif
-
             try
             {
                 Statistics.LogPacketSend(length);
@@ -285,8 +276,6 @@ namespace Infinity.Core.Udp
                     return;
                 }
             }
-
-            DataReceivedRaw?.Invoke(msg.Buffer, msg.Length);
 #endif
             HandleReceive(msg, msg.Length);
         }

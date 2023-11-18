@@ -30,7 +30,7 @@ namespace Infinity.Core.Tests
             //Setup conneciton
             connection.DataReceived += delegate (DataReceivedEventArgs a)
             {
-                Trace.WriteLine("Data was received correctly.");
+                _output.WriteLine("Data was received correctly.");
 
                 try
                 {
@@ -75,7 +75,7 @@ namespace Infinity.Core.Tests
             {
                 args.Connection.DataReceived += delegate (DataReceivedEventArgs innerArgs)
                 {
-                    Trace.WriteLine("Data was received correctly.");
+                    _output.WriteLine("Data was received correctly.");
 
                     result = innerArgs;
 
