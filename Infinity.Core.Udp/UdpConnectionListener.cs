@@ -11,7 +11,6 @@ namespace Infinity.Core.Udp
     public class UdpConnectionListener : NetworkConnectionListener
     {
         private const int SendReceiveBufferSize = 1024 * 1024;
-        private const int BufferSize = ushort.MaxValue;
 
         private Socket socket;
         private ILogger Logger;
