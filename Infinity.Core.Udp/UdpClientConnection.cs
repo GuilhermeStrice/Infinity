@@ -71,7 +71,7 @@ namespace Infinity.Core.Udp
         {
             try
             {
-                Statistics.LogPacketSend(length);
+                Statistics.LogPacketSent(length);
                 socket.BeginSendTo(
                     bytes,
                     0,
@@ -239,9 +239,10 @@ namespace Infinity.Core.Udp
                 DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "Socket exception while reading data: " + e.Message);
                 return;
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 msg.Recycle();
+                DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "No idea what happened here: " + e.Message);
                 return;
             }
 

@@ -35,7 +35,7 @@ namespace Infinity.Core.Udp
 
         public override void WriteBytesToConnection(byte[] bytes, int length)
         {
-            Statistics.LogPacketSend(length);
+            Statistics.LogPacketSent(length);
             Listener.SendData(bytes, length, EndPoint);
         }
 

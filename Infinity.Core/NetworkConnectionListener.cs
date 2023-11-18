@@ -18,8 +18,6 @@ namespace Infinity.Core
         /// </summary>
         public IPMode IPMode { get; protected set; }
 
-        public ListenerStatistics Statistics { get; protected set; }
-
         /// <summary>
         /// The max size it attempts to read from the network.
         /// Defaults to 8096.
@@ -68,11 +66,6 @@ namespace Infinity.Core
         ///      When Unity resumes, it can't know that time passed or the socket is freed, so we used to continuously throw internal errors.
         /// </remarks>
         public event Action<InfinityInternalErrors> OnInternalError;
-
-        public NetworkConnectionListener()
-        {
-            Statistics = new ListenerStatistics();
-        }
 
         /// <summary>
         ///     Makes this connection listener begin listening for connections.

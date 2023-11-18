@@ -18,6 +18,8 @@ namespace Infinity.Core.Udp
 
         private ConcurrentDictionary<EndPoint, UdpServerConnection> allConnections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
 
+        public UdpListenerStatistics Statistics { get; private set; }
+
         public override double AveragePing => allConnections.Values.Sum(c => c.AveragePingMs) / allConnections.Count;
         public override int ConnectionCount { get { return allConnections.Count; } }
         public override int ReceiveQueueLength => throw new NotImplementedException();
@@ -28,8 +30,9 @@ namespace Infinity.Core.Udp
         /// </summary>
         /// <param name="endPoint">The endpoint to listen on.</param>
         public UdpConnectionListener(IPEndPoint endPoint, IPMode ipMode = IPMode.IPv4, ILogger logger = null)
-            : base()
         {
+            Statistics = new UdpListenerStatistics();
+
             Logger = logger;
             EndPoint = endPoint;
             IPMode = ipMode;

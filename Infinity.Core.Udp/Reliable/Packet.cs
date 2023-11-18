@@ -80,7 +80,7 @@ namespace Infinity.Core.Udp
                     try
                     {
                         connection.WriteBytesToConnection(Data, Length);
-                        connection.Statistics.LogMessageResent();
+                        connection.Statistics.LogMessageResent(Length);
                         return 1;
                     }
                     catch (InvalidOperationException)

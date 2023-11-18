@@ -1,3 +1,5 @@
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace Infinity.Core.Udp
 {
     /// <summary>
@@ -10,8 +12,12 @@ namespace Infinity.Core.Udp
         public override float AveragePingMs => _pingMs;
         protected readonly ILogger logger;
 
+        public UdpConnectionStatistics Statistics { get; private set; }
+
         public UdpConnection(ILogger logger) : base()
         {
+            Statistics = new UdpConnectionStatistics();
+
             this.logger = logger;
             PacketPool = new ObjectPool<Packet>(() => new Packet(this));
         }
@@ -41,13 +47,13 @@ namespace Infinity.Core.Udp
                     if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                     {
                         FragmentedSend(buffer);
-                        Statistics.LogFragmentedSend(buffer.Length - FragmentHeaderSize);
+                        Statistics.LogFragmentedMessageSent(buffer.Length);
                     }
                     else
                     {
                         AttachReliableID(buffer, 1);
                         WriteBytesToConnection(buffer, buffer.Length);
-                        Statistics.LogReliableSend(buffer.Length - 3);
+                        Statistics.LogReliableMessageSent(buffer.Length);
                     }
                 }
                 else if (msg.SendOption == UdpSendOption.ReliableOrdered)
@@ -56,12 +62,12 @@ namespace Infinity.Core.Udp
                         throw new InfinityException("not allowed");
                     
                     OrderedSend(buffer);
-                    Statistics.LogReliableSend(buffer.Length - 3);
+                    Statistics.LogReliableMessageSent(buffer.Length);
                 }
                 else
                 {
                     WriteBytesToConnection(buffer, buffer.Length);
-                    Statistics.LogUnreliableSend(buffer.Length - 1);
+                    Statistics.LogUnreliableMessageSent(buffer.Length);
                 }
             }
             catch (Exception e)
@@ -73,33 +79,7 @@ namespace Infinity.Core.Udp
             return SendErrors.None;
         }
         
-        /// <summary>
-        ///     Handles the reliable/fragmented sending from this connection.
-        /// </summary>
-        /// <param name="data">The data being sent.</param>
-        /// <param name="sendOption">The <see cref="SendOption"/> specified as its byte value.</param>
-        /// <param name="ackCallback">The callback to invoke when this packet is acknowledged.</param>
-        /// <returns>The bytes that should actually be sent.</returns>
-        protected virtual void HandleSend(byte[] data, byte sendOption, Action ackCallback = null)
-        {
-            if (sendOption == UdpSendOptionInternal.Ping || 
-                sendOption == UdpSendOptionInternal.Handshake || 
-                sendOption == UdpSendOption.Reliable)
-            {
-                if (data.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
-                {
-                    FragmentedSend(data);
-                }
-                else
-                {
-                    ReliableSend(sendOption, data, ackCallback);
-                }
-            }
-            else
-            {
-                UnreliableSend(sendOption, data);
-            }
-        }
+        
 
         /// <summary>
         ///     Handles the receiving of data.
@@ -113,45 +93,49 @@ namespace Infinity.Core.Udp
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
                     ReliableMessageReceive(message, bytesReceived);
+                    Statistics.LogReliableMessageReceived(bytesReceived);
                     break;
 
                 case UdpSendOption.ReliableOrdered:
                     OrderedMessageReceived(message);
+                    Statistics.LogReliableMessageReceived(bytesReceived);
                     break;
 
                 //Handle acknowledgments
                 case UdpSendOptionInternal.Acknowledgement:
                     AcknowledgementMessageReceive(message.Buffer, bytesReceived);
+                    Statistics.LogAcknowledgementReceived(bytesReceived);
                     message.Recycle();
                     break;
 
                 //We need to acknowledge Handshake and ping messages but dont want to invoke any events!
                 case UdpSendOptionInternal.Ping:
                     ProcessReliableReceive(message.Buffer, 1, out id);
-                    Statistics.LogHandshakeReceive(bytesReceived);
+                    Statistics.LogPingReceived(bytesReceived);
                     message.Recycle();
                     break;
                 case UdpSendOptionInternal.Handshake:
                     ProcessReliableReceive(message.Buffer, 1, out id);
-                    Statistics.LogHandshakeReceive(bytesReceived);
+                    Statistics.LogHandshakeReceived(bytesReceived);
                     message.Recycle();
                     break;
 
                 //Handle fragmented messages
                 case UdpSendOptionInternal.Fragment:
                     FragmentMessageReceive(message);
-                    Statistics.LogFragmentedReceive(message.Length, bytesReceived);
+                    Statistics.LogFragmentedMessageReceived(bytesReceived);
                     break;
 
                 case UdpSendOption.Disconnect:
                     message.Offset = 1;
                     message.Position = 0;
                     DisconnectRemote("The remote sent a disconnect request", message);
+                    Statistics.LogUnreliableMessageReceived(bytesReceived);
                     break;
 
                 case UdpSendOption.Unreliable:
                     InvokeDataReceived(UdpSendOption.Unreliable, message, 1, bytesReceived);
-                    Statistics.LogUnreliableReceive(bytesReceived - 1, bytesReceived);
+                    Statistics.LogUnreliableMessageReceived(bytesReceived);
                     break;
 
                 // Treat everything else as garbage
@@ -159,7 +143,7 @@ namespace Infinity.Core.Udp
                     message.Recycle();
 
                     // TODO: A new stat for unused data
-                    Statistics.LogUnreliableReceive(bytesReceived - 1, bytesReceived);
+                    Statistics.LogUnreliableMessageReceived(bytesReceived);
                     break;
             }
         }
@@ -194,7 +178,7 @@ namespace Infinity.Core.Udp
             //Write to connection
             WriteBytesToConnection(bytes, bytes.Length);
 
-            Statistics.LogUnreliableSend(length);
+            Statistics.LogUnreliableMessageSent(length);
         }
 
         /// <summary>
@@ -229,7 +213,7 @@ namespace Infinity.Core.Udp
                 Buffer.BlockCopy(bytes, 0, actualBytes, 1, bytes.Length);
             }
 
-            HandleSend(actualBytes, UdpSendOptionInternal.Handshake, acknowledgeCallback);
+            ReliableSend(UdpSendOptionInternal.Handshake, actualBytes, acknowledgeCallback);
         }
 
         protected override void Dispose(bool disposing)

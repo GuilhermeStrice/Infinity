@@ -59,14 +59,6 @@ namespace Infinity.Core
         public IPMode IPMode { get; protected set; }
 
         /// <summary>
-        ///     The traffic statistics about this Connection.
-        /// </summary>
-        /// <remarks>
-        ///     Contains statistics about the number of messages and bytes sent and received by this connection.
-        /// </remarks>
-        public ConnectionStatistics Statistics { get; protected set; }
-
-        /// <summary>
         ///     The state of this connection.
         /// </summary>
         /// <remarks>
@@ -91,16 +83,8 @@ namespace Infinity.Core
 
         protected virtual void SetState(ConnectionState state) { }
 
-        /// <summary>
-        ///     Constructor that initializes the ConnecitonStatistics object.
-        /// </summary>
-        /// <remarks>
-        ///     This constructor initialises <see cref="Statistics"/> with empty statistics and sets <see cref="State"/> to 
-        ///     <see cref="ConnectionState.NotConnected"/>.
-        /// </remarks>
         protected NetworkConnection()
         {
-            Statistics = new ConnectionStatistics();
             State = ConnectionState.NotConnected;
         }
 

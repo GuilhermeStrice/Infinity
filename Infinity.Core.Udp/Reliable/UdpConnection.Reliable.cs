@@ -160,7 +160,7 @@ namespace Infinity.Core.Udp
             //Write to connection
             WriteBytesToConnection(bytes, bytes.Length);
 
-            Statistics.LogReliableSend(data.Length);
+            Statistics.LogReliableMessageSent(bytes.Length);
         }
 
         /// <summary>
@@ -178,8 +178,6 @@ namespace Infinity.Core.Udp
             {
                 message.Recycle();
             }
-
-            Statistics.LogReliableReceive(message.Length - 3, message.Length);
         }
 
         /// <summary>
@@ -300,8 +298,6 @@ namespace Infinity.Core.Udp
                     recentPackets >>= 1;
                 }
             }
-
-            Statistics.LogAcknowledgementReceive(bytesReceived);
         }
 
         private void AcknowledgeMessageId(ushort id)

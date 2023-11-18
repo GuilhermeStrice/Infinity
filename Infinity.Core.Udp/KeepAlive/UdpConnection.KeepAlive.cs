@@ -92,7 +92,7 @@
 
             WriteBytesToConnection(bytes, bytes.Length);
 
-            Statistics.LogReliableSend(0);
+            Statistics.LogPingSent(0);
         }
 
         /// <summary>
