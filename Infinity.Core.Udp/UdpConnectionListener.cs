@@ -29,6 +29,7 @@ namespace Infinity.Core.Udp
         /// </summary>
         /// <param name="endPoint">The endpoint to listen on.</param>
         public UdpConnectionListener(IPEndPoint endPoint, IPMode ipMode = IPMode.IPv4, ILogger logger = null)
+            : base()
         {
             Logger = logger;
             EndPoint = endPoint;
