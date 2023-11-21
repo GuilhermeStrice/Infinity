@@ -46,7 +46,6 @@ namespace Infinity.Core.Tests
             client.StartListen();
 
             waitHandle.WaitOne();
-            Console.ReadKey();
         }
     }
 }
