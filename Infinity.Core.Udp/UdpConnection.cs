@@ -79,8 +79,6 @@ namespace Infinity.Core.Udp
             return SendErrors.None;
         }
         
-        
-
         /// <summary>
         ///     Handles the receiving of data.
         /// </summary>
@@ -146,39 +144,6 @@ namespace Infinity.Core.Udp
                     Statistics.LogUnreliableMessageReceived(bytesReceived);
                     break;
             }
-        }
-
-        /// <summary>
-        ///     Sends bytes using the unreliable UDP protocol.
-        /// </summary>
-        /// <param name="sendOption">The SendOption to attach.</param>
-        /// <param name="data">The data.</param>
-        void UnreliableSend(byte sendOption, byte[] data)
-        {
-            UnreliableSend(sendOption, data, 0, data.Length);
-        }
-
-        /// <summary>
-        ///     Sends bytes using the unreliable UDP protocol.
-        /// </summary>
-        /// <param name="data">The data.</param>
-        /// <param name="sendOption">The SendOption to attach.</param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        void UnreliableSend(byte sendOption, byte[] data, int offset, int length)
-        {
-            byte[] bytes = new byte[length + 1];
-
-            //Add message type
-            bytes[0] = sendOption;
-
-            //Copy data into new array
-            Buffer.BlockCopy(data, offset, bytes, bytes.Length - length, length);
-
-            //Write to connection
-            WriteBytesToConnection(bytes, bytes.Length);
-
-            Statistics.LogUnreliableMessageSent(length);
         }
 
         /// <summary>
