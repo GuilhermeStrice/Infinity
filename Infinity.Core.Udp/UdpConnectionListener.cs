@@ -233,10 +233,7 @@ namespace Infinity.Core.Udp
 
                 aware = false;
                 connection = new UdpServerConnection(this, (IPEndPoint)remoteEndPoint, IPMode, Logger);
-                if (!allConnections.TryAdd(remoteEndPoint, connection))
-                {
-                    throw new InfinityException("Failed to add a connection. This should never happen.");
-                }
+                allConnections.TryAdd(remoteEndPoint, connection);
             }
 
             // If it's a new connection invoke the NewConnection event.
