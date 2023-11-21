@@ -53,6 +53,11 @@ namespace Infinity.Core.Udp.Broadcast
 
         public void Broadcast(byte[] data)
         {
+            if (data == null)
+            {
+                throw new UdpBroadcastException("Set some data please");
+            }
+
             int data_length = data.Length;
             int identifier_length = identifier.Length;
 
@@ -60,11 +65,6 @@ namespace Infinity.Core.Udp.Broadcast
 
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
             Array.Copy(data, 0, buffer, identifier_length, data_length);
-
-            if (data == null)
-            {
-                throw new UdpBroadcastException("Set some data please");
-            }
 
             foreach (var aa in availableAddresses)
             {
