@@ -63,6 +63,10 @@ namespace Infinity.Core.Udp
 
                 if (lifetimeMs >= NextTimeoutMs)
                 {
+                    // if it's not 0 it means we already sent it once
+                    if (Retransmissions != 0)
+                        connection.Statistics.LogDroppedPacket();
+
                     ++Retransmissions;
                     if (connection.ResendLimit != 0
                         && Retransmissions > connection.ResendLimit)
