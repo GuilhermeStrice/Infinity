@@ -61,7 +61,7 @@ namespace Infinity.Core.Udp.Broadcast
         {
             if (data == null)
             {
-                return;
+                throw new UdpBroadcastException("Set some data please");
             }
 
             foreach (var aa in availableAddresses)
