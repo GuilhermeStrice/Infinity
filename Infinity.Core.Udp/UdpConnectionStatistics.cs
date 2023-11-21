@@ -26,6 +26,8 @@
 
         long garbageReceived = 0;
 
+        long droppedPackets = 0;
+
         public long BytesSent => Interlocked.Increment(ref bytesSent);
         public long BytesReceived => Interlocked.Increment(ref bytesReceived);
         public long PacksSent => Interlocked.Increment(ref packetsSent);
@@ -50,6 +52,8 @@
 
         public long GarbageReceived => Interlocked.Read(ref garbageReceived);
 
+        public long DroppedPackets => Interlocked.Read(ref droppedPackets);
+
         public long TotalMessagesSent
         {
             get
@@ -58,6 +62,7 @@
                     reliableMessagesSent +
                     fragmentedMessagesSent +
                     acknowledgementsSent +
+                    pingsSent +
                     handshakeMessagesSent;
             }
         }
@@ -168,6 +173,11 @@
         {
             Interlocked.Increment(ref garbageReceived);
             Interlocked.Add(ref bytesReceived, length);
+        }
+
+        public void LogDroppedPacket()
+        {
+            Interlocked.Increment(ref droppedPackets);
         }
     }
 }
