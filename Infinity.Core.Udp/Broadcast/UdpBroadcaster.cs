@@ -1,36 +1,38 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using System.Collections.Concurrent;
 
 namespace Infinity.Core.Udp.Broadcast
 {
     public class UdpBroadcaster : IDisposable
     {
-        private SocketBroadcast[] socketBroadcasts;
+        private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses;
         private byte[] data;
-        private Action<string> logger;
+        private ILogger logger;
 
-        public UdpBroadcaster(int port, Action<string> logger = null)
+        public UdpBroadcaster(int port, ILogger logger = null)
         {
+            availableAddresses = new ConcurrentDictionary<IPEndPoint, Socket>();
+
             this.logger = logger;
 
             var addresses = Util.GetAddressesFromNetworkInterfaces(AddressFamily.InterNetwork);
-            socketBroadcasts = new SocketBroadcast[addresses.Count > 0 ? addresses.Count : 1];
 
-            int count = 0;
-            foreach (var addressInformation in addresses)
+            if (addresses.Count > 0)
             {
-                Socket socket = CreateSocket(new IPEndPoint(addressInformation.Address, 0));
-                IPAddress broadcast = Util.GetBroadcastAddress(addressInformation);
+                foreach (var addressInformation in addresses)
+                {
+                    Socket socket = CreateSocket(new IPEndPoint(addressInformation.Address, 0));
+                    IPAddress broadcast = Util.GetBroadcastAddress(addressInformation);
 
-                socketBroadcasts[count] = new SocketBroadcast(socket, new IPEndPoint(broadcast, port));
-                count++;
+                    availableAddresses.TryAdd(new IPEndPoint(broadcast, port), socket);
+                }
             }
-            if (count == 0)
+            else
             {
                 Socket socket = CreateSocket(new IPEndPoint(IPAddress.Any, 0));
-
-                socketBroadcasts[0] = new SocketBroadcast(socket, new IPEndPoint(IPAddress.Broadcast, port));
+                availableAddresses.TryAdd(new IPEndPoint(IPAddress.Broadcast, port), socket);
             }
         }
 
@@ -61,16 +63,17 @@ namespace Infinity.Core.Udp.Broadcast
                 return;
             }
 
-            foreach (SocketBroadcast socketBroadcast in socketBroadcasts)
+            foreach (var aa in availableAddresses)
             {
                 try
                 {
-                    Socket socket = socketBroadcast.Socket;
-                    socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, socketBroadcast.Broadcast, FinishSendTo, socket);
+                    Socket socket = aa.Value;
+                    IPEndPoint address = aa.Key;
+                    socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, address, FinishSendTo, socket);
                 }
                 catch (Exception e)
                 {
-                    logger?.Invoke("BroadcastListener: " + e);
+                    logger?.WriteError("Broadcaster: " + e);
                 }
             }
         }
@@ -84,38 +87,29 @@ namespace Infinity.Core.Udp.Broadcast
             }
             catch (Exception e)
             {
-                logger?.Invoke("BroadcastListener: " + e);
+                logger?.WriteError("Broadcaster: " + e);
+            }
+        }
+
+        private void CloseSocket(Socket s)
+        {
+            if (s != null)
+            {
+                try { s.Shutdown(SocketShutdown.Both); } catch { }
+                try { s.Close(); } catch { }
+                try { s.Dispose(); } catch { }
             }
         }
 
         public void Dispose()
         {
-            if (socketBroadcasts != null)
+            foreach (var aa in availableAddresses)
             {
-                foreach (SocketBroadcast socketBroadcast in socketBroadcasts)
-                {
-                    Socket socket = socketBroadcast.Socket;
-                    if (socket != null)
-                    {
-                        try { socket.Shutdown(SocketShutdown.Both); } catch { }
-                        try { socket.Close(); } catch { }
-                        try { socket.Dispose(); } catch { }
-                    }
-                }
-                Array.Clear(socketBroadcasts, 0, socketBroadcasts.Length);
+                Socket socket = aa.Value;
+                CloseSocket(socket);
             }
-        }
 
-        private struct SocketBroadcast
-        {
-            public Socket Socket;
-            public IPEndPoint Broadcast;
-
-            public SocketBroadcast(Socket socket, IPEndPoint broadcast)
-            {
-                Socket = socket;
-                Broadcast = broadcast;
-            }
+            availableAddresses.Clear();
         }
     }
 }
