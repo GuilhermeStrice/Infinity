@@ -1,150 +1,115 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using System.Collections.Concurrent;
 
 namespace Infinity.Core.Udp.Broadcast
 {
-    public class BroadcastPacket
+    public class UdpBroadcastServer : IDisposable
     {
-        public string Data;
-        public DateTime ReceiveTime;
-        public IPEndPoint Sender;
+        private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses;
+        private byte[] data;
+        private ILogger logger;
 
-        public BroadcastPacket(string data, IPEndPoint sender)
+        public UdpBroadcastServer(int port, ILogger logger = null)
         {
-            Data = data;
-            Sender = sender;
-            ReceiveTime = DateTime.Now;
-        }
+            availableAddresses = new ConcurrentDictionary<IPEndPoint, Socket>();
 
-        public string GetAddress()
-        {
-            return Sender.Address.ToString();
-        }
-    }
-
-    public class UdpBroadcastListener : IDisposable
-    {
-        private Socket socket;
-        private EndPoint endpoint;
-        private Action<string> logger;
-
-        private byte[] buffer = new byte[1024];
-
-        private List<BroadcastPacket> packets = new List<BroadcastPacket>();
-
-        public bool Running { get; private set; }
-
-        public UdpBroadcastListener(int port, Action<string> logger = null)
-        {
             this.logger = logger;
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            var addresses = Util.GetAddressesFromNetworkInterfaces(AddressFamily.InterNetwork);
+
+            if (addresses.Count > 0)
+            {
+                foreach (var addressInformation in addresses)
+                {
+                    Socket socket = CreateSocket(new IPEndPoint(addressInformation.Address, 0));
+                    IPAddress broadcast = Util.GetBroadcastAddress(addressInformation);
+
+                    availableAddresses.TryAdd(new IPEndPoint(broadcast, port), socket);
+                }
+            }
+            else
+            {
+                Socket socket = CreateSocket(new IPEndPoint(IPAddress.Any, 0));
+                availableAddresses.TryAdd(new IPEndPoint(IPAddress.Broadcast, port), socket);
+            }
+        }
+
+        private static Socket CreateSocket(IPEndPoint endPoint)
+        {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.EnableBroadcast = true;
             socket.MulticastLoopback = false;
-            endpoint = new IPEndPoint(IPAddress.Any, port);
-            socket.Bind(endpoint);
+            socket.Bind(endPoint);
+
+            return socket;
         }
 
-        public void StartListen()
+        public void SetData(string data)
         {
-            if (Running) return;
-            Running = true;
+            int len = Encoding.UTF8.GetByteCount(data);
+            this.data = new byte[len + 2];
+            this.data[0] = 4;
+            this.data[1] = 2;
 
-            try
-            {
-                EndPoint endpt = new IPEndPoint(IPAddress.Any, 0);
-                socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endpt, HandleData, null);
-            }
-            catch (NullReferenceException) { }
-            catch (Exception e)
-            {
-                logger?.Invoke("BroadcastListener: " + e);
-                Dispose();
-            }
+            Encoding.UTF8.GetBytes(data, 0, data.Length, this.data, 2);
         }
 
-        private void HandleData(IAsyncResult result)
+        public void Broadcast()
         {
-            Running = false;
-
-            int numBytes;
-            EndPoint endpt = new IPEndPoint(IPAddress.Any, 0);
-            try
+            if (data == null)
             {
-                numBytes = socket.EndReceiveFrom(result, ref endpt);
-            }
-            catch (NullReferenceException)
-            {
-                // Already disposed
-                return;
-            }
-            catch (Exception e)
-            {
-                logger?.Invoke("BroadcastListener: " + e);
-                Dispose();
                 return;
             }
 
-            if (numBytes < 3
-                || buffer[0] != 4 || buffer[1] != 2)
+            foreach (var aa in availableAddresses)
             {
-                StartListen();
-                return;
-            }
-
-            IPEndPoint ipEnd = (IPEndPoint)endpt;
-            string data = Encoding.UTF8.GetString(buffer, 2, numBytes - 2);
-            int dataHash = data.GetHashCode();
-
-            lock (packets)
-            {
-                bool found = false;
-                for (int i = 0; i < packets.Count; ++i)
+                try
                 {
-                    var pkt = packets[i];
-
-                    if (pkt == null || pkt.Data == null)
-                    {
-                        packets.RemoveAt(i);
-                        i--;
-                        continue;
-                    }
-
-                    if (pkt.Data.GetHashCode() == dataHash && pkt.Sender.Equals(ipEnd))
-                    {
-                        packets[i].ReceiveTime = DateTime.Now;
-                        break;
-                    }
+                    Socket socket = aa.Value;
+                    IPEndPoint address = aa.Key;
+                    socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, address, FinishSendTo, socket);
                 }
-
-                if (!found)
+                catch (Exception e)
                 {
-                    packets.Add(new BroadcastPacket(data, ipEnd));
+                    logger?.WriteError("Broadcaster: " + e);
                 }
             }
-
-            StartListen();
         }
 
-        public BroadcastPacket[] GetPackets()
+        private void FinishSendTo(IAsyncResult evt)
         {
-            lock (packets)
+            try
             {
-                var output = packets.ToArray();
-                packets.Clear();
-                return output;
+                Socket socket = (Socket)evt.AsyncState;
+                socket.EndSendTo(evt);
+            }
+            catch (Exception e)
+            {
+                logger?.WriteError("Broadcaster: " + e);
+            }
+        }
+
+        private void CloseSocket(Socket s)
+        {
+            if (s != null)
+            {
+                try { s.Shutdown(SocketShutdown.Both); } catch { }
+                try { s.Close(); } catch { }
+                try { s.Dispose(); } catch { }
             }
         }
 
         public void Dispose()
         {
-            if (socket != null)
+            foreach (var aa in availableAddresses)
             {
-                try { socket.Shutdown(SocketShutdown.Both); } catch { }
-                try { socket.Close(); } catch { }
-                try { socket.Dispose(); } catch { }
-                socket = null;
+                Socket socket = aa.Value;
+                CloseSocket(socket);
             }
+
+            availableAddresses.Clear();
         }
     }
 }
