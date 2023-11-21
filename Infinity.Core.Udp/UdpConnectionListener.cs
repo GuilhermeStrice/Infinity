@@ -22,8 +22,6 @@ namespace Infinity.Core.Udp
 
         public override double AveragePing => allConnections.Values.Sum(c => c.AveragePingMs) / allConnections.Count;
         public override int ConnectionCount { get { return allConnections.Count; } }
-        public override int ReceiveQueueLength => throw new NotImplementedException();
-        public override int SendQueueLength => throw new NotImplementedException();
 
         /// <summary>
         ///     Creates a new UdpConnectionListener for the given <see cref="IPAddress"/>, port and <see cref="IPMode"/>.

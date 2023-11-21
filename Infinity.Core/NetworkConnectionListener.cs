@@ -26,8 +26,6 @@ namespace Infinity.Core
 
         public abstract double AveragePing { get; }
         public abstract int ConnectionCount { get; }
-        public abstract int SendQueueLength { get; }
-        public abstract int ReceiveQueueLength { get; }
 
         /// <summary>
         /// A callback for early connection rejection. 

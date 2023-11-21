@@ -17,10 +17,6 @@ namespace Infinity.Core.Tcp
 
         public override int ConnectionCount => throw new NotImplementedException();
 
-        public override int SendQueueLength => throw new NotImplementedException();
-
-        public override int ReceiveQueueLength => throw new NotImplementedException();
-
         /// <summary>
         ///     Creates a new TcpConnectionListener for the given <see cref="IPAddress"/>, port and <see cref="IPMode"/>.
         /// </summary>
