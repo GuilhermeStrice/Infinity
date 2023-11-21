@@ -101,12 +101,12 @@ namespace Infinity.Core.Udp.Broadcast
                 string data = Encoding.UTF8.GetString(buffer, ident_len, len - ident_len);
 
                 OnBroadcastReceive?.Invoke(data, ipEnd);
-
-                // Since this is an async operation we don't really care if we sleep here
-                // it's up to the user to specify a sane time frame
-                Thread.Sleep(PollTime);
-                StartListen();
             }
+
+            // Since this is an async operation we don't really care if we sleep here
+            // it's up to the user to specify a sane time frame
+            Thread.Sleep(PollTime);
+            StartListen();
         }
 
         public void Stop()
