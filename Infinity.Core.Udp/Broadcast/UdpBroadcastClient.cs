@@ -6,7 +6,7 @@ namespace Infinity.Core.Udp.Broadcast
 {
     public delegate void OnBroadcastReceive(string data, IPEndPoint sender);
 
-    public class UdpBroadcastClient
+    public class UdpBroadcastClient : IDisposable
     {
         private Socket socket;
         private EndPoint endpoint;
@@ -19,7 +19,7 @@ namespace Infinity.Core.Udp.Broadcast
         public bool Running { get; private set; }
 
         /// <summary>
-        /// Time to wait between each Broadcast read in milliseconds. Defaults to 1000;
+        /// Time to wait between each Broadcast read in milliseconds. Defaults to 1000
         /// </summary>
         public int PollTime { get; set; } = 1000;
 
@@ -109,7 +109,7 @@ namespace Infinity.Core.Udp.Broadcast
             }
         }
 
-        public void Stop()
+        public void Dispose()
         {
             if (socket != null)
             {
