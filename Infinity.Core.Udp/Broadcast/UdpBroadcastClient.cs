@@ -109,7 +109,7 @@ namespace Infinity.Core.Udp.Broadcast
             }
         }
 
-        public void Dispose()
+        public void Stop()
         {
             if (socket != null)
             {
