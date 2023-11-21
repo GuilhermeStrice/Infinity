@@ -18,7 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infinity.Tests", "Infinity.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinity.Core.Tests", "Infinity.Tests\Infinity.Core.Tests\Infinity.Core.Tests.csproj", "{8A4C558D-AAE1-43A8-AF86-79BC0DB02CDB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infinity.Server", "Infinity.Server\Infinity.Server.csproj", "{20259D54-5B02-47A5-954A-903EEC76D061}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinity.Server", "Infinity.Server\Infinity.Server.csproj", "{20259D54-5B02-47A5-954A-903EEC76D061}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{DCD171F3-4487-4003-8A9C-6F596E009DE8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +48,10 @@ Global
 		{20259D54-5B02-47A5-954A-903EEC76D061}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20259D54-5B02-47A5-954A-903EEC76D061}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20259D54-5B02-47A5-954A-903EEC76D061}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

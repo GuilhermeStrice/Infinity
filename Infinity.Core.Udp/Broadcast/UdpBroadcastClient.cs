@@ -56,7 +56,7 @@ namespace Infinity.Core.Udp.Broadcast
             catch (Exception e)
             {
                 logger?.WriteError("BroadcastListener: " + e);
-                Dispose();
+                Stop();
             }
         }
 
@@ -79,7 +79,7 @@ namespace Infinity.Core.Udp.Broadcast
             catch (Exception e)
             {
                 logger?.WriteError("BroadcastListener: " + e);
-                Dispose();
+                Stop();
                 return;
             }
 
