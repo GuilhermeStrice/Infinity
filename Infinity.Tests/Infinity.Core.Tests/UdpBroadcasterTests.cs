@@ -27,14 +27,12 @@ namespace Infinity.Core.Tests
                 1
             };
 
-            UdpBroadcastServer server = new UdpBroadcastServer(47777);
-            UdpBroadcastClient client = new UdpBroadcastClient(47777);
+            UdpBroadcastServer server = new UdpBroadcastServer(47777, identifier);
+            UdpBroadcastClient client = new UdpBroadcastClient(47777, identifier);
 
-            server.SetData(identifier, TestData);
-            server.Broadcast();
+            server.Broadcast(TestData);
             Thread.Sleep(1000);
 
-            client.SetIdentifier(identifier);
             client.OnBroadcastReceive += (string data, IPEndPoint sender) =>
             {
                 _output.WriteLine(data);
@@ -44,6 +42,7 @@ namespace Infinity.Core.Tests
 
                 waitHandle.Set();
             };
+
             client.StartListen();
 
             waitHandle.WaitOne();

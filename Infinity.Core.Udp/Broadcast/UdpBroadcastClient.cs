@@ -25,19 +25,19 @@ namespace Infinity.Core.Udp.Broadcast
 
         public event OnBroadcastReceive OnBroadcastReceive;
 
-        public UdpBroadcastClient(int port, ILogger logger = null)
+        public UdpBroadcastClient(int port, byte[] identifier, ILogger logger = null)
         {
+            if (identifier == null)
+                throw new UdpBroadcastException("identifier can't be null");
+
+            this.identifier = identifier;
+
             this.logger = logger;
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.EnableBroadcast = true;
             socket.MulticastLoopback = false;
             endpoint = new IPEndPoint(IPAddress.Any, port);
             socket.Bind(endpoint);
-        }
-
-        public void SetIdentifier(byte[] identifier)
-        {
-            this.identifier = identifier;
         }
 
         public void StartListen()

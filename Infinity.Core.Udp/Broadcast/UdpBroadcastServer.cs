@@ -8,11 +8,16 @@ namespace Infinity.Core.Udp.Broadcast
     public class UdpBroadcastServer
     {
         private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses;
-        private byte[] data;
+        private byte[] identifier;
         private ILogger logger;
 
-        public UdpBroadcastServer(int port, ILogger logger = null)
+        public UdpBroadcastServer(int port, byte[] identifier, ILogger logger = null)
         {
+            if (identifier == null)
+                throw new UdpBroadcastException("identifier can't be null");
+
+            this.identifier = identifier;
+
             availableAddresses = new ConcurrentDictionary<IPEndPoint, Socket>();
 
             this.logger = logger;
@@ -46,19 +51,16 @@ namespace Infinity.Core.Udp.Broadcast
             return socket;
         }
 
-        public void SetData(byte[] identifier, string data)
+        public void Broadcast(string data)
         {
-            int data_len = Encoding.UTF8.GetByteCount(data);
-            int ident_len = identifier.Count();
-            this.data = new byte[data_len + ident_len];
+            int data_length = Encoding.UTF8.GetByteCount(data);
+            int identifier_length = identifier.Count();
 
-            Array.Copy(identifier, 0, this.data, 0, ident_len);
+            var buffer = new byte[identifier_length + data_length];
 
-            Encoding.UTF8.GetBytes(data, 0, data.Length, this.data, ident_len);
-        }
+            Array.Copy(identifier, 0, buffer, 0, identifier_length);
+            Encoding.UTF8.GetBytes(data, 0, data.Length, buffer, identifier_length);
 
-        public void Broadcast()
-        {
             if (data == null)
             {
                 throw new UdpBroadcastException("Set some data please");
@@ -70,7 +72,7 @@ namespace Infinity.Core.Udp.Broadcast
                 {
                     Socket socket = aa.Value;
                     IPEndPoint address = aa.Key;
-                    socket.BeginSendTo(data, 0, data.Length, SocketFlags.None, address, FinishSendTo, socket);
+                    socket.BeginSendTo(buffer, 0, buffer.Length, SocketFlags.None, address, FinishSendTo, socket);
                 }
                 catch (Exception e)
                 {
