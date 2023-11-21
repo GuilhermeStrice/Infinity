@@ -90,9 +90,9 @@ namespace Infinity.Core.Tcp
 
         private void TcpConnection_OnHandshake(MessageReader handshakeData, TcpConnection connection)
         {
-            if (AcceptConnection != null)
+            if (HandshakeConnection != null)
             {
-                if (!AcceptConnection(connection.EndPoint, handshakeData.Buffer, out var response))
+                if (!HandshakeConnection(connection.EndPoint, handshakeData.Buffer, out var response))
                 {
                     handshakeData.Recycle();
                     if (response != null)

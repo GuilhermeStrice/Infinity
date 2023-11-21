@@ -217,9 +217,9 @@ namespace Infinity.Core.Udp
                     return;
                 }
 
-                if (AcceptConnection != null)
+                if (HandshakeConnection != null)
                 {
-                    if (!AcceptConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
+                    if (!HandshakeConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
                     {
                         message.Recycle();
                         if (response != null)
