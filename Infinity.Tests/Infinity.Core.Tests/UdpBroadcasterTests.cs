@@ -9,12 +9,19 @@ namespace Infinity.Core.Tests
         {
             const string TestData = "pwerowerower";
 
-            using (UdpBroadcaster caster = new UdpBroadcaster(47777))
-            using (UdpBroadcastListener listener = new UdpBroadcastListener(47777))
+            using (UdpBroadcastServer caster = new UdpBroadcastServer(47777))
+            using (UdpBroadcastClient listener = new UdpBroadcastClient(47777))
             {
                 listener.StartListen();
 
-                caster.SetData(TestData);
+                byte[] identifier =
+                {
+                    1,
+                    1,
+                    1
+                };
+
+                caster.SetData(identifier, TestData);
 
                 caster.Broadcast();
                 Thread.Sleep(1000);

@@ -46,14 +46,15 @@ namespace Infinity.Core.Udp.Broadcast
             return socket;
         }
 
-        public void SetData(string data)
+        public void SetData(byte[] identifier, string data)
         {
-            int len = Encoding.UTF8.GetByteCount(data);
-            this.data = new byte[len + 2];
-            this.data[0] = 4;
-            this.data[1] = 2;
+            int data_len = Encoding.UTF8.GetByteCount(data);
+            int ident_len = identifier.Count();
+            this.data = new byte[data_len + ident_len];
 
-            Encoding.UTF8.GetBytes(data, 0, data.Length, this.data, 2);
+            Array.Copy(identifier, 0, this.data, 0, ident_len);
+
+            Encoding.UTF8.GetBytes(data, 0, data.Length, this.data, ident_len);
         }
 
         public void Broadcast()

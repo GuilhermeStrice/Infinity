@@ -27,15 +27,17 @@ namespace Infinity.Core.Udp.Broadcast
     {
         private Socket socket;
         private EndPoint endpoint;
-        private Action<string> logger;
+        private ILogger logger;
 
-        private byte[] buffer = new byte[1024];
+        private byte[] buffer = new byte[8086];
 
         private List<BroadcastPacket> packets = new List<BroadcastPacket>();
 
+        private byte[] identifier;
+
         public bool Running { get; private set; }
 
-        public UdpBroadcastClient(int port, Action<string> logger = null)
+        public UdpBroadcastClient(int port, ILogger logger = null)
         {
             this.logger = logger;
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -45,9 +47,16 @@ namespace Infinity.Core.Udp.Broadcast
             socket.Bind(endpoint);
         }
 
+        public void SetIdentifier(byte[] identifier)
+        {
+            this.identifier = identifier;
+        }
+
         public void StartListen()
         {
-            if (Running) return;
+            if (Running)
+                return;
+            
             Running = true;
 
             try
@@ -58,7 +67,7 @@ namespace Infinity.Core.Udp.Broadcast
             catch (NullReferenceException) { }
             catch (Exception e)
             {
-                logger?.Invoke("BroadcastListener: " + e);
+                logger?.WriteError("BroadcastListener: " + e);
                 Dispose();
             }
         }
@@ -67,11 +76,12 @@ namespace Infinity.Core.Udp.Broadcast
         {
             Running = false;
 
-            int numBytes;
+            int len;
             EndPoint endpt = new IPEndPoint(IPAddress.Any, 0);
+
             try
             {
-                numBytes = socket.EndReceiveFrom(result, ref endpt);
+                len = socket.EndReceiveFrom(result, ref endpt);
             }
             catch (NullReferenceException)
             {
@@ -80,50 +90,58 @@ namespace Infinity.Core.Udp.Broadcast
             }
             catch (Exception e)
             {
-                logger?.Invoke("BroadcastListener: " + e);
+                logger?.WriteError("BroadcastListener: " + e);
                 Dispose();
                 return;
             }
 
-            if (numBytes < 3
-                || buffer[0] != 4 || buffer[1] != 2)
+            int ident_len = identifier.Count();
+
+            // if its equals to the length of identifier it means there's no data
+            if (len > ident_len)
             {
+                for (int i = 0; i < ident_len; i++)
+                {
+                    if (buffer[i] != identifier[i])
+                    {
+                        StartListen();
+                        return;
+                    }
+                }
+
+                IPEndPoint ipEnd = (IPEndPoint)endpt;
+                string data = Encoding.UTF8.GetString(buffer, ident_len, len - ident_len);
+                int dataHash = data.GetHashCode();
+
+                lock (packets)
+                {
+                    bool found = false;
+                    for (int i = 0; i < packets.Count; ++i)
+                    {
+                        var pkt = packets[i];
+
+                        if (pkt == null || pkt.Data == null)
+                        {
+                            packets.RemoveAt(i);
+                            i--;
+                            continue;
+                        }
+
+                        if (pkt.Data.GetHashCode() == dataHash && pkt.Sender.Equals(ipEnd))
+                        {
+                            packets[i].ReceiveTime = DateTime.Now;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        packets.Add(new BroadcastPacket(data, ipEnd));
+                    }
+                }
+
                 StartListen();
-                return;
             }
-
-            IPEndPoint ipEnd = (IPEndPoint)endpt;
-            string data = Encoding.UTF8.GetString(buffer, 2, numBytes - 2);
-            int dataHash = data.GetHashCode();
-
-            lock (packets)
-            {
-                bool found = false;
-                for (int i = 0; i < packets.Count; ++i)
-                {
-                    var pkt = packets[i];
-
-                    if (pkt == null || pkt.Data == null)
-                    {
-                        packets.RemoveAt(i);
-                        i--;
-                        continue;
-                    }
-
-                    if (pkt.Data.GetHashCode() == dataHash && pkt.Sender.Equals(ipEnd))
-                    {
-                        packets[i].ReceiveTime = DateTime.Now;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    packets.Add(new BroadcastPacket(data, ipEnd));
-                }
-            }
-
-            StartListen();
         }
 
         public BroadcastPacket[] GetPackets()
