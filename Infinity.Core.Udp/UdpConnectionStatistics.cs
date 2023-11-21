@@ -58,12 +58,12 @@
         {
             get
             {
-                return unreliableMessagesSent +
-                    reliableMessagesSent +
-                    fragmentedMessagesSent +
-                    acknowledgementsSent +
-                    pingsSent +
-                    handshakeMessagesSent;
+                return UnreliableMessagesSent +
+                    ReliableMessagesSent +
+                    FragmentedMessagesSent +
+                    AcknowledgementsSent +
+                    PingsSent +
+                    HandshakeMessagesSent;
             }
         }
 
@@ -71,12 +71,23 @@
         {
             get
             {
-                return unreliableMessagesReceived +
-                    reliableMessagesReceived +
-                    fragmentedMessagesReceived +
-                    acknowledgementsReceived +
-                    pingsReceived +
-                    handshakeMessagesReceived;
+                return UnreliableMessagesReceived +
+                    ReliableMessagesReceived +
+                    FragmentedMessagesReceived +
+                    AcknowledgementsReceived +
+                    PingsReceived +
+                    HandshakeMessagesReceived;
+            }
+        }
+
+        public long PacketLossPercentage
+        {
+            get
+            {
+                if (TotalMessagesSent == 0)
+                    return 0;
+
+                return DroppedPackets * 100 / TotalMessagesSent;
             }
         }
 
