@@ -1,18 +1,39 @@
 ﻿using Infinity.Core.Udp.Broadcast;
+using System.Net;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public class BroadcastTests
     {
+        public ITestOutputHelper _output;
+
+        public BroadcastTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public void CanStart()
         {
+            ManualResetEvent waitHandle = new ManualResetEvent(false);
+
             const string TestData = "pwerowerower";
 
-            using (UdpBroadcastServer caster = new UdpBroadcastServer(47777))
-            using (UdpBroadcastClient listener = new UdpBroadcastClient(47777))
+            using (UdpBroadcastServer server = new UdpBroadcastServer(47777))
+            using (UdpBroadcastClient client = new UdpBroadcastClient(47777))
             {
-                listener.StartListen();
+                client.OnBroadcastReceive += (string data, IPEndPoint sender) =>
+                {
+                    _output.WriteLine(data);
+                    _output.WriteLine("----- from -----");
+                    _output.WriteLine(sender.ToString());
+                    Assert.Equal(TestData, data);
+
+                    waitHandle.Set();
+                };
+
+                client.StartListen();
 
                 byte[] identifier =
                 {
@@ -21,19 +42,12 @@ namespace Infinity.Core.Tests
                     1
                 };
 
-                caster.SetData(identifier, TestData);
+                server.SetData(identifier, TestData);
 
-                caster.Broadcast();
+                server.Broadcast();
                 Thread.Sleep(1000);
 
-                var pkt = listener.GetPackets();
-                foreach (var p in pkt)
-                {
-                    Console.WriteLine($"{p.Data} {p.Sender}");
-                    Assert.Equal(TestData, p.Data);
-                }
-
-                Assert.True(pkt.Length >= 1);
+                waitHandle.WaitOne();
             }
         }
     }

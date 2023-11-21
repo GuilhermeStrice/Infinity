@@ -4,24 +4,7 @@ using System.Text;
 
 namespace Infinity.Core.Udp.Broadcast
 {
-    public class BroadcastPacket
-    {
-        public string Data;
-        public DateTime ReceiveTime;
-        public IPEndPoint Sender;
-
-        public BroadcastPacket(string data, IPEndPoint sender)
-        {
-            Data = data;
-            Sender = sender;
-            ReceiveTime = DateTime.Now;
-        }
-
-        public string GetAddress()
-        {
-            return Sender.Address.ToString();
-        }
-    }
+    public delegate void OnBroadcastReceive(string data, IPEndPoint sender);
 
     public class UdpBroadcastClient : IDisposable
     {
@@ -31,11 +14,13 @@ namespace Infinity.Core.Udp.Broadcast
 
         private byte[] buffer = new byte[8086];
 
-        private List<BroadcastPacket> packets = new List<BroadcastPacket>();
-
         private byte[] identifier;
 
         public bool Running { get; private set; }
+
+        public int PollTime { get; set; }
+
+        public event OnBroadcastReceive OnBroadcastReceive;
 
         public UdpBroadcastClient(int port, ILogger logger = null)
         {
@@ -111,46 +96,13 @@ namespace Infinity.Core.Udp.Broadcast
 
                 IPEndPoint ipEnd = (IPEndPoint)endpt;
                 string data = Encoding.UTF8.GetString(buffer, ident_len, len - ident_len);
-                int dataHash = data.GetHashCode();
 
-                lock (packets)
-                {
-                    bool found = false;
-                    for (int i = 0; i < packets.Count; ++i)
-                    {
-                        var pkt = packets[i];
+                OnBroadcastReceive?.Invoke(data, ipEnd);
 
-                        if (pkt == null || pkt.Data == null)
-                        {
-                            packets.RemoveAt(i);
-                            i--;
-                            continue;
-                        }
-
-                        if (pkt.Data.GetHashCode() == dataHash && pkt.Sender.Equals(ipEnd))
-                        {
-                            packets[i].ReceiveTime = DateTime.Now;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        packets.Add(new BroadcastPacket(data, ipEnd));
-                    }
-                }
-
+                // Since this is an async operation we don't really care if we sleep here
+                // it's up to the user to specify a sane time frame
+                Thread.Sleep(PollTime);
                 StartListen();
-            }
-        }
-
-        public BroadcastPacket[] GetPackets()
-        {
-            lock (packets)
-            {
-                var output = packets.ToArray();
-                packets.Clear();
-                return output;
             }
         }
 
