@@ -180,7 +180,7 @@
             Interlocked.Add(ref bytesReceived, length);
         }
 
-        public void LogUnformattedMessageReceived(int length)
+        public void LogGarbageMessageReceived(int length)
         {
             Interlocked.Increment(ref garbageReceived);
             Interlocked.Add(ref bytesReceived, length);

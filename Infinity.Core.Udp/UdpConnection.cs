@@ -140,8 +140,7 @@ namespace Infinity.Core.Udp
                 default:
                     message.Recycle();
 
-                    // TODO: A new stat for unused data
-                    Statistics.LogUnreliableMessageReceived(bytesReceived);
+                    Statistics.LogGarbageMessageReceived(bytesReceived);
                     break;
             }
         }
