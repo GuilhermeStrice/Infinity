@@ -18,7 +18,10 @@ namespace Infinity.Core.Udp.Broadcast
 
         public bool Running { get; private set; }
 
-        public int PollTime { get; set; }
+        /// <summary>
+        /// Time to wait between each Broadcast read in milliseconds. Defaults to 1000
+        /// </summary>
+        public int PollTime { get; set; } = 1000;
 
         public event OnBroadcastReceive OnBroadcastReceive;
 
