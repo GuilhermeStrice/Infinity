@@ -128,13 +128,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        public static int ClampToInt(float value, int min, int max)
-        {
-            if (value < min) return min;
-            if (value > max) return max;
-            return (int)value;
-        }
-
         /// <summary>
         ///     Sends the bytes reliably and stores the send.
         /// </summary>
