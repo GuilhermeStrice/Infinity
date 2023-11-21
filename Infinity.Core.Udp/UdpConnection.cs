@@ -83,7 +83,7 @@ namespace Infinity.Core.Udp
         ///     Handles the receiving of data.
         /// </summary>
         /// <param name="message">The buffer containing the bytes received.</param>
-        public virtual void HandleReceive(MessageReader message, int bytesReceived)
+        protected virtual void HandleReceive(MessageReader message, int bytesReceived)
         {
             ushort id;
             switch (message.Buffer[0])
