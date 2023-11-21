@@ -6,7 +6,7 @@ namespace Infinity.Core.Udp.Broadcast
 {
     public delegate void OnBroadcastReceive(string data, IPEndPoint sender);
 
-    public class UdpBroadcastClient : IDisposable
+    public class UdpBroadcastClient
     {
         private Socket socket;
         private EndPoint endpoint;

@@ -20,35 +20,34 @@ namespace Infinity.Core.Tests
 
             const string TestData = "pwerowerower";
 
-            using (UdpBroadcastServer server = new UdpBroadcastServer(47777))
-            using (UdpBroadcastClient client = new UdpBroadcastClient(47777))
+            byte[] identifier =
             {
-                client.OnBroadcastReceive += (string data, IPEndPoint sender) =>
-                {
-                    _output.WriteLine(data);
-                    _output.WriteLine("----- from -----");
-                    _output.WriteLine(sender.ToString());
-                    Assert.Equal(TestData, data);
+                1,
+                1,
+                1
+            };
 
-                    waitHandle.Set();
-                };
+            UdpBroadcastServer server = new UdpBroadcastServer(47777);
+            UdpBroadcastClient client = new UdpBroadcastClient(47777);
 
-                client.StartListen();
+            server.SetData(identifier, TestData);
+            server.Broadcast();
+            Thread.Sleep(1000);
 
-                byte[] identifier =
-                {
-                    1,
-                    1,
-                    1
-                };
+            client.SetIdentifier(identifier);
+            client.OnBroadcastReceive += (string data, IPEndPoint sender) =>
+            {
+                _output.WriteLine(data);
+                _output.WriteLine("----- from -----");
+                _output.WriteLine(sender.ToString());
+                Assert.Equal(TestData, data);
 
-                server.SetData(identifier, TestData);
+                waitHandle.Set();
+            };
+            client.StartListen();
 
-                server.Broadcast();
-                Thread.Sleep(1000);
-
-                waitHandle.WaitOne();
-            }
+            waitHandle.WaitOne();
+            Console.ReadKey();
         }
     }
 }
