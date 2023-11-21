@@ -1,5 +1,6 @@
 ﻿using Infinity.Core.Udp.Broadcast;
 using System.Net;
+using System.Text;
 using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
@@ -18,7 +19,7 @@ namespace Infinity.Core.Tests
         {
             ManualResetEvent waitHandle = new ManualResetEvent(false);
 
-            const string TestData = "pwerowerower";
+            byte[] TestData = Encoding.UTF8.GetBytes("pwerowerower");
 
             byte[] identifier =
             {
@@ -33,11 +34,8 @@ namespace Infinity.Core.Tests
             server.Broadcast(TestData);
             Thread.Sleep(1000);
 
-            client.OnBroadcastReceive += (string data, IPEndPoint sender) =>
+            client.OnBroadcastReceive += (byte[] data, IPEndPoint sender) =>
             {
-                _output.WriteLine(data);
-                _output.WriteLine("----- from -----");
-                _output.WriteLine(sender.ToString());
                 Assert.Equal(TestData, data);
 
                 waitHandle.Set();

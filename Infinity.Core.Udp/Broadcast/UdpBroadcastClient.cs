@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Infinity.Core.Udp.Broadcast
 {
-    public delegate void OnBroadcastReceive(string data, IPEndPoint sender);
+    public delegate void OnBroadcastReceive(byte[] data, IPEndPoint sender);
 
     public class UdpBroadcastClient
     {
@@ -83,12 +83,12 @@ namespace Infinity.Core.Udp.Broadcast
                 return;
             }
 
-            int ident_len = identifier.Count();
+            var identifier_len = identifier.Count();
 
             // if its equals to the length of identifier it means there's no data
-            if (len > ident_len)
+            if (len > identifier_len)
             {
-                for (int i = 0; i < ident_len; i++)
+                for (int i = 0; i < identifier_len; i++)
                 {
                     if (buffer[i] != identifier[i])
                     {
@@ -97,8 +97,9 @@ namespace Infinity.Core.Udp.Broadcast
                     }
                 }
 
-                IPEndPoint ipEnd = (IPEndPoint)endpt;
-                string data = Encoding.UTF8.GetString(buffer, ident_len, len - ident_len);
+                var ipEnd = (IPEndPoint)endpt;
+                var data = new byte[len - identifier_len];
+                Array.Copy(buffer, identifier_len, data, 0, len - identifier_len);
 
                 OnBroadcastReceive?.Invoke(data, ipEnd);
             }

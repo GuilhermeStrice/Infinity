@@ -51,15 +51,15 @@ namespace Infinity.Core.Udp.Broadcast
             return socket;
         }
 
-        public void Broadcast(string data)
+        public void Broadcast(byte[] data)
         {
-            int data_length = Encoding.UTF8.GetByteCount(data);
-            int identifier_length = identifier.Count();
+            int data_length = data.Length;
+            int identifier_length = identifier.Length;
 
             var buffer = new byte[identifier_length + data_length];
 
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
-            Encoding.UTF8.GetBytes(data, 0, data.Length, buffer, identifier_length);
+            Array.Copy(data, 0, buffer, identifier_length, data_length);
 
             if (data == null)
             {
