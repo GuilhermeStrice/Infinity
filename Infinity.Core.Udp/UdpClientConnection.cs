@@ -114,7 +114,7 @@ namespace Infinity.Core.Udp
             ConnectAsync(bytes);
 
             //Wait till Handshake packet is acknowledged and the state is set to Connected
-            bool timedOut = !WaitOnConnect(timeout);
+            bool timedOut = !connectWaitLock.WaitOne(timeout);
 
             //If we timed out raise an exception
             if (timedOut)
@@ -210,15 +210,6 @@ namespace Infinity.Core.Udp
             catch (ObjectDisposedException)
             {
             }
-        }
-
-        /// <summary>
-        ///     Blocks until the Connection is connected.
-        /// </summary>
-        /// <param name="timeout">The number of milliseconds to wait before timing out.</param>
-        public bool WaitOnConnect(int timeout)
-        {
-            return connectWaitLock.WaitOne(timeout);
         }
 
         /// <summary>
