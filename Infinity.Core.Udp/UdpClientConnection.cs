@@ -137,7 +137,7 @@ namespace Infinity.Core.Udp
             }
             catch (SocketException e)
             {
-                SetState(ConnectionState.NotConnected);
+                State = ConnectionState.NotConnected;
                 throw new InfinityException("A SocketException occurred while binding to the port.", e);
             }
 
@@ -149,7 +149,7 @@ namespace Infinity.Core.Udp
             {
                 // If the socket's been disposed then we can just end there but make sure we're in NotConnected state.
                 // If we end up here I'm really lost...
-                SetState(ConnectionState.NotConnected);
+                State = ConnectionState.NotConnected;
                 return;
             }
             catch (SocketException e)
