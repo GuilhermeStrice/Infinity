@@ -55,16 +55,7 @@ namespace Infinity.Core.Udp
 
         public override void WriteBytesToConnection(byte[] bytes, int length)
         {
-#if DEBUG
-            if (TestLagMs > 0)
-            {
-                ThreadPool.QueueUserWorkItem(a => { Thread.Sleep(TestLagMs); WriteBytesToConnectionReal(bytes, length); });
-            }
-            else
-#endif
-            {
-                WriteBytesToConnectionReal(bytes, length);
-            }
+            WriteBytesToConnectionReal(bytes, length);
         }
 
         private void WriteBytesToConnectionReal(byte[] bytes, int length)
@@ -172,13 +163,6 @@ namespace Infinity.Core.Udp
         /// </summary>
         void StartListeningForData()
         {
-#if DEBUG
-            if (TestLagMs > 0)
-            {
-                Thread.Sleep(TestLagMs);
-            }
-#endif
-
             var msg = MessageReader.GetSized(ReceiveBufferSize);
             try
             {
@@ -260,15 +244,6 @@ namespace Infinity.Core.Udp
                 return;
             }
 
-#if DEBUG
-            if (TestDropRate > 0)
-            {
-                if ((testDropCount++ % TestDropRate) == 0)
-                {
-                    return;
-                }
-            }
-#endif
             HandleReceive(msg, msg.Length);
         }
 
