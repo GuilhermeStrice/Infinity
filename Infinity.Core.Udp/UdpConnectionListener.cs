@@ -217,18 +217,16 @@ namespace Infinity.Core.Udp
                     return;
                 }
 
-                if (HandshakeConnection != null)
+                if (HandshakeConnection != null && 
+                    !HandshakeConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
                 {
-                    if (!HandshakeConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
+                    message.Recycle();
+                    if (response != null)
                     {
-                        message.Recycle();
-                        if (response != null)
-                        {
-                            SendData(response, response.Length, remoteEndPoint);
-                        }
-
-                        return;
+                        SendData(response, response.Length, remoteEndPoint);
                     }
+
+                    return;
                 }
 
                 aware = false;
