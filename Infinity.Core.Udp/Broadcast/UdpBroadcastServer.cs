@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 
 namespace Infinity.Core.Udp.Broadcast
 {
-    public class UdpBroadcastServer
+    public class UdpBroadcastServer : IDisposable
     {
         private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses;
         private byte[] identifier;
@@ -104,7 +104,7 @@ namespace Infinity.Core.Udp.Broadcast
             }
         }
 
-        public void Stop()
+        public void Dispose()
         {
             foreach (var aa in availableAddresses)
             {

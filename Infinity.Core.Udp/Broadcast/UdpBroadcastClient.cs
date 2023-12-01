@@ -6,7 +6,7 @@ namespace Infinity.Core.Udp.Broadcast
 {
     public delegate void OnBroadcastReceive(byte[] data, IPEndPoint sender);
 
-    public class UdpBroadcastClient
+    public class UdpBroadcastClient : IDisposable
     {
         private Socket socket;
         private EndPoint endpoint;
@@ -53,10 +53,14 @@ namespace Infinity.Core.Udp.Broadcast
                 socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endpt, HandleData, null);
             }
             catch (NullReferenceException) { }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
             catch (Exception e)
             {
                 logger?.WriteError("BroadcastListener: " + e);
-                Stop();
+                Dispose();
             }
         }
 
@@ -64,22 +68,22 @@ namespace Infinity.Core.Udp.Broadcast
         {
             Running = false;
 
-            int len;
+            int len = 0;
             EndPoint endpt = new IPEndPoint(IPAddress.Any, 0);
 
             try
             {
                 len = socket.EndReceiveFrom(result, ref endpt);
             }
-            catch (NullReferenceException)
+            catch (NullReferenceException) { }
+            catch (ObjectDisposedException)
             {
-                // Already disposed
                 return;
             }
             catch (Exception e)
             {
                 logger?.WriteError("BroadcastListener: " + e);
-                Stop();
+                Dispose();
                 return;
             }
 
@@ -110,7 +114,7 @@ namespace Infinity.Core.Udp.Broadcast
             StartListen();
         }
 
-        public void Stop()
+        public void Dispose()
         {
             if (socket != null)
             {

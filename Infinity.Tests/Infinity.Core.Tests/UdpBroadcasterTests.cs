@@ -28,22 +28,23 @@ namespace Infinity.Core.Tests
                 1
             };
 
-            UdpBroadcastServer server = new UdpBroadcastServer(47777, identifier);
-            UdpBroadcastClient client = new UdpBroadcastClient(47777, identifier);
-
-            server.Broadcast(TestData);
-            Thread.Sleep(1000);
-
-            client.OnBroadcastReceive += (byte[] data, IPEndPoint sender) =>
+            using (UdpBroadcastServer server = new UdpBroadcastServer(47777, identifier))
+            using (UdpBroadcastClient client = new UdpBroadcastClient(47777, identifier))
             {
-                Assert.Equal(TestData, data);
+                server.Broadcast(TestData);
+                Thread.Sleep(1000);
 
-                waitHandle.Set();
-            };
+                client.OnBroadcastReceive += (byte[] data, IPEndPoint sender) =>
+                {
+                    Assert.Equal(TestData, data);
 
-            client.StartListen();
+                    waitHandle.Set();
+                };
 
-            waitHandle.WaitOne();
+                client.StartListen();
+
+                waitHandle.WaitOne();
+            }
         }
     }
 }
