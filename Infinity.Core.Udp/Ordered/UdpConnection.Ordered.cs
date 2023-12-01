@@ -52,31 +52,26 @@ namespace Infinity.Core.Udp
                 int currentId = afterId - 1;
 
                 OrderedMessagesReceived.TryAdd(currentId, messageReader);
-                
-                ProcessMessage(beforeId, currentId, afterId);
-            }
-        }
 
-        void ProcessMessage(int before, int current, int after)
-        {
-            if (!OrderedMessagesReceived.ContainsKey(before))
-            {
-                if (!receivedFirst)
+                if (!OrderedMessagesReceived.ContainsKey(beforeId))
                 {
-                    receivedFirst = true;
-                    // just process it
-                    InvokeOrderedMessageReceived(current);
-                    return;
+                    if (!receivedFirst)
+                    {
+                        receivedFirst = true;
+                        // just process it
+                        InvokeOrderedMessageReceived(currentId);
+                        return;
+                    }
+                    else
+                    {
+                        // we still havent received the before packet
+                        // do nothing
+                    }
                 }
                 else
                 {
-                    // we still havent received the before packet
-                    // do nothing
+                    InvokeOrderedMessageReceived(beforeId);
                 }
-            }
-            else
-            {
-                InvokeOrderedMessageReceived(before);
             }
         }
 
