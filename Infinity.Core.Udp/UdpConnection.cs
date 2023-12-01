@@ -37,13 +37,15 @@ namespace Infinity.Core.Udp
 
             try
             {
+                ResetKeepAliveTimer();
+                InvokeBeforeSend(msg);
+
                 byte[] buffer = new byte[msg.Length];
                 Buffer.BlockCopy(msg.Buffer, 0, buffer, 0, msg.Length);
 
                 if (msg.SendOption == UdpSendOption.Reliable)
                 {
-                    ResetKeepAliveTimer();
-
+                    // we automagically send fragments if its greater than fragment size
                     if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                     {
                         FragmentedSend(buffer);
@@ -60,7 +62,7 @@ namespace Infinity.Core.Udp
                 {
                     if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                         throw new InfinityException("not allowed");
-                    
+
                     OrderedSend(buffer);
                     Statistics.LogReliableMessageSent(buffer.Length);
                 }
@@ -90,11 +92,13 @@ namespace Infinity.Core.Udp
             {
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
-                    ReliableMessageReceive(message, bytesReceived);
+                    InvokeBeforeReceive(message);
+                    ReliableMessageReceive(message);
                     Statistics.LogReliableMessageReceived(bytesReceived);
                     break;
 
                 case UdpSendOption.ReliableOrdered:
+                    InvokeBeforeReceive(message);
                     OrderedMessageReceived(message);
                     Statistics.LogReliableMessageReceived(bytesReceived);
                     break;
@@ -132,6 +136,7 @@ namespace Infinity.Core.Udp
                     break;
 
                 case UdpSendOption.Unreliable:
+                    InvokeBeforeReceive(message);
                     InvokeDataReceived(UdpSendOption.Unreliable, message, 1, bytesReceived);
                     Statistics.LogUnreliableMessageReceived(bytesReceived);
                     break;

@@ -46,6 +46,9 @@ namespace Infinity.Core
         /// </example>
         public event EventHandler<DisconnectedEventArgs>? Disconnected;
 
+        public event EventHandler<MessageWriter>? BeforeSend;
+        public event EventHandler<MessageReader>? BeforeReceive;
+
         /// <summary>
         ///     The remote end point of this Connection.
         /// </summary>
@@ -290,6 +293,20 @@ namespace Infinity.Core
                 if (msg != null)
                     msg.Recycle();
             }
+        }
+
+        protected void InvokeBeforeSend(MessageWriter writer)
+        {
+            EventHandler<MessageWriter> handler = BeforeSend;
+            if (handler != null)
+                handler(this, writer);
+        }
+
+        protected void InvokeBeforeReceive(MessageReader reader)
+        {
+            EventHandler<MessageReader> handler = BeforeReceive;
+            if (handler != null)
+                handler(this, reader);
         }
 
         /// <summary>

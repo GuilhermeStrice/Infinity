@@ -160,12 +160,12 @@ namespace Infinity.Core.Udp
         ///     Handles a reliable message being received and invokes the data event.
         /// </summary>
         /// <param name="message">The buffer received.</param>
-        private void ReliableMessageReceive(MessageReader message, int bytesReceived)
+        private void ReliableMessageReceive(MessageReader message)
         {
             ushort id;
             if (ProcessReliableReceive(message.Buffer, 1, out id))
             {
-                InvokeDataReceived(UdpSendOption.Reliable, message, 3, bytesReceived);
+                InvokeDataReceived(UdpSendOption.Reliable, message, 3, message.Length);
             }
             else
             {
