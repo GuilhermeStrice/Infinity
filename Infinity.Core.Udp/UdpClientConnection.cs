@@ -291,7 +291,7 @@ namespace Infinity.Core.Udp
             {
                 if (_state == ConnectionState.NotConnected) 
                     return false;
-                State = ConnectionState.NotConnected; // Use the property so we release the state lock
+                State = ConnectionState.NotConnected;
             }
 
             var bytes = EmptyDisconnectBytes;
@@ -300,8 +300,7 @@ namespace Infinity.Core.Udp
                 if (data.SendOption != UdpSendOption.Unreliable)
                     throw new ArgumentException("Disconnect messages can only be unreliable.");
 
-                // manually set SendOption
-                bytes = data.ToByteArray(true);
+                bytes = data.ToByteArray(3);
                 bytes[0] = UdpSendOption.Disconnect;
             }
 

@@ -219,7 +219,7 @@ namespace Infinity.Core.Tests
         /// <returns>The data.</returns>
         static MessageWriter BuildData(byte sendOption, int dataSize)
         {
-            var output = MessageWriter.Get(sendOption);
+            var output = MessageWriter.Get(sendOption, 1);
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);

@@ -30,7 +30,7 @@ namespace Infinity.Core
         public void CopyFrom(MessageReader other)
         {
             int offset, length;
-            if (other.Tag == byte.MaxValue)
+            if (other.Tag == byte.MaxValue) // no idea what this is
             {
                 offset = other.Offset;
                 length = other.Length;
@@ -184,13 +184,11 @@ namespace Infinity.Core
             if (Position > Length) Length = Position;
         }
 
-        ///
         public void WritePacked(int value)
         {
             WritePacked((uint)value);
         }
 
-        ///
         public void WritePacked(uint value)
         {
             do
@@ -207,81 +205,32 @@ namespace Infinity.Core
         }
         #endregion
 
-        public void Write(MessageWriter msg, bool includeHeader)
+        public void Write(MessageWriter msg, int _offset)
         {
-            int offset = 0;
-            if (!includeHeader)
-            {
-                switch (msg.SendOption)
-                {
-                    case 20: // Reliable Ordered UDP
-                    case 1: // Reliable UDP different header size
-                        offset = 3;
-                        break;
-                    default:
-                        offset = 1;
-                        break;
-                }
-            }
-
-            Write(msg.Buffer, offset, msg.Length - offset);
+            Write(msg.Buffer, _offset, msg.Length - _offset);
         }
 
-        public byte[] ToByteArray(bool includeHeader)
+        public byte[] ToByteArray(int _offset)
         {
-            if (includeHeader)
-            {
-                byte[] output = new byte[Length];
-                System.Buffer.BlockCopy(Buffer, 0, output, 0, Length);
-                return output;
-            }
-            else
-            {
-                switch (SendOption)
-                {
-                    case 20: // Reliable Ordered UDP
-                    case 1: // Reliable UDP
-                        {
-                            byte[] output = new byte[Length - 3];
-                            System.Buffer.BlockCopy(Buffer, 3, output, 0, Length - 3);
-                            return output;
-                        }
-                    default:
-                        {
-                            byte[] output = new byte[Length - 1];
-                            System.Buffer.BlockCopy(Buffer, 1, output, 0, Length - 1);
-                            return output;
-                        }
-                }
-            }
-
-            throw new NotImplementedException();
+            byte[] output = new byte[Length - _offset];
+            System.Buffer.BlockCopy(Buffer, _offset, output, 0, Length - _offset);
+            return output;
         }
 
-        public static MessageWriter Get(byte sendOption = 0) // unreliable
+        public static MessageWriter Get(byte sendOption, int _offset)
         {
             var output = WriterPool.GetObject();
-            output.Clear(sendOption);
+            output.Clear(sendOption, _offset);
 
             return output;
         }
 
-        public void Clear(byte sendOption)
+        public void Clear(byte sendOption, int _offset)
         {
             Array.Clear(Buffer, 0, Buffer.Length);
 
             Buffer[0] = SendOption = sendOption;
-
-            switch (sendOption)
-            {
-                case 20: // Reliable Ordered UDP
-                case 1: // Reliable UDP
-                    Length = Position = 3;
-                    break;
-                default:
-                    Length = Position = 1;
-                    break;
-            }
+            Length = Position = _offset;
         }
 
         public void Recycle()

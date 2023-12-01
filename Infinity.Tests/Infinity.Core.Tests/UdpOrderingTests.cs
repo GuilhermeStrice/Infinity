@@ -50,7 +50,7 @@ namespace Infinity.Core.Tests
 
                 Thread.Sleep(100);
 
-                var message = MessageWriter.Get(UdpSendOption.ReliableOrdered);
+                var message = MessageWriter.Get(UdpSendOption.ReliableOrdered, 3);
                 message.Write(20);
 
                 for (int i = 0; i < 50; i++)

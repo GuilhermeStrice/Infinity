@@ -138,7 +138,7 @@ namespace Infinity.Core.Tcp
         /// <param name="acknowledgeCallback">The callback to invoke when the Handshake packet is acknowledged.</param>
         protected void SendHandshake(byte[] bytes, Action acknowledgeCallback)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Handshake);
+            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Handshake, 1);
 
             if (bytes != null)
             {
@@ -435,7 +435,7 @@ namespace Infinity.Core.Tcp
 
         protected override bool SendDisconnect(MessageWriter data = null)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Disconnect);
+            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Disconnect, 1);
 
             if (data != null)
             {

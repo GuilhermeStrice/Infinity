@@ -100,7 +100,7 @@ namespace Infinity.Core.Udp
 
                     if (fragmentedMessage.Fragments.Count == fragmentsCount)
                     {
-                        var writer = MessageWriter.Get(UdpSendOption.Reliable);
+                        var writer = MessageWriter.Get(UdpSendOption.Reliable, 3);
                         writer.Position = 1;
                         writer.Write(fragmentedMessageId);
 

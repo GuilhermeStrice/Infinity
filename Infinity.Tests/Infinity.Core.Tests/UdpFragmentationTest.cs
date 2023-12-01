@@ -41,7 +41,7 @@ namespace Infinity.Core.Tests
                 listener.Start();
                 connection.Connect();
 
-                var message = MessageWriter.Get(UdpSendOption.Reliable);
+                var message = MessageWriter.Get(UdpSendOption.Reliable, 3);
                 message.Buffer = _testData;
                 message.Length = _testData.Length;
 
@@ -90,7 +90,7 @@ namespace Infinity.Core.Tests
 
                 Thread.Sleep(100);
 
-                var message = MessageWriter.Get(UdpSendOption.Reliable);
+                var message = MessageWriter.Get(UdpSendOption.Reliable, 3);
                 message.Buffer = _testData;
                 message.Length = _testData.Length;
 

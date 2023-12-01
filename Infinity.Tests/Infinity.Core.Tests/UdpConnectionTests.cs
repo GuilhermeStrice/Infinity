@@ -147,7 +147,7 @@ namespace Infinity.Core.Tests
 
                 for (int i = 0; i < 4; ++i)
                 {
-                    var msg = MessageWriter.Get(UdpSendOption.Unreliable);
+                    var msg = MessageWriter.Get(UdpSendOption.Unreliable, 1);
                     msg.Write(TestData);
                     connection.Send(msg);
                     msg.Recycle();
@@ -442,6 +442,7 @@ namespace Infinity.Core.Tests
         /// <summary>
         ///     Test that a disconnect is sent when the client is disposed.
         /// </summary>
+        [Fact]
         public void ClientDisconnectOnDisposeTest()
         {
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -476,7 +477,7 @@ namespace Infinity.Core.Tests
                 string received = null;
                 ManualResetEvent mutex = new ManualResetEvent(false);
 
-                connection.Disconnected += delegate (object sender, DisconnectedEventArgs args)
+                connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args)
                 {
                     // We don't own the message, we have to read the string now
                     received = args.Message.ReadString();
@@ -489,8 +490,8 @@ namespace Infinity.Core.Tests
                     // Tossing it on a different thread makes this test more reliable. Perhaps something to think about elsewhere though.
                     Task.Run(async () =>
                     {
-                        await Task.Delay(1);
-                        MessageWriter writer = MessageWriter.Get(UdpSendOption.Unreliable);
+                        await Task.Delay(100);
+                        MessageWriter writer = MessageWriter.Get(UdpSendOption.Unreliable, 1);
                         writer.Write("Goodbye");
                         args.Connection.Disconnect("Testing", writer);
                     });

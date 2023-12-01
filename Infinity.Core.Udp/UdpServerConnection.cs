@@ -74,7 +74,7 @@ namespace Infinity.Core.Udp
                 if (data.SendOption != UdpSendOption.Unreliable)
                     throw new ArgumentException("Disconnect messages can only be unreliable.");
 
-                bytes = data.ToByteArray(true);
+                bytes = data.ToByteArray(0);
                 bytes[0] = UdpSendOption.Disconnect;
             }
 

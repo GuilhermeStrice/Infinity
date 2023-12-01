@@ -116,7 +116,7 @@ namespace Infinity.Core.Tests
         {
             var mutex = new ManualResetEvent(false);
 
-            connection.Disconnected += delegate (object sender, DisconnectedEventArgs args)
+            connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args)
             {
                 mutex.Set();
             };
@@ -145,7 +145,7 @@ namespace Infinity.Core.Tests
 
             listener.NewConnection += delegate (NewConnectionEventArgs args)
             {
-                args.Connection.Disconnected += delegate (object sender2, DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args2)
                 {
                     mutex2.Set();
                 };
@@ -176,7 +176,7 @@ namespace Infinity.Core.Tests
 
             listener.NewConnection += delegate (NewConnectionEventArgs args)
             {
-                args.Connection.Disconnected += delegate (object sender2, DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args2)
                 {
                     mutex2.Set();
                 };
@@ -219,7 +219,13 @@ namespace Infinity.Core.Tests
         /// <returns>The data.</returns>
         static MessageWriter BuildData(byte sendOption, int dataSize)
         {
-            var output = MessageWriter.Get(sendOption);
+            int offset = 3;
+            if (sendOption == UdpSendOption.Unreliable)
+            {
+                offset = 1;
+            }
+
+            var output = MessageWriter.Get(sendOption, offset);
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);
