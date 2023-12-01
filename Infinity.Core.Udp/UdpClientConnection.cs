@@ -137,7 +137,7 @@ namespace Infinity.Core.Udp
             }
             catch (SocketException e)
             {
-                State = ConnectionState.NotConnected;
+                SetState(ConnectionState.NotConnected);
                 throw new InfinityException("A SocketException occurred while binding to the port.", e);
             }
 
@@ -149,7 +149,7 @@ namespace Infinity.Core.Udp
             {
                 // If the socket's been disposed then we can just end there but make sure we're in NotConnected state.
                 // If we end up here I'm really lost...
-                State = ConnectionState.NotConnected;
+                SetState(ConnectionState.NotConnected);
                 return;
             }
             catch (SocketException e)
@@ -162,7 +162,7 @@ namespace Infinity.Core.Udp
             // When acknowledged set the state to connected
             SendHandshake(bytes, () =>
             {
-                State = ConnectionState.Connected;
+                SetState(ConnectionState.Connected);
                 InitializeKeepAliveTimer();
             });
         }
