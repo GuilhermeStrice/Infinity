@@ -376,7 +376,7 @@ namespace Infinity.Core.Tcp
             //Invoke event outide lock if need be
             if (invoke)
             {
-                InvokeDisconnected(e.Message, null);
+                InvokeDisconnected(e?.Message, null);
 
                 Dispose();
             }
