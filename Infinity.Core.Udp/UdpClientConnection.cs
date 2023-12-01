@@ -162,7 +162,7 @@ namespace Infinity.Core.Udp
             // When acknowledged set the state to connected
             SendHandshake(bytes, () =>
             {
-                SetState(ConnectionState.Connected);
+                State = ConnectionState.Connected;
                 InitializeKeepAliveTimer();
             });
         }
