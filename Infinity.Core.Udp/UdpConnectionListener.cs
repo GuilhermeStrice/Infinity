@@ -250,6 +250,11 @@ namespace Infinity.Core.Udp
             connection.HandleReceive(message, bytesReceived);
         }
 
+#if DEBUG
+        public int TestDropRate = -1;
+        private int dropCounter = 0;
+#endif
+
         /// <summary>
         ///     Sends data from the listener socket.
         /// </summary>
@@ -257,8 +262,17 @@ namespace Infinity.Core.Udp
         /// <param name="endPoint">The endpoint to send to.</param>
         internal void SendData(byte[] bytes, int length, EndPoint endPoint)
         {
-            if (length > bytes.Length)
-                return;
+            if (length > bytes.Length) return;
+
+#if DEBUG
+            if (TestDropRate > 0)
+            {
+                if (Interlocked.Increment(ref dropCounter) % TestDropRate == 0)
+                {
+                    return;
+                }
+            }
+#endif
 
             try
             {
