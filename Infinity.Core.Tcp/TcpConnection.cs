@@ -333,7 +333,7 @@ namespace Infinity.Core.Tcp
             //Exit if receive nothing
             if (bytesReceived == 0)
             {
-                //HandleDisconnect();
+                HandleDisconnect();
                 return;
             }
 
@@ -352,6 +352,8 @@ namespace Infinity.Core.Tcp
             }
             else
             {
+                Statistics.LogStreamReceived(state.totalBytesReceived + 4);
+
                 state.callback.Invoke(state.buffer);
             }
         }
@@ -449,7 +451,6 @@ namespace Infinity.Core.Tcp
         {
             try
             {
-                Statistics.LogStreamSent(buffer.Length);
                 socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, HandleSendBytes, callback);
             }
             catch (Exception e)
@@ -463,9 +464,11 @@ namespace Infinity.Core.Tcp
 
         public void HandleSendBytes(IAsyncResult result)
         {
+            int sent = 0;
+
             try
             {
-                socket.EndSend(result);
+                sent = socket.EndSend(result);
             }
             catch (NullReferenceException) { }
             catch (ObjectDisposedException)
@@ -477,6 +480,8 @@ namespace Infinity.Core.Tcp
                 // probably disconnected
                 DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "A socket exception occurred while sending");
             }
+
+            Statistics.LogStreamSent(sent);
 
             var callback = (Action)result.AsyncState;
             if (callback != null)
