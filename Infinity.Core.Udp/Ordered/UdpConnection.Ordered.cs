@@ -6,8 +6,6 @@ namespace Infinity.Core.Udp
     {
         internal ConcurrentDictionary<int, MessageReader> OrderedMessagesReceived = new ConcurrentDictionary<int, MessageReader>();
 
-        internal bool receivedFirst = false;
-
         internal const int OrderedHeaderSize = sizeof(byte) + sizeof(ushort) + sizeof(byte);
 
         internal volatile int sendSequence = 0;
