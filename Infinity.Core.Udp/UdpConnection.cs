@@ -37,7 +37,6 @@ namespace Infinity.Core.Udp
 
             try
             {
-                ResetKeepAliveTimer();
                 InvokeBeforeSend(msg);
 
                 byte[] buffer = new byte[msg.Length];
