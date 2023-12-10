@@ -6,10 +6,12 @@ namespace Infinity.Core.Udp
     {
         internal ConcurrentDictionary<int, MessageReader> OrderedMessagesReceived = new ConcurrentDictionary<int, MessageReader>();
 
-        internal volatile int nextInSequence = 1;
         internal bool receivedFirst = false;
 
-        internal const int OrderedHeaderSize = sizeof(byte) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
+        internal const int OrderedHeaderSize = sizeof(byte) + sizeof(ushort) + sizeof(byte);
+
+        internal volatile int sendSequence = 0;
+        internal volatile int receiveSequence = 1;
 
         void OrderedSend(byte[] data)
         {
@@ -19,22 +21,10 @@ namespace Infinity.Core.Udp
 
             AttachReliableID(buffer, 1);
 
-            int before;
-            int after;
-
-            if (nextInSequence == byte.MaxValue)
-            {
-                before = nextInSequence;
-                after = Interlocked.Exchange(ref nextInSequence, 1);
-            }
-            else
-            {
-                before = nextInSequence - 1;
-                after = Interlocked.Increment(ref nextInSequence);
-            }
+            int before = sendSequence;
+            Interlocked.Exchange(ref sendSequence, (sendSequence + 1) % 255);
 
             buffer[3] = (byte)before;
-            buffer[4] = (byte)after;
 
             Buffer.BlockCopy(data, 3, buffer, OrderedHeaderSize, data.Length - 3);
 
@@ -47,39 +37,18 @@ namespace Infinity.Core.Udp
             {
                 messageReader.Position += 3;
 
-                int beforeId = messageReader.ReadByte();
-                int afterId = messageReader.ReadByte();
-                int currentId = afterId - 1;
+                int before = messageReader.ReadByte();
+                int current = (before + 1) % 255;
 
-                OrderedMessagesReceived.TryAdd(currentId, messageReader);
+                OrderedMessagesReceived.TryAdd(current, messageReader);
 
-                if (!OrderedMessagesReceived.ContainsKey(beforeId))
+                while (OrderedMessagesReceived.TryRemove(receiveSequence, out var reader))
                 {
-                    if (!receivedFirst)
-                    {
-                        receivedFirst = true;
-                        // just process it
-                        InvokeOrderedMessageReceived(currentId);
-                        return;
-                    }
-                    else
-                    {
-                        // we still havent received the before packet
-                        // do nothing
-                    }
-                }
-                else
-                {
-                    InvokeOrderedMessageReceived(beforeId);
+                    InvokeDataReceived(reader, UdpSendOption.ReliableOrdered);
+
+                    Interlocked.Exchange(ref receiveSequence, (receiveSequence + 1) % 255);
                 }
             }
-        }
-
-        void InvokeOrderedMessageReceived(int current)
-        {
-            OrderedMessagesReceived.Remove(current, out var message);
-
-            InvokeDataReceived(message, UdpSendOption.ReliableOrdered);
         }
     }
 }

@@ -15,6 +15,7 @@ namespace Infinity.Core.Tests
         public void OrderedTest()
         {
             int count = 1;
+            int lastId = 1;
 
             TaskCompletionSource<bool> result = new TaskCompletionSource<bool>();
 
@@ -27,20 +28,19 @@ namespace Infinity.Core.Tests
                     {
                         data.Message.Position = 3;
 
-                        var receivedId = data.Message.ReadByte() + 1;
+                        var receivedId = (data.Message.ReadByte() + 1) % 255;
 
-                        data.Message.Position++;
+                        Assert.Equal(lastId, receivedId);
 
-                        Assert.Equal(count, receivedId);
+                        lastId = (lastId + 1) % 255;
 
-                        var hey = data.Message.ReadInt32();
+                        var receivedData = data.Message.ReadInt32();
 
-                        var expected = 20;
-                        Assert.Equal(hey, expected);
+                        Assert.Equal(receivedData, 20);
 
                         Interlocked.Increment(ref count);
 
-                        if (count == 50)
+                        if (count == 300)
                             result.SetResult(true);
                     };
                 };
@@ -53,10 +53,11 @@ namespace Infinity.Core.Tests
                 var message = MessageWriter.Get(UdpSendOption.ReliableOrdered, 3);
                 message.Write(20);
 
-                for (int i = 0; i < 50; i++)
+                // needs further testing
+                for (int i = 0; i < 300; i++)
                 {
                     connection.Send(message);
-                    Thread.Sleep(10);
+                    Thread.Sleep(1); // might be a local host problem, but if packets are sent too quickly this test doesn't run
                 }
 
                 message.Recycle();
