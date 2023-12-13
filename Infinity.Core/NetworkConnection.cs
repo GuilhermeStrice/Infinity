@@ -159,7 +159,7 @@ namespace Infinity.Core
 
             if (protocol == Protocol.Udp)
             {
-                socket.DontFragment = false;
+                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
