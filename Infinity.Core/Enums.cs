@@ -30,7 +30,6 @@
         Connected,
     }
 
-    [Flags]
     public enum SendErrors
     {
         None,
@@ -48,7 +47,6 @@
         ConnectionDisconnected
     }
 
-    [Flags]
     public enum Protocol : byte
     {
         Udp,
