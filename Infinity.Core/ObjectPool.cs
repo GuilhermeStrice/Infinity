@@ -9,11 +9,11 @@ namespace Infinity.Core
     /// <threadsafety static="true" instance="true"/>
     public sealed class ObjectPool<T> where T : IRecyclable
     {
-        public int InUse{ get; private set; }
+        public int InUse => MaxNumberObjects - instance_count;
         public int MaxNumberObjects;
 
         private readonly T[] pool;
-        private int instanceCount;
+        private int instance_count;
 
         /// <summary>
         ///     The generator for creating new objects.
@@ -38,9 +38,9 @@ namespace Infinity.Core
         /// <returns>An instance of T.</returns>
         public T GetObject()
         {
-            if (instanceCount > 0)
+            if (instance_count > 0)
             {
-                return pool[--instanceCount];
+                return pool[--instance_count];
             }
             else
             {
@@ -54,9 +54,9 @@ namespace Infinity.Core
         /// <param name="item">The item to return.</param>
         public void PutObject(T item)
         {
-            if (instanceCount < MaxNumberObjects)
+            if (instance_count < MaxNumberObjects)
             {
-                pool[instanceCount++] = item;
+                pool[instance_count++] = item;
             }
         }
     }

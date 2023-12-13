@@ -15,7 +15,7 @@ namespace Infinity.Core
         public int BytesRemaining => Length - Position;
 
         internal int _position;
-        internal int readHead;
+        internal int head;
 
         public int Position
         {
@@ -23,7 +23,7 @@ namespace Infinity.Core
             set
             {
                 _position = value;
-                readHead = value + Offset;
+                head = value + Offset;
             }
         }
 
@@ -116,14 +116,14 @@ namespace Infinity.Core
         {
             float output = 0;
 
-            fixed (byte* bufPtr = &Buffer[readHead])
+            fixed (byte* buf_ptr = &Buffer[head])
             {
-                byte* outPtr = (byte*)&output;
+                byte* out_ptr = (byte*)&output;
 
-                *outPtr = *bufPtr;
-                *(outPtr + 1) = *(bufPtr + 1);
-                *(outPtr + 2) = *(bufPtr + 2);
-                *(outPtr + 3) = *(bufPtr + 3);
+                *out_ptr = *buf_ptr;
+                *(out_ptr + 1) = *(buf_ptr + 1);
+                *(out_ptr + 2) = *(buf_ptr + 2);
+                *(out_ptr + 3) = *(buf_ptr + 3);
             }
 
             Position += 4;
@@ -132,40 +132,40 @@ namespace Infinity.Core
 
         public string ReadString()
         {
-            int len = ReadPackedInt32();
+            int length = ReadPackedInt32();
 
-            if (BytesRemaining < len)
-            {
-                throw new InvalidDataException($"Read length is longer than message length: {len} of {BytesRemaining}");
-            }
-
-            string output = Encoding.UTF8.GetString(Buffer, readHead, len);
-
-            Position += len;
-            return output;
-        }
-
-        public byte[] ReadBytesAndSize()
-        {
-            int len = ReadPackedInt32();
-
-            if (BytesRemaining < len)
-            {
-                throw new InvalidDataException($"Read length is longer than message length: {len} of {BytesRemaining}");
-            }
-
-            return ReadBytes(len);
-        }
-
-        public byte[] ReadBytes(int length)
-        {
             if (BytesRemaining < length)
             {
                 throw new InvalidDataException($"Read length is longer than message length: {length} of {BytesRemaining}");
             }
 
-            byte[] output = new byte[length];
-            Array.Copy(Buffer, readHead, output, 0, output.Length);
+            string output = Encoding.UTF8.GetString(Buffer, head, length);
+
+            Position += length;
+            return output;
+        }
+
+        public byte[] ReadBytesAndSize()
+        {
+            int length = ReadPackedInt32();
+
+            if (BytesRemaining < length)
+            {
+                throw new InvalidDataException($"Read length is longer than message length: {length} of {BytesRemaining}");
+            }
+
+            return ReadBytes(length);
+        }
+
+        public byte[] ReadBytes(int _length)
+        {
+            if (BytesRemaining < _length)
+            {
+                throw new InvalidDataException($"Read length is longer than message length: {_length} of {BytesRemaining}");
+            }
+
+            byte[] output = new byte[_length];
+            Array.Copy(Buffer, head, output, 0, output.Length);
             Position += output.Length;
 
             return output;
@@ -180,11 +180,11 @@ namespace Infinity.Core
         ///
         public uint ReadPackedUInt32()
         {
-            bool readMore = true;
+            bool read_more = true;
             int shift = 0;
             uint output = 0;
 
-            while (readMore)
+            while (read_more)
             {
                 if (BytesRemaining < 1)
                 {
@@ -195,12 +195,12 @@ namespace Infinity.Core
 
                 if (b >= 0x80)
                 {
-                    readMore = true;
+                    read_more = true;
                     b ^= 0x80;
                 }
                 else
                 {
-                    readMore = false;
+                    read_more = false;
                 }
 
                 output |= (uint)(b << shift);
@@ -215,28 +215,28 @@ namespace Infinity.Core
         private byte FastByte()
         {
             _position++;
-            return Buffer[readHead++];
+            return Buffer[head++];
         }
 
-        public static MessageReader Get(byte[] buffer)
+        public static MessageReader Get(byte[] _buffer)
         {
             var output = ReaderPool.GetObject();
 
-            output.Buffer = buffer;
+            output.Buffer = _buffer;
             output.Offset = 0;
             output.Position = 0;
-            output.Length = buffer.Length;
+            output.Length = _buffer.Length;
 
             return output;
         }
 
-        public static MessageReader GetSized(int minSize)
+        public static MessageReader GetSized(int _min_size)
         {
             var output = ReaderPool.GetObject();
 
-            if (output.Buffer == null || output.Buffer.Length < minSize)
+            if (output.Buffer == null || output.Buffer.Length < _min_size)
             {
-                output.Buffer = new byte[minSize];
+                output.Buffer = new byte[_min_size];
             }
             else
             {
@@ -248,17 +248,17 @@ namespace Infinity.Core
             return output;
         }
 
-        public static MessageReader Get(MessageReader source)
+        public static MessageReader Get(MessageReader _source)
         {
-            var output = GetSized(source.Buffer.Length);
-            System.Buffer.BlockCopy(source.Buffer, 0, output.Buffer, 0, source.Buffer.Length);
+            var output = GetSized(_source.Buffer.Length);
+            System.Buffer.BlockCopy(_source.Buffer, 0, output.Buffer, 0, _source.Buffer.Length);
 
-            output.Offset = source.Offset;
+            output.Offset = _source.Offset;
 
-            output._position = source._position;
-            output.readHead = source.readHead;
+            output._position = _source._position;
+            output.head = _source.head;
 
-            output.Length = source.Length;
+            output.Length = _source.Length;
 
             return output;
         }

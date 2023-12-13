@@ -6,11 +6,11 @@
     [Serializable]
     public class InfinityException : Exception
     {
-        public InfinityException(string msg) : base(msg)
+        public InfinityException(string _msg) : base(_msg)
         {
         }
 
-        public InfinityException(string msg, Exception e) : base(msg, e)
+        public InfinityException(string _msg, Exception _e) : base(_msg, _e)
         {
         }
     }

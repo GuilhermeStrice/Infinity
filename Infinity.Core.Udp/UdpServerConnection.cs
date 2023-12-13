@@ -62,12 +62,12 @@ namespace Infinity.Core.Udp
         {
             lock (this)
             {
-                if (_state != ConnectionState.Connected)
+                if (state != ConnectionState.Connected)
                 {
                     return false;
                 }
 
-                _state = ConnectionState.NotConnected;
+                state = ConnectionState.NotConnected;
             }
             
             var bytes = EmptyDisconnectBytes;

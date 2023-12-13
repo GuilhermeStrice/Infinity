@@ -74,19 +74,19 @@ namespace Infinity.Core
         {
             get
             {
-                return _state;
+                return state;
             }
 
             protected set
             {
-                _state = value;
+                state = value;
                 SetState(value);
             }
         }
 
-        protected ConnectionState _state;
+        protected ConnectionState state;
 
-        protected virtual void SetState(ConnectionState state) { }
+        protected abstract void SetState(ConnectionState _state);
 
         protected NetworkConnection()
         {
@@ -116,22 +116,22 @@ namespace Infinity.Core
         /// <summary>
         ///     Sends a disconnect message to the end point.
         /// </summary>
-        protected abstract bool SendDisconnect(MessageWriter writer);
+        protected abstract bool SendDisconnect(MessageWriter _writer);
 
         /// <summary>
         ///     Sends a number of bytes to the end point of the connection using the specified <see cref="SendOption"/>.
         /// </summary>
         /// <param name="msg">The message to send.</param>
-        public abstract SendErrors Send(MessageWriter msg);
+        public abstract SendErrors Send(MessageWriter _writer);
 
-        public Socket CreateSocket(Protocol protocol, IPMode ipMode)
+        public Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
         {
             Socket socket;
 
             SocketType socket_type;
             ProtocolType protocol_type;
 
-            if (protocol == Protocol.Udp)
+            if (_protocol == Protocol.Udp)
             {
                 socket_type = SocketType.Dgram;
                 protocol_type = ProtocolType.Udp;
@@ -142,7 +142,7 @@ namespace Infinity.Core
                 protocol_type = ProtocolType.Tcp;
             }
 
-            if (ipMode == IPMode.IPv4)
+            if (_ip_mode == IPMode.IPv4)
             {
                 socket = new Socket(AddressFamily.InterNetwork, socket_type, protocol_type);
             }
@@ -157,7 +157,7 @@ namespace Infinity.Core
                 socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             }
 
-            if (protocol == Protocol.Udp)
+            if (_protocol == Protocol.Udp)
             {
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
 
@@ -175,18 +175,18 @@ namespace Infinity.Core
             return socket;
         }
 
-        public abstract void Connect(byte[] bytes = null, int timeout = 5000);
+        public abstract void Connect(byte[] _bytes = null, int _timeout = 5000);
 
-        public abstract void ConnectAsync(byte[] bytes = null);
+        public abstract void ConnectAsync(byte[] _bytes = null);
 
         /// <summary>
         ///     Called when the socket has been disconnected at the remote host.
         /// </summary>
-        protected void DisconnectRemote(string reason, MessageReader msg)
+        protected void DisconnectRemote(string _reason, MessageReader _reader)
         {
             if (SendDisconnect(null))
             {
-                InvokeDisconnected(reason, msg);
+                InvokeDisconnected(_reason, _reader);
             }
 
             Dispose();
@@ -195,20 +195,20 @@ namespace Infinity.Core
         /// <summary>
         /// Called when socket is disconnected publicly
         /// </summary>
-        public void DisconnectInternal(InfinityInternalErrors error, string reason)
+        public void DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {
-            var msg = OnInternalDisconnect?.Invoke(error);
-            Disconnect(reason, msg);
+            var msg = OnInternalDisconnect?.Invoke(_error);
+            Disconnect(_reason, msg);
         }
 
         /// <summary>
         ///     Called when the socket has been disconnected locally.
         /// </summary>
-        public void Disconnect(string reason, MessageWriter writer = null)
+        public void Disconnect(string _reason, MessageWriter _writer = null)
         {
-            if (SendDisconnect(writer))
+            if (SendDisconnect(_writer))
             {
-                InvokeDisconnected(reason, null);
+                InvokeDisconnected(_reason, null);
             }
 
             Dispose();
@@ -217,60 +217,60 @@ namespace Infinity.Core
         /// <summary>
         ///     Invokes the DataReceived event.
         /// </summary>
-        /// <param name="msg">The bytes received.</param>
+        /// <param name="_reader">The bytes received.</param>
         /// <param name="sendOption">The <see cref="SendOption"/> the message was received with.</param>
         /// <remarks>
         ///     Invokes the <see cref="DataReceived"/> event on this connection to alert subscribers a new message has been
         ///     received. The bytes and the send option that the message was sent with should be passed in to give to the
         ///     subscribers.
         /// </remarks>
-        protected void InvokeDataReceived(MessageReader msg, byte sendOption)
+        protected void InvokeDataReceived(MessageReader _reader)
         {
             if (DataReceived != null)
             {
-                var args = new DataReceivedEventArgs(this, msg, sendOption);
+                var args = new DataReceivedEventArgs(this, _reader);
                 DataReceived.Invoke(args);
             }
             else
             {
-                msg.Recycle();
+                _reader.Recycle();
             }
         }
 
         /// <summary>
         ///     Invokes the Disconnected event.
         /// </summary>
-        /// <param name="e">The exception, if any, that occurred to cause this.</param>
-        /// <param name="msg">Extra disconnect data</param>
+        /// <param name="_reason">The exception, if any, that occurred to cause this.</param>
+        /// <param name="_reader">Extra disconnect data</param>
         /// <remarks>
         ///     Invokes the <see cref="Disconnected"/> event to alert subscribres this connection has been disconnected either 
         ///     by the end point or because an error occurred. If an error occurred the error should be passed in in order to 
         ///     pass to the subscribers, otherwise null can be passed in.
         /// </remarks>
-        protected void InvokeDisconnected(string e, MessageReader msg)
+        protected void InvokeDisconnected(string _reason, MessageReader _reader)
         {
             if (Disconnected != null)
             {
-                var args = new DisconnectedEventArgs(this, e, msg);
+                var args = new DisconnectedEventArgs(this, _reason, _reader);
                 Disconnected.Invoke(args);
             }
             else
             {
-                if (msg != null)
+                if (_reader != null)
                 {
-                    msg.Recycle();
+                    _reader.Recycle();
                 }
             }
         }
 
-        protected void InvokeBeforeSend(MessageWriter writer)
+        protected void InvokeBeforeSend(MessageWriter _writer)
         {
-            BeforeSend?.Invoke(this, writer);
+            BeforeSend?.Invoke(this, _writer);
         }
 
-        protected void InvokeBeforeReceive(MessageReader reader)
+        protected void InvokeBeforeReceive(MessageReader _reader)
         {
-            BeforeReceive?.Invoke(this, reader);
+            BeforeReceive?.Invoke(this, _reader);
         }
 
         /// <summary>
@@ -286,9 +286,9 @@ namespace Infinity.Core
         ///     Disposes of this NetworkConnection.
         /// </summary>
         /// <param name="disposing">Are we currently disposing?</param>
-        protected virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool _disposing)
         {
-            if (disposing)
+            if (_disposing)
             {
                 DataReceived = null;
                 Disconnected = null;

@@ -284,7 +284,7 @@ namespace Infinity.Core.Udp
         {
             lock (this)
             {
-                if (_state == ConnectionState.NotConnected) 
+                if (state == ConnectionState.NotConnected) 
                 {
                     return false;
                 }

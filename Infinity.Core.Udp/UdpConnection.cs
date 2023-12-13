@@ -30,7 +30,7 @@ namespace Infinity.Core.Udp
 
         public override SendErrors Send(MessageWriter msg)
         {
-            if (_state != ConnectionState.Connected)
+            if (state != ConnectionState.Connected)
             {
                 return SendErrors.Disconnected;
             }

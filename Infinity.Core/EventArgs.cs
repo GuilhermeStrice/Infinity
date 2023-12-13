@@ -9,16 +9,10 @@
         /// </summary>
         public readonly MessageReader Message;
 
-        /// <summary>
-        ///     The <see cref="SendOption"/> the data was sent with.
-        /// </summary>
-        public readonly byte SendOption;
-
-        public DataReceivedEventArgs(NetworkConnection connection, MessageReader msg, byte sendOption)
+        public DataReceivedEventArgs(NetworkConnection _connection, MessageReader _reader)
         {
-            Connection = connection;
-            Message = msg;
-            SendOption = sendOption;
+            Connection = _connection;
+            Message = _reader;
         }
     }
 
@@ -37,11 +31,11 @@
         /// </summary>
         public readonly MessageReader Message;
 
-        public DisconnectedEventArgs(NetworkConnection connection, string reason, MessageReader message)
+        public DisconnectedEventArgs(NetworkConnection _connection, string _reason, MessageReader _reader)
         {
-            Connection = connection;
-            Reason = reason;
-            Message = message;
+            Connection = _connection;
+            Reason = _reason;
+            Message = _reader;
         }
     }
 
@@ -55,10 +49,10 @@
         /// </summary>
         public readonly MessageReader HandshakeData;
 
-        public NewConnectionEventArgs(NetworkConnection connection, MessageReader handshakeData)
+        public NewConnectionEventArgs(NetworkConnection _connection, MessageReader _reader)
         {
-            Connection = connection;
-            HandshakeData = handshakeData;
+            Connection = _connection;
+            HandshakeData = _reader;
         }
     }
 }

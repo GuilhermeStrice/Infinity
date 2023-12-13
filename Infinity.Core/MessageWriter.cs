@@ -12,17 +12,15 @@ namespace Infinity.Core
         public int Length;
         public int Position;
 
-        public byte SendOption { get; private set; }
-
-        internal MessageWriter(byte[] buffer)
+        internal MessageWriter(byte[] _buffer)
         {
-            Buffer = buffer;
+            Buffer = _buffer;
             Length = Buffer.Length;
         }
 
-        internal MessageWriter(int bufferSize)
+        internal MessageWriter(int _buffer_size)
         {
-            Buffer = new byte[bufferSize];
+            Buffer = new byte[_buffer_size];
         }
 
         #region WriteMethods
@@ -34,169 +32,169 @@ namespace Infinity.Core
             }
         }
 
-        public void Write(bool value)
+        public void Write(bool _value)
         {
-            Buffer[Position++] = (byte)(value ? 1 : 0);
+            Buffer[Position++] = (byte)(_value ? 1 : 0);
             FixLength();
         }
 
-        public void Write(sbyte value)
+        public void Write(sbyte _value)
         {
-            Buffer[Position++] = (byte)value;
+            Buffer[Position++] = (byte)_value;
             FixLength();
         }
 
-        public void Write(byte value)
+        public void Write(byte _value)
         {
-            Buffer[Position++] = value;
+            Buffer[Position++] = _value;
             FixLength();
         }
 
-        public void Write(short value)
+        public void Write(short _value)
         {
-            Buffer[Position++] = (byte)value;
-            Buffer[Position++] = (byte)(value >> 8);
+            Buffer[Position++] = (byte)_value;
+            Buffer[Position++] = (byte)(_value >> 8);
             FixLength();
         }
 
-        public void Write(ushort value)
+        public void Write(ushort _value)
         {
-            Buffer[Position++] = (byte)value;
-            Buffer[Position++] = (byte)(value >> 8);
+            Buffer[Position++] = (byte)_value;
+            Buffer[Position++] = (byte)(_value >> 8);
             FixLength();
         }
 
-        public void Write(uint value)
+        public void Write(uint _value)
         {
-            Buffer[Position++] = (byte)value;
-            Buffer[Position++] = (byte)(value >> 8);
-            Buffer[Position++] = (byte)(value >> 16);
-            Buffer[Position++] = (byte)(value >> 24);
+            Buffer[Position++] = (byte)_value;
+            Buffer[Position++] = (byte)(_value >> 8);
+            Buffer[Position++] = (byte)(_value >> 16);
+            Buffer[Position++] = (byte)(_value >> 24);
             FixLength();
         }
 
-        public void Write(int value)
+        public void Write(int _value)
         {
-            Buffer[Position++] = (byte)value;
-            Buffer[Position++] = (byte)(value >> 8);
-            Buffer[Position++] = (byte)(value >> 16);
-            Buffer[Position++] = (byte)(value >> 24);
+            Buffer[Position++] = (byte)_value;
+            Buffer[Position++] = (byte)(_value >> 8);
+            Buffer[Position++] = (byte)(_value >> 16);
+            Buffer[Position++] = (byte)(_value >> 24);
             FixLength();
         }
 
-        public void Write(ulong value)
+        public void Write(ulong _value)
         {
-            Buffer[Position++] = (byte)value;
-            Buffer[Position++] = (byte)(value >> 8);
-            Buffer[Position++] = (byte)(value >> 16);
-            Buffer[Position++] = (byte)(value >> 24);
-            Buffer[Position++] = (byte)(value >> 32);
-            Buffer[Position++] = (byte)(value >> 40);
-            Buffer[Position++] = (byte)(value >> 48);
-            Buffer[Position++] = (byte)(value >> 56);
+            Buffer[Position++] = (byte)_value;
+            Buffer[Position++] = (byte)(_value >> 8);
+            Buffer[Position++] = (byte)(_value >> 16);
+            Buffer[Position++] = (byte)(_value >> 24);
+            Buffer[Position++] = (byte)(_value >> 32);
+            Buffer[Position++] = (byte)(_value >> 40);
+            Buffer[Position++] = (byte)(_value >> 48);
+            Buffer[Position++] = (byte)(_value >> 56);
             FixLength();
         }
 
-        public void Write(long value)
+        public void Write(long _value)
         {
-            Buffer[Position++] = (byte)value;
-            Buffer[Position++] = (byte)(value >> 8);
-            Buffer[Position++] = (byte)(value >> 16);
-            Buffer[Position++] = (byte)(value >> 24);
-            Buffer[Position++] = (byte)(value >> 32);
-            Buffer[Position++] = (byte)(value >> 40);
-            Buffer[Position++] = (byte)(value >> 48);
-            Buffer[Position++] = (byte)(value >> 56);
+            Buffer[Position++] = (byte)_value;
+            Buffer[Position++] = (byte)(_value >> 8);
+            Buffer[Position++] = (byte)(_value >> 16);
+            Buffer[Position++] = (byte)(_value >> 24);
+            Buffer[Position++] = (byte)(_value >> 32);
+            Buffer[Position++] = (byte)(_value >> 40);
+            Buffer[Position++] = (byte)(_value >> 48);
+            Buffer[Position++] = (byte)(_value >> 56);
             FixLength();
         }
 
-        public unsafe void Write(float value)
+        public unsafe void Write(float _value)
         {
-            fixed (byte* ptr = &Buffer[Position])
+            fixed (byte* buffer_ptr = &Buffer[Position])
             {
-                byte* valuePtr = (byte*)&value;
+                byte* value_ptr = (byte*)&_value;
 
-                *ptr = *valuePtr;
-                *(ptr + 1) = *(valuePtr + 1);
-                *(ptr + 2) = *(valuePtr + 2);
-                *(ptr + 3) = *(valuePtr + 3);
+                *buffer_ptr = *value_ptr;
+                *(buffer_ptr + 1) = *(value_ptr + 1);
+                *(buffer_ptr + 2) = *(value_ptr + 2);
+                *(buffer_ptr + 3) = *(value_ptr + 3);
             }
 
             Position += 4;
             FixLength();
         }
 
-        public void Write(string value)
+        public void Write(string _value)
         {
-            var bytes = Encoding.UTF8.GetBytes(value);
+            var bytes = Encoding.UTF8.GetBytes(_value);
             WritePacked(bytes.Length);
             Write(bytes);
         }
 
-        public void WriteBytesAndSize(byte[] bytes)
+        public void WriteBytesAndSize(byte[] _bytes)
         {
-            WritePacked((uint)bytes.Length);
-            Write(bytes);
+            WritePacked((uint)_bytes.Length);
+            Write(_bytes);
         }
 
-        public void WriteBytesAndSize(byte[] bytes, int length)
+        public void WriteBytesAndSize(byte[] _bytes, int _length)
         {
-            WritePacked((uint)length);
-            Write(bytes, length);
+            WritePacked((uint)_length);
+            Write(_bytes, _length);
         }
 
-        public void WriteBytesAndSize(byte[] bytes, int offset, int length)
+        public void WriteBytesAndSize(byte[] _bytes, int _offset, int _length)
         {
-            WritePacked((uint)length);
-            Write(bytes, offset, length);
+            WritePacked((uint)_length);
+            Write(_bytes, _offset, _length);
         }
 
-        public void Write(byte[] bytes)
+        public void Write(byte[] _bytes)
         {
-            Array.Copy(bytes, 0, Buffer, Position, bytes.Length);
-            Position += bytes.Length;
+            Array.Copy(_bytes, 0, Buffer, Position, _bytes.Length);
+            Position += _bytes.Length;
             FixLength();
         }
 
-        public void Write(byte[] bytes, int offset, int length)
+        public void Write(byte[] _bytes, int _offset, int _length)
         {
-            Array.Copy(bytes, offset, Buffer, Position, length);
-            Position += length;
+            Array.Copy(_bytes, _offset, Buffer, Position, _length);
+            Position += _length;
             FixLength();
         }
 
-        public void Write(byte[] bytes, int length)
+        public void Write(byte[] _bytes, int _length)
         {
-            Array.Copy(bytes, 0, Buffer, Position, length);
-            Position += length;
+            Array.Copy(_bytes, 0, Buffer, Position, _length);
+            Position += _length;
             FixLength();
         }
 
-        public void WritePacked(int value)
+        public void WritePacked(int _value)
         {
-            WritePacked((uint)value);
+            WritePacked((uint)_value);
         }
 
-        public void WritePacked(uint value)
+        public void WritePacked(uint _value)
         {
             do
             {
-                byte b = (byte)(value & 0xFF);
-                if (value >= 0x80)
+                byte b = (byte)(_value & 0xFF);
+                if (_value >= 0x80)
                 {
                     b |= 0x80;
                 }
 
                 Write(b);
-                value >>= 7;
+                _value >>= 7;
             }
-            while (value > 0);
+            while (_value > 0);
         }
         #endregion
 
-        public void Write(MessageWriter msg, int _offset)
+        public void Write(MessageWriter _msg, int _offset)
         {
-            Write(msg.Buffer, _offset, msg.Length - _offset);
+            Write(_msg.Buffer, _offset, _msg.Length - _offset);
         }
 
         public byte[] ToByteArray(int _offset)
@@ -206,19 +204,18 @@ namespace Infinity.Core
             return output;
         }
 
-        public static MessageWriter Get(byte sendOption, int _offset)
+        public static MessageWriter Get(int _offset)
         {
             var output = WriterPool.GetObject();
-            output.Clear(sendOption, _offset);
+            output.Clear(_offset);
 
             return output;
         }
 
-        public void Clear(byte sendOption, int _offset)
+        public void Clear(int _offset)
         {
             Array.Clear(Buffer, 0, Buffer.Length);
 
-            Buffer[0] = SendOption = sendOption;
             Length = Position = _offset;
         }
 

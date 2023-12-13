@@ -88,34 +88,34 @@ namespace Infinity.Core
         /// <summary>
         ///     Invokes the NewConnection event with the supplied connection.
         /// </summary>
-        /// <param name="msg">The user sent bytes that were received as part of the handshake.</param>
-        /// <param name="connection">The connection to pass in the arguments.</param>
+        /// <param name="_reader">The user sent bytes that were received as part of the handshake.</param>
+        /// <param name="_connection">The connection to pass in the arguments.</param>
         /// <remarks>
         ///     Implementers should call this to invoke the <see cref="NewConnection"/> event before data is received so that
         ///     subscribers do not miss any data that may have been sent immediately after connecting.
         /// </remarks>
-        protected void InvokeNewConnection(NetworkConnection connection, MessageReader msg)
+        protected void InvokeNewConnection(NetworkConnection _connection, MessageReader _reader)
         {
-            var args = new NewConnectionEventArgs(connection, msg);
+            var args = new NewConnectionEventArgs(_connection, _reader);
             NewConnection?.Invoke(args);
         }
 
         /// <summary>
         ///     Invokes the InternalError event with the supplied reason.
         /// </summary>
-        protected void InvokeInternalError(InfinityInternalErrors reason)
+        protected void InvokeInternalError(InfinityInternalErrors _error)
         {
-            OnInternalError?.Invoke(reason);
+            OnInternalError?.Invoke(_error);
         }
 
-        public Socket CreateSocket(Protocol protocol, IPMode ipMode)
+        public Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
         {
             Socket socket;
 
             SocketType socket_type;
             ProtocolType protocol_type;
 
-            if (protocol == Protocol.Udp)
+            if (_protocol == Protocol.Udp)
             {
                 socket_type = SocketType.Dgram;
                 protocol_type = ProtocolType.Udp;
@@ -126,7 +126,7 @@ namespace Infinity.Core
                 protocol_type = ProtocolType.Tcp;
             }
 
-            if (ipMode == IPMode.IPv4)
+            if (_ip_mode == IPMode.IPv4)
             {
                 socket = new Socket(AddressFamily.InterNetwork, socket_type, protocol_type);
             }
@@ -141,7 +141,7 @@ namespace Infinity.Core
                 socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             }
 
-            if (protocol == Protocol.Udp)
+            if (_protocol == Protocol.Udp)
             {
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
 
@@ -171,10 +171,13 @@ namespace Infinity.Core
         ///     Called when the object is being disposed.
         /// </summary>
         /// <param name="disposing">Are we disposing?</param>
-        protected virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool _disposing)
         {
-            NewConnection = null;
-            OnInternalError = null;
+            if (_disposing)
+            {
+                NewConnection = null;
+                OnInternalError = null;
+            }
         }
     }
 }
