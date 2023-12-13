@@ -2,7 +2,7 @@
 
 namespace Infinity.Core
 {
-    public delegate bool AcceptConnectionCheck(IPEndPoint endPoint, byte[] input, out byte[] response);
+    public delegate bool HandshakeCheck(IPEndPoint endPoint, byte[] input, out byte[] response);
 
     /// <summary>
     ///     Abstract base class for a <see cref="ConnectionListener"/> for network based connections.
@@ -34,7 +34,7 @@ namespace Infinity.Core
         /// * Return false to reject connection.
         /// * A null response is ok, we just won't send anything.
         /// </summary>
-        public AcceptConnectionCheck? HandshakeConnection;
+        public HandshakeCheck? HandshakeConnection;
 
         /// <summary>
         ///     Invoked when a new client connects.
