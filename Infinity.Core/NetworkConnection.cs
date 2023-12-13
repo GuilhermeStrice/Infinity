@@ -42,9 +42,11 @@ namespace Infinity.Core
         /// </example>
         public event Action<DisconnectedEventArgs>? Disconnected;
 
+#if DEBUG
         public int TestLagMs = -1;
         public int TestDropRate = 0;
         protected int testDropCount = 0;
+#endif
 
         public event EventHandler<MessageWriter>? BeforeSend;
         public event EventHandler<MessageReader>? BeforeReceive;

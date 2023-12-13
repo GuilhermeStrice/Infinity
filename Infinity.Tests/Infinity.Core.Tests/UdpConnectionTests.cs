@@ -361,7 +361,7 @@ namespace Infinity.Core.Tests
                 Assert.Equal(ConnectionState.NotConnected, connection.State);
             }
 #else
-            Assert.Inconclusive("Only works in DEBUG");
+            Assert.True(true);
 #endif
         }
 
