@@ -27,25 +27,6 @@ namespace Infinity.Core
 
         #region WriteMethods
 
-        public void CopyFrom(MessageReader other)
-        {
-            int offset, length;
-            if (other.Tag == byte.MaxValue) // no idea what this is
-            {
-                offset = other.Offset;
-                length = other.Length;
-            }
-            else
-            {
-                offset = other.Offset - 3;
-                length = other.Length + 3;
-            }
-
-            System.Buffer.BlockCopy(other.Buffer, offset, Buffer, Position, length);
-            Position += length;
-            if (Position > Length) Length = Position;
-        }
-
         public void Write(bool value)
         {
             Buffer[Position++] = (byte)(value ? 1 : 0);

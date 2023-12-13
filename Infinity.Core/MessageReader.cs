@@ -8,7 +8,6 @@ namespace Infinity.Core
         internal static readonly ObjectPool<MessageReader> ReaderPool = new ObjectPool<MessageReader>(() => new MessageReader());
 
         public byte[] ?Buffer;
-        public byte Tag;
 
         public int Length;
         public int Offset;
@@ -206,7 +205,6 @@ namespace Infinity.Core
             output.Offset = 0;
             output.Position = 0;
             output.Length = buffer.Length;
-            output.Tag = byte.MaxValue;
 
             return output;
         }
@@ -226,7 +224,6 @@ namespace Infinity.Core
 
             output.Offset = 0;
             output.Position = 0;
-            output.Tag = byte.MaxValue;
             return output;
         }
 
@@ -241,28 +238,6 @@ namespace Infinity.Core
             output.readHead = source.readHead;
 
             output.Length = source.Length;
-            output.Tag = source.Tag;
-
-            return output;
-        }
-
-        public static MessageReader? Get(byte[] buffer, int offset)
-        {
-            // Ensure there is at least a header
-            if (offset + 3 > buffer.Length)
-                return null;
-
-            var output = ReaderPool.GetObject();
-
-            output.Buffer = buffer;
-            output.Offset = offset;
-            output.Position = 0;
-
-            output.Length = output.ReadUInt16();
-            output.Tag = output.ReadByte();
-
-            output.Offset += 3;
-            output.Position = 0;
 
             return output;
         }
