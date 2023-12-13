@@ -2,7 +2,7 @@
 {
     public struct DataReceivedEventArgs
     {
-        public readonly NetworkConnection Sender;
+        public readonly NetworkConnection Connection;
 
         /// <summary>
         ///     The bytes received from the client.
@@ -14,16 +14,18 @@
         /// </summary>
         public readonly byte SendOption;
 
-        public DataReceivedEventArgs(NetworkConnection sender, MessageReader msg, byte sendOption)
+        public DataReceivedEventArgs(NetworkConnection connection, MessageReader msg, byte sendOption)
         {
-            Sender = sender;
+            Connection = connection;
             Message = msg;
             SendOption = sendOption;
         }
     }
 
-    public class DisconnectedEventArgs : EventArgs
+    public struct DisconnectedEventArgs
     {
+        public readonly NetworkConnection Connection;
+
         /// <summary>
         /// Optional disconnect reason. May be null.
         /// </summary>
@@ -35,8 +37,9 @@
         /// </summary>
         public readonly MessageReader Message;
 
-        public DisconnectedEventArgs(string reason, MessageReader message)
+        public DisconnectedEventArgs(NetworkConnection connection, string reason, MessageReader message)
         {
+            Connection = connection;
             Reason = reason;
             Message = message;
         }
@@ -44,21 +47,18 @@
 
     public struct NewConnectionEventArgs
     {
+        public readonly NetworkConnection Connection;
+
         /// <summary>
         /// The data received from the client in the handshake.
         /// You must not recycle this. If you need the message outside of a callback, you should copy it.
         /// </summary>
         public readonly MessageReader HandshakeData;
 
-        /// <summary>
-        /// The <see cref="Connection"/> to the new client.
-        /// </summary>
-        public readonly NetworkConnection Connection;
-
-        public NewConnectionEventArgs(MessageReader handshakeData, NetworkConnection connection)
+        public NewConnectionEventArgs(NetworkConnection connection, MessageReader handshakeData)
         {
-            HandshakeData = handshakeData;
             Connection = connection;
+            HandshakeData = handshakeData;
         }
     }
 }

@@ -116,7 +116,7 @@ namespace Infinity.Core.Tests
         {
             var mutex = new ManualResetEvent(false);
 
-            connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args)
+            connection.Disconnected += delegate (DisconnectedEventArgs args)
             {
                 mutex.Set();
             };
@@ -145,7 +145,7 @@ namespace Infinity.Core.Tests
 
             listener.NewConnection += delegate (NewConnectionEventArgs args)
             {
-                args.Connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (DisconnectedEventArgs args2)
                 {
                     mutex2.Set();
                 };
@@ -176,7 +176,7 @@ namespace Infinity.Core.Tests
 
             listener.NewConnection += delegate (NewConnectionEventArgs args)
             {
-                args.Connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (DisconnectedEventArgs args2)
                 {
                     mutex2.Set();
                 };

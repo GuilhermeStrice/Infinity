@@ -26,10 +26,6 @@ namespace Infinity.Core
         /// </example>
         public event Action<DataReceivedEventArgs>? DataReceived;
 
-        public int TestLagMs = -1;
-        public int TestDropRate = 0;
-        protected int testDropCount = 0;
-
         /// <summary>
         ///     Called when the end point disconnects or an error occurs.
         /// </summary>
@@ -44,7 +40,11 @@ namespace Infinity.Core
         /// <example>
         ///     <code language="C#" source="DocInclude/TcpClientExample.cs"/>
         /// </example>
-        public event EventHandler<DisconnectedEventArgs>? Disconnected;
+        public event Action<DisconnectedEventArgs>? Disconnected;
+
+        public int TestLagMs = -1;
+        public int TestDropRate = 0;
+        protected int testDropCount = 0;
 
         public event EventHandler<MessageWriter>? BeforeSend;
         public event EventHandler<MessageReader>? BeforeReceive;
@@ -275,18 +275,10 @@ namespace Infinity.Core
         /// </remarks>
         protected void InvokeDisconnected(string e, MessageReader msg)
         {
-            // Make a copy to avoid race condition between null check and invocation
-            EventHandler<DisconnectedEventArgs> handler = Disconnected;
-            if (handler != null)
+            if (Disconnected != null)
             {
-                DisconnectedEventArgs args = new DisconnectedEventArgs(e, msg);
-                try
-                {
-                    handler(this, args);
-                }
-                catch
-                {
-                }
+                DisconnectedEventArgs args = new DisconnectedEventArgs(this, e, msg);
+                Disconnected?.Invoke(args);
             }
             else
             {
@@ -297,16 +289,12 @@ namespace Infinity.Core
 
         protected void InvokeBeforeSend(MessageWriter writer)
         {
-            EventHandler<MessageWriter> handler = BeforeSend;
-            if (handler != null)
-                handler(this, writer);
+            BeforeSend?.Invoke(this, writer);
         }
 
         protected void InvokeBeforeReceive(MessageReader reader)
         {
-            EventHandler<MessageReader> handler = BeforeReceive;
-            if (handler != null)
-                handler(this, reader);
+            BeforeReceive?.Invoke(this, reader);
         }
 
         /// <summary>

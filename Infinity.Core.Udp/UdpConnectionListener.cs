@@ -243,7 +243,7 @@ namespace Infinity.Core.Udp
                 message.Offset = 4;
                 message.Length = bytesReceived - 4;
                 message.Position = 0;
-                InvokeNewConnection(message, connection);
+                InvokeNewConnection(connection, message);
             }
 
             // Inform the connection of the buffer (new connections need to send an ack back to client)

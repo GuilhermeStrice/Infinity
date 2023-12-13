@@ -27,9 +27,9 @@ namespace Infinity.Core.Tests
                 listener.NewConnection += (evt) =>
                 {
                     serverConnected = true;
-                    evt.Connection.Disconnected += (o, et) => clientDisconnected = true;
+                    evt.Connection.Disconnected += (et) => clientDisconnected = true;
                 };
-                connection.Disconnected += (o, evt) => serverDisconnected = true;
+                connection.Disconnected += (evt) => serverDisconnected = true;
 
                 listener.Start();
                 connection.Connect();
@@ -59,10 +59,10 @@ namespace Infinity.Core.Tests
                 listener.NewConnection += (evt) =>
                 {
                     serverConnected = true;
-                    evt.Connection.Disconnected += (o, et) => serverDisconnected = true;
+                    evt.Connection.Disconnected += (et) => serverDisconnected = true;
                 };
 
-                connection.Disconnected += (o, et) => clientDisconnected = true;
+                connection.Disconnected += (et) => clientDisconnected = true;
 
                 listener.Start();
                 connection.Connect();
@@ -477,7 +477,7 @@ namespace Infinity.Core.Tests
                 string received = null;
                 ManualResetEvent mutex = new ManualResetEvent(false);
 
-                connection.Disconnected += delegate (object? sender, DisconnectedEventArgs args)
+                connection.Disconnected += delegate (DisconnectedEventArgs args)
                 {
                     // We don't own the message, we have to read the string now
                     received = args.Message.ReadString();

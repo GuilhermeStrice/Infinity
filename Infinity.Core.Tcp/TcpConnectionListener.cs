@@ -104,7 +104,7 @@ namespace Infinity.Core.Tcp
                 }
             }
 
-            InvokeNewConnection(handshakeData, connection);
+            InvokeNewConnection(connection, handshakeData);
         }
 
         protected override void Dispose(bool disposing)

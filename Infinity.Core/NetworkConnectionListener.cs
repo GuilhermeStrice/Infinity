@@ -92,20 +92,10 @@ namespace Infinity.Core
         ///     Implementers should call this to invoke the <see cref="NewConnection"/> event before data is received so that
         ///     subscribers do not miss any data that may have been sent immediately after connecting.
         /// </remarks>
-        protected void InvokeNewConnection(MessageReader msg, NetworkConnection connection)
+        protected void InvokeNewConnection(NetworkConnection connection, MessageReader msg)
         {
-            // Make a copy to avoid race condition between null check and invocation
-            Action<NewConnectionEventArgs> handler = NewConnection;
-            if (handler != null)
-            {
-                try
-                {
-                    handler(new NewConnectionEventArgs(msg, connection));
-                }
-                catch (Exception)
-                {
-                }
-            }
+            var args = new NewConnectionEventArgs(connection, msg);
+            NewConnection?.Invoke(args);
         }
 
         /// <summary>
@@ -113,18 +103,7 @@ namespace Infinity.Core
         /// </summary>
         protected void InvokeInternalError(InfinityInternalErrors reason)
         {
-            // Make a copy to avoid race condition between null check and invocation
-            Action<InfinityInternalErrors> handler = OnInternalError;
-            if (handler != null)
-            {
-                try
-                {
-                    handler(reason);
-                }
-                catch
-                {
-                }
-            }
+            OnInternalError?.Invoke(reason);
         }
 
         /// <summary>
