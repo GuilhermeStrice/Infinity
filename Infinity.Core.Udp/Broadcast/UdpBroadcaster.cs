@@ -5,21 +5,20 @@ using System.Collections.Concurrent;
 
 namespace Infinity.Core.Udp.Broadcast
 {
-    public class UdpBroadcastServer : IDisposable
+    public class UdpBroadcaster : IDisposable
     {
-        private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses;
+        private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses = new ConcurrentDictionary<IPEndPoint, Socket>();
         private byte[] identifier;
         private ILogger logger;
 
-        public UdpBroadcastServer(int port, byte[] identifier, ILogger logger = null)
+        public UdpBroadcaster(int port, byte[] identifier, ILogger logger = null)
         {
-            if (identifier == null)
-                throw new UdpBroadcastException("identifier can't be null");
+            if (identifier == null || identifier.Length == 0)
+            {
+                throw new ArgumentException("UdpBroadcaster: identifier can't be null and it's length must be greater than 0");
+            }
 
             this.identifier = identifier;
-
-            availableAddresses = new ConcurrentDictionary<IPEndPoint, Socket>();
-
             this.logger = logger;
 
             var addresses = Util.GetAddressesFromNetworkInterfaces(AddressFamily.InterNetwork);
@@ -53,9 +52,9 @@ namespace Infinity.Core.Udp.Broadcast
 
         public void Broadcast(byte[] data)
         {
-            if (data == null)
+            if (data == null || data.Length == 0)
             {
-                throw new UdpBroadcastException("Set some data please");
+                throw new ArgumentException("Data argument must not be null and it's length must be greater than 0");
             }
 
             int data_length = data.Length;
@@ -66,12 +65,12 @@ namespace Infinity.Core.Udp.Broadcast
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
             Array.Copy(data, 0, buffer, identifier_length, data_length);
 
-            foreach (var aa in availableAddresses)
+            foreach (var available_addr in availableAddresses)
             {
                 try
                 {
-                    Socket socket = aa.Value;
-                    IPEndPoint address = aa.Key;
+                    Socket socket = available_addr.Value;
+                    IPEndPoint address = available_addr.Key;
                     socket.BeginSendTo(buffer, 0, buffer.Length, SocketFlags.None, address, FinishSendTo, socket);
                 }
                 catch (Exception e)

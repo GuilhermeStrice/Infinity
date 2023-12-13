@@ -28,8 +28,8 @@ namespace Infinity.Core.Tests
                 1
             };
 
-            using (UdpBroadcastServer server = new UdpBroadcastServer(47777, identifier))
-            using (UdpBroadcastClient client = new UdpBroadcastClient(47777, identifier))
+            using (UdpBroadcaster server = new UdpBroadcaster(47777, identifier))
+            using (UdpBroadcastListener client = new UdpBroadcastListener(47777, identifier))
             {
                 server.Broadcast(TestData);
                 Thread.Sleep(1000);

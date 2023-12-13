@@ -6,14 +6,13 @@ namespace Infinity.Core.Udp.Broadcast
 {
     public delegate void OnBroadcastReceive(byte[] data, IPEndPoint sender);
 
-    public class UdpBroadcastClient : IDisposable
+    public class UdpBroadcastListener : IDisposable
     {
         private Socket socket;
-        private EndPoint endpoint;
+        private IPEndPoint endpoint;
         private ILogger logger;
 
         private byte[] buffer = new byte[8086];
-
         private byte[] identifier;
 
         public bool Running { get; private set; }
@@ -23,27 +22,38 @@ namespace Infinity.Core.Udp.Broadcast
         /// </summary>
         public int PollTime { get; set; } = 1000;
 
-        public event OnBroadcastReceive OnBroadcastReceive;
+        public event OnBroadcastReceive? OnBroadcastReceive;
 
-        public UdpBroadcastClient(int port, byte[] identifier, ILogger logger = null)
+        public UdpBroadcastListener(int port, byte[] identifier, ILogger logger = null)
         {
-            if (identifier == null)
-                throw new UdpBroadcastException("identifier can't be null");
+            if (identifier == null || identifier.Length == 0)
+            {
+                throw new ArgumentException("Identifier paramenter must not be null and it's length must be greater than 0");
+            }
 
             this.identifier = identifier;
-
             this.logger = logger;
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            endpoint = new IPEndPoint(IPAddress.Any, port);
+            socket = CreateSocket(endpoint);
+        }
+
+        private static Socket CreateSocket(IPEndPoint endPoint)
+        {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.EnableBroadcast = true;
             socket.MulticastLoopback = false;
-            endpoint = new IPEndPoint(IPAddress.Any, port);
-            socket.Bind(endpoint);
+            socket.Bind(endPoint);
+
+            return socket;
         }
 
         public void StartListen()
         {
             if (Running)
+            {
                 return;
+            }
             
             Running = true;
 
