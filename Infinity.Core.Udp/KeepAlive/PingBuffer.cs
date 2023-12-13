@@ -10,52 +10,52 @@
             public DateTime SentAt;
         }
 
-        private PingInfo[] activePings;
+        private PingInfo[] active_pings;
         private int head; // The location of the next usable activePing
 
-        public PingBuffer(int maxPings)
+        public PingBuffer(int _max_pings)
         {
-            activePings = new PingInfo[maxPings];
+            active_pings = new PingInfo[_max_pings];
 
             // We don't want the first few packets to match id before we set anything.
-            for (int i = 0; i < activePings.Length; ++i)
+            for (int i = 0; i < active_pings.Length; ++i)
             {
-                activePings[i].Id = InvalidatingFactor;
+                active_pings[i].Id = InvalidatingFactor;
             }
         }
 
-        public void AddPing(ushort id)
+        public void AddPing(ushort _id)
         {
-            lock (activePings)
+            lock (active_pings)
             {
-                activePings[head].Id = id;
-                activePings[head].SentAt = DateTime.UtcNow;
+                active_pings[head].Id = _id;
+                active_pings[head].SentAt = DateTime.UtcNow;
 
                 head++;
 
-                if (head >= activePings.Length)
+                if (head >= active_pings.Length)
                 {
                     head = 0;
                 }
             }
         }
 
-        public bool TryFindPing(ushort id, out DateTime sentAt)
+        public bool TryFindPing(ushort _id, out DateTime _sent_at)
         {
-            lock (activePings)
+            lock (active_pings)
             {
-                for (int i = 0; i < activePings.Length; ++i)
+                for (int i = 0; i < active_pings.Length; ++i)
                 {
-                    if (activePings[i].Id == id)
+                    if (active_pings[i].Id == _id)
                     {
-                        sentAt = activePings[i].SentAt;
-                        activePings[i].Id += InvalidatingFactor;
+                        _sent_at = active_pings[i].SentAt;
+                        active_pings[i].Id += InvalidatingFactor;
                         return true;
                     }
                 }
             }
 
-            sentAt = default;
+            _sent_at = default;
             return false;
         }
     }

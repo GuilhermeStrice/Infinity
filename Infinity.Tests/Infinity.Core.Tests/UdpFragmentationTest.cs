@@ -28,8 +28,8 @@ namespace Infinity.Core.Tests
                         var messageReader = data.Message;
                         Assert.NotNull(data.Message);
 
-                        var received = new byte[messageReader.Length];
-                        Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length);
+                        var received = new byte[messageReader.Length - 3];
+                        Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length - 3);
 
                         Assert.Equal(_testData, received);
                         data.Message.Recycle();
@@ -41,9 +41,9 @@ namespace Infinity.Core.Tests
                 listener.Start();
                 connection.Connect();
 
-                var message = MessageWriter.Get(UdpSendOption.Reliable, 3);
-                message.Buffer = _testData;
-                message.Length = _testData.Length;
+                var message = MessageWriter.Get(3);
+                message.Buffer[0] = UdpSendOption.Reliable;
+                message.Write(_testData, _testData.Length);
 
                 connection.Send(message);
 
@@ -73,11 +73,10 @@ namespace Infinity.Core.Tests
                         var messageReader = data.Message;
                         Assert.NotNull(data.Message);
 
-                        var received = new byte[messageReader.Length];
-                        Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length);
+                        var received = new byte[messageReader.Length - 3];
+                        Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length - 3);
 
                         Assert.Equal(_testData, received);
-
                         data.Message.Recycle();
 
                         if (count == 100)
@@ -90,14 +89,14 @@ namespace Infinity.Core.Tests
 
                 Thread.Sleep(100);
 
-                var message = MessageWriter.Get(UdpSendOption.Reliable, 3);
-                message.Buffer = _testData;
-                message.Length = _testData.Length;
+                var message = MessageWriter.Get(3);
+                message.Buffer[0] = UdpSendOption.Reliable;
+                message.Write(_testData, _testData.Length);
 
                 for (int i = 0; i < 100; i++)
                 {
                     connection.Send(message);
-                    Thread.Sleep(10);
+                    Thread.Sleep(5);
                 }
 
                 message.Recycle();

@@ -10,37 +10,37 @@ namespace Infinity.Core.Udp
     /// </summary>
     public class UdpConnectionListener : NetworkConnectionListener
     {
-        private const int SendReceiveBufferSize = 1024 * 1024;
+        private const int send_receive_buffer_size = 1024 * 1024;
 
         private Socket socket;
-        private ILogger Logger;
-        private Timer reliablePacketTimer;
+        private ILogger logger;
+        private Timer reliable_packet_timer;
 
-        private ConcurrentDictionary<EndPoint, UdpServerConnection> allConnections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
+        private ConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
 
         public UdpListenerStatistics Statistics { get; private set; }
 
-        public override double AveragePing => allConnections.Values.Sum(c => c.AveragePingMs) / allConnections.Count;
-        public override int ConnectionCount => allConnections.Count;
+        public override double AveragePing => all_connections.Values.Sum(c => c.AveragePingMs) / all_connections.Count;
+        public override int ConnectionCount => all_connections.Count;
 
         /// <summary>
         ///     Creates a new UdpConnectionListener for the given <see cref="IPAddress"/>, port and <see cref="IPMode"/>.
         /// </summary>
-        /// <param name="endPoint">The endpoint to listen on.</param>
-        public UdpConnectionListener(IPEndPoint endPoint, IPMode ipMode = IPMode.IPv4, ILogger logger = null)
+        /// <param name="_endpoint">The endpoint to listen on.</param>
+        public UdpConnectionListener(IPEndPoint _endpoint, IPMode _ip_mode = IPMode.IPv4, ILogger _logger = null)
         {
             Statistics = new UdpListenerStatistics();
 
-            Logger = logger;
-            EndPoint = endPoint;
-            IPMode = ipMode;
+            logger = _logger;
+            EndPoint = _endpoint;
+            IPMode = _ip_mode;
 
             socket = CreateSocket(Protocol.Udp, IPMode);
 
-            socket.ReceiveBufferSize = SendReceiveBufferSize;
-            socket.SendBufferSize = SendReceiveBufferSize;
+            socket.ReceiveBufferSize = send_receive_buffer_size;
+            socket.SendBufferSize = send_receive_buffer_size;
 
-            reliablePacketTimer = new Timer(ManageReliablePackets, null, 100, Timeout.Infinite);
+            reliable_packet_timer = new Timer(ManageReliablePackets, null, 100, Timeout.Infinite);
         }
 
         ~UdpConnectionListener()
@@ -48,17 +48,17 @@ namespace Infinity.Core.Udp
             Dispose(false);
         }
 
-        private void ManageReliablePackets(object ?state)
+        private void ManageReliablePackets(object? _state)
         {
-            foreach (var kvp in allConnections)
+            foreach (var ep_connection in all_connections)
             {
-                var sock = kvp.Value;
-                sock.ManageReliablePackets();
+                var connection = ep_connection.Value;
+                connection.ManageReliablePackets();
             }
 
             try
             {
-                reliablePacketTimer.Change(100, Timeout.Infinite);
+                reliable_packet_timer.Change(100, Timeout.Infinite);
             }
             catch { }
         }
@@ -84,17 +84,17 @@ namespace Infinity.Core.Udp
         {
             EndPoint remoteEP = EndPoint;
 
-            MessageReader message = null;
+            MessageReader reader = null;
             try
             {
-                message = MessageReader.GetSized(ReceiveBufferSize);
-                socket.BeginReceiveFrom(message.Buffer, 0, message.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, message);
+                reader = MessageReader.GetSized(ReceiveBufferSize);
+                socket.BeginReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, reader);
             }
             catch (SocketException sx)
             {
-                message?.Recycle();
+                reader?.Recycle();
 
-                Logger?.WriteError("Socket Ex in StartListening: " + sx.Message);
+                logger?.WriteError("Socket Ex in StartListening: " + sx.Message);
 
                 Thread.Sleep(10);
                 StartListeningForData();
@@ -102,41 +102,41 @@ namespace Infinity.Core.Udp
             }
             catch (Exception ex)
             {
-                message?.Recycle();
-                Logger?.WriteError("Stopped due to: " + ex.Message);
+                reader?.Recycle();
+                logger?.WriteError("Stopped due to: " + ex.Message);
                 return;
             }
         }
 
-        void ReadCallback(IAsyncResult result)
+        void ReadCallback(IAsyncResult _result)
         {
-            var message = (MessageReader)result.AsyncState;
-            int bytesReceived;
-            EndPoint remoteEndPoint = new IPEndPoint(EndPoint.Address, EndPoint.Port);
+            MessageReader reader = (MessageReader)_result.AsyncState;
+            int bytes_received;
+            EndPoint remote_end_point = new IPEndPoint(EndPoint.Address, EndPoint.Port);
 
             //End the receive operation
             try
             {
-                bytesReceived = socket.EndReceiveFrom(result, ref remoteEndPoint);
+                bytes_received = socket.EndReceiveFrom(_result, ref remote_end_point);
 
-                message.Offset = 0;
-                message.Length = bytesReceived;
+                reader.Offset = 0;
+                reader.Length = bytes_received;
             }
             catch (ObjectDisposedException)
             {
-                message.Recycle();
+                reader.Recycle();
                 return;
             }
             catch (SocketException sx)
             {
-                message.Recycle();
+                reader.Recycle();
                 if (sx.SocketErrorCode == SocketError.NotConnected)
                 {
                     InvokeInternalError(InfinityInternalErrors.ConnectionDisconnected);
                     return;
                 }
 
-                Logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
+                logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
 
                 Thread.Sleep(10);
                 StartListeningForData();
@@ -145,17 +145,17 @@ namespace Infinity.Core.Udp
             catch (Exception ex)
             {
                 // Idk, maybe a null ref after dispose?
-                message.Recycle();
-                Logger?.WriteError("Stopped due to: " + ex.Message);
+                reader.Recycle();
+                logger?.WriteError("Stopped due to: " + ex.Message);
                 return;
             }
 
             // I'm a little concerned about a infinite loop here, but it seems like it's possible 
             // to get 0 bytes read on UDP without the socket being shut down.
-            if (bytesReceived == 0)
+            if (bytes_received == 0)
             {
-                message.Recycle();
-                Logger?.WriteInfo("Received 0 bytes");
+                reader.Recycle();
+                logger?.WriteInfo("Received 0 bytes");
                 Thread.Sleep(10);
                 StartListeningForData();
                 return;
@@ -165,35 +165,35 @@ namespace Infinity.Core.Udp
             StartListeningForData();
 
             bool aware = true;
-            bool isHandshake = message.Buffer[0] == UdpSendOptionInternal.Handshake;
+            bool is_handshake = reader.Buffer[0] == UdpSendOptionInternal.Handshake;
 
             // If we're aware of this connection use the one already
             // If this is a new client then connect with them!
             UdpServerConnection connection;
-            if (!allConnections.TryGetValue(remoteEndPoint, out connection))
+            if (!all_connections.TryGetValue(remote_end_point, out connection))
             {
                 // Check for malformed connection attempts
-                if (!isHandshake)
+                if (!is_handshake)
                 {
-                    message.Recycle();
+                    reader.Recycle();
                     return;
                 }
 
                 if (HandshakeConnection != null && 
-                    !HandshakeConnection((IPEndPoint)remoteEndPoint, message.Buffer, out var response))
+                    !HandshakeConnection((IPEndPoint)remote_end_point, reader.Buffer, out var response))
                 {
-                    message.Recycle();
+                    reader.Recycle();
                     if (response != null)
                     {
-                        SendData(response, response.Length, remoteEndPoint);
+                        SendData(response, response.Length, remote_end_point);
                     }
 
                     return;
                 }
 
                 aware = false;
-                connection = new UdpServerConnection(this, (IPEndPoint)remoteEndPoint, IPMode, Logger);
-                allConnections.TryAdd(remoteEndPoint, connection);
+                connection = new UdpServerConnection(this, (IPEndPoint)remote_end_point, IPMode, logger);
+                all_connections.TryAdd(remote_end_point, connection);
             }
 
             // If it's a new connection invoke the NewConnection event.
@@ -202,34 +202,37 @@ namespace Infinity.Core.Udp
             if (!aware)
             {
                 // Skip header and Handshake byte;
-                message.Offset = 4;
-                message.Length = bytesReceived - 4;
-                message.Position = 0;
-                InvokeNewConnection(connection, message);
+                reader.Offset = 4;
+                reader.Length = bytes_received - 4;
+                reader.Position = 0;
+                InvokeNewConnection(connection, reader);
             }
 
             // Inform the connection of the buffer (new connections need to send an ack back to client)
-            connection.HandleReceive(message, bytesReceived);
+            connection.HandleReceive(reader, bytes_received);
         }
 
 #if DEBUG
         public int TestDropRate = -1;
-        private int dropCounter = 0;
+        private int drop_counter = 0;
 #endif
 
         /// <summary>
         ///     Sends data from the listener socket.
         /// </summary>
-        /// <param name="bytes">The bytes to send.</param>
-        /// <param name="endPoint">The endpoint to send to.</param>
-        internal void SendData(byte[] bytes, int length, EndPoint endPoint)
+        /// <param name="_bytes">The bytes to send.</param>
+        /// <param name="_endpoint">The endpoint to send to.</param>
+        internal void SendData(byte[] _bytes, int _length, EndPoint _endpoint)
         {
-            if (length > bytes.Length) return;
+            if (_length > _bytes.Length)
+            {
+                return;
+            }
 
 #if DEBUG
             if (TestDropRate > 0)
             {
-                if (Interlocked.Increment(ref dropCounter) % TestDropRate == 0)
+                if (Interlocked.Increment(ref drop_counter) % TestDropRate == 0)
                 {
                     return;
                 }
@@ -239,19 +242,19 @@ namespace Infinity.Core.Udp
             try
             {
                 socket.BeginSendTo(
-                    bytes,
+                    _bytes,
                     0,
-                    length,
+                    _length,
                     SocketFlags.None,
-                    endPoint,
+                    _endpoint,
                     SendCallback,
                     null);
 
-                Statistics.AddBytesSent(length);
+                Statistics.AddBytesSent(_length);
             }
             catch (SocketException e)
             {
-                Logger?.WriteError("Could not send data as a SocketException occurred: " + e);
+                logger?.WriteError("Could not send data as a SocketException occurred: " + e);
             }
             catch (ObjectDisposedException)
             {
@@ -260,11 +263,11 @@ namespace Infinity.Core.Udp
             }
         }
 
-        private void SendCallback(IAsyncResult result)
+        private void SendCallback(IAsyncResult _result)
         {
             try
             {
-                socket.EndSendTo(result);
+                socket.EndSendTo(_result);
             }
             catch { }
         }
@@ -272,21 +275,21 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Sends data from the listener socket.
         /// </summary>
-        /// <param name="bytes">The bytes to send.</param>
-        /// <param name="endPoint">The endpoint to send to.</param>
-        internal void SendDataSync(byte[] bytes, int length, EndPoint endPoint)
+        /// <param name="_bytes">The bytes to send.</param>
+        /// <param name="_endpoint">The endpoint to send to.</param>
+        internal void SendDataSync(byte[] _bytes, int _length, EndPoint _endpoint)
         {
             try
             {
                 socket.SendTo(
-                    bytes,
+                    _bytes,
                     0,
-                    length,
+                    _length,
                     SocketFlags.None,
-                    endPoint
+                    _endpoint
                 );
 
-                Statistics.AddBytesSent(length);
+                Statistics.AddBytesSent(_length);
             }
             catch { }
         }
@@ -294,26 +297,26 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Removes a virtual connection from the list.
         /// </summary>
-        /// <param name="endPoint">The endpoint of the virtual connection.</param>
-        internal void RemoveConnectionTo(EndPoint endPoint)
+        /// <param name="_endpoint">The endpoint of the virtual connection.</param>
+        internal void RemoveConnectionTo(EndPoint _endpoint)
         {
-            allConnections.TryRemove(endPoint, out var conn);
+            all_connections.TryRemove(_endpoint, out var conn);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool _disposing)
         {
-            foreach (var kvp in allConnections)
+            foreach (var entry in all_connections)
             {
-                kvp.Value.Dispose();
+                entry.Value.Dispose();
             }
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }
             try { socket.Dispose(); } catch { }
 
-            reliablePacketTimer.Dispose();
+            reliable_packet_timer.Dispose();
 
-            base.Dispose(disposing);
+            base.Dispose(_disposing);
         }
     }
 }

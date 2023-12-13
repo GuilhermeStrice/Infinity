@@ -2,12 +2,12 @@
 {
     public class UdpListenerStatistics
     {
-        private long _bytesSent;
-        public long BytesSent => _bytesSent;
+        private long bytes_sent;
+        public long BytesSent => bytes_sent;
 
         public void AddBytesSent(long bytes)
         {
-            Interlocked.Add(ref _bytesSent, bytes);
+            Interlocked.Add(ref bytes_sent, bytes);
         }
     }
 }

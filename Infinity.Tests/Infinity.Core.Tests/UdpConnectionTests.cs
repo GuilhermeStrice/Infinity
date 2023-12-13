@@ -139,6 +139,7 @@ namespace Infinity.Core.Tests
                     e.Connection.DataReceived += delegate (DataReceivedEventArgs evt)
                     {
                         output = evt.Message;
+                        output.Position++;
                     };
                 };
 
@@ -147,7 +148,8 @@ namespace Infinity.Core.Tests
 
                 for (int i = 0; i < 4; ++i)
                 {
-                    var msg = MessageWriter.Get(UdpSendOption.Unreliable, 1);
+                    var msg = MessageWriter.Get(1);
+                    msg.Buffer[0] = UdpSendOption.Unreliable;
                     msg.Write(TestData);
                     connection.Send(msg);
                     msg.Recycle();
@@ -491,7 +493,8 @@ namespace Infinity.Core.Tests
                     Task.Run(async () =>
                     {
                         await Task.Delay(100);
-                        MessageWriter writer = MessageWriter.Get(UdpSendOption.Unreliable, 1);
+                        MessageWriter writer = MessageWriter.Get(1);
+                        writer.Buffer[0] = UdpSendOption.Unreliable;
                         writer.Write("Goodbye");
                         args.Connection.Disconnect("Testing", writer);
                     });

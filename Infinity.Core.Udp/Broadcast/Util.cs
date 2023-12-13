@@ -12,7 +12,7 @@ namespace Infinity.Core.Udp.Broadcast
             if (nics == null || nics.Length < 1)
                 return new NetworkInterface[0];
 
-            var validInterfaces = new List<NetworkInterface>(nics.Length);
+            var valid_interfaces = new List<NetworkInterface>(nics.Length);
 
             NetworkInterface best = null;
             foreach (NetworkInterface adapter in nics)
@@ -41,69 +41,69 @@ namespace Infinity.Core.Udp.Broadcast
 
                 // make sure this adapter has any ip addresses
                 IPInterfaceProperties properties = adapter.GetIPProperties();
-                foreach (UnicastIPAddressInformation unicastAddress in properties.UnicastAddresses)
+                foreach (UnicastIPAddressInformation unicast_address in properties.UnicastAddresses)
                 {
-                    if (unicastAddress != null && unicastAddress.Address != null)
+                    if (unicast_address != null && unicast_address.Address != null)
                     {
                         // Yes it does, add this network interface.
-                        validInterfaces.Add(adapter);
+                        valid_interfaces.Add(adapter);
                         break;
                     }
                 }
             }
 
-            if (validInterfaces.Count == 0 && best != null)
+            if (valid_interfaces.Count == 0 && best != null)
             {
-                validInterfaces.Add(best);
+                valid_interfaces.Add(best);
             }
 
-            return validInterfaces;
+            return valid_interfaces;
         }
 
-        public static ICollection<UnicastIPAddressInformation> GetAddressesFromNetworkInterfaces(AddressFamily addressFamily)
+        public static ICollection<UnicastIPAddressInformation> GetAddressesFromNetworkInterfaces(AddressFamily _address_family)
         {
-            var unicastAddresses = new List<UnicastIPAddressInformation>();
+            var unicast_ddresses = new List<UnicastIPAddressInformation>();
 
             foreach (NetworkInterface adapter in GetValidNetworkInterfaces())
             {
                 IPInterfaceProperties properties = adapter.GetIPProperties();
-                foreach (UnicastIPAddressInformation unicastAddress in properties.UnicastAddresses)
+                foreach (UnicastIPAddressInformation unicast_address in properties.UnicastAddresses)
                 {
-                    if (unicastAddress != null && unicastAddress.Address != null
-                        && unicastAddress.Address.AddressFamily == addressFamily)
+                    if (unicast_address != null && unicast_address.Address != null
+                        && unicast_address.Address.AddressFamily == _address_family)
                     {
-                        unicastAddresses.Add(unicastAddress);
+                        unicast_ddresses.Add(unicast_address);
                         break;
                     }
                 }
             }
 
-            return unicastAddresses;
+            return unicast_ddresses;
         }
 
-        public static IPAddress? GetBroadcastAddress(UnicastIPAddressInformation unicastAddress)
+        public static IPAddress? GetBroadcastAddress(UnicastIPAddressInformation _unicast_address)
         {
-            if (unicastAddress != null && unicastAddress.Address != null
-                && unicastAddress.Address.AddressFamily == AddressFamily.InterNetwork)
+            if (_unicast_address != null && _unicast_address.Address != null
+                && _unicast_address.Address.AddressFamily == AddressFamily.InterNetwork)
             {
-                var mask = unicastAddress.IPv4Mask;
+                var mask = _unicast_address.IPv4Mask;
 
-                byte[] ipAdressBytes = unicastAddress.Address.GetAddressBytes();
-                byte[] subnetMaskBytes = mask.GetAddressBytes();
+                byte[] ip_adress_bytes = _unicast_address.Address.GetAddressBytes();
+                byte[] subnet_mask_bytes = mask.GetAddressBytes();
 
-                if (ipAdressBytes.Length != subnetMaskBytes.Length)
+                if (ip_adress_bytes.Length != subnet_mask_bytes.Length)
                 {
                     throw new ArgumentException("Lengths of IP address and subnet mask do not match.");
                 }
 
-                byte[] broadcastAddress = new byte[ipAdressBytes.Length];
+                byte[] broadcast_address = new byte[ip_adress_bytes.Length];
 
-                for (int i = 0; i < broadcastAddress.Length; i++)
+                for (int i = 0; i < broadcast_address.Length; i++)
                 {
-                    broadcastAddress[i] = (byte)(ipAdressBytes[i] | (subnetMaskBytes[i] ^ 255));
+                    broadcast_address[i] = (byte)(ip_adress_bytes[i] | (subnet_mask_bytes[i] ^ 255));
                 }
 
-                return new IPAddress(broadcastAddress);
+                return new IPAddress(broadcast_address);
             }
 
             return null;

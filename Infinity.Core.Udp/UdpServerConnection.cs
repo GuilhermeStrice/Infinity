@@ -19,30 +19,27 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Creates a UdpConnection for the virtual connection to the endpoint.
         /// </summary>
-        /// <param name="listener">The listener that created this connection.</param>
-        /// <param name="endPoint">The endpoint that we are connected to.</param>
+        /// <param name="_listener">The listener that created this connection.</param>
+        /// <param name="_endpoint">The endpoint that we are connected to.</param>
         /// <param name="IPMode">The IPMode we are connected using.</param>
-        public UdpServerConnection(UdpConnectionListener listener, IPEndPoint endPoint, IPMode ipMode, ILogger logger)
-            : base(logger)
+        public UdpServerConnection(UdpConnectionListener _listener, IPEndPoint _endpoint, IPMode _ip_mode, ILogger _logger)
+            : base(_logger)
         {
-            Listener = listener;
-            EndPoint = endPoint;
-            IPMode = ipMode;
+            Listener = _listener;
+            EndPoint = _endpoint;
+            IPMode = _ip_mode;
 
             State = ConnectionState.Connected;
             InitializeKeepAliveTimer();
         }
 
-        public override void WriteBytesToConnection(byte[] bytes, int length)
+        public override void WriteBytesToConnection(byte[] _bytes, int _length)
         {
-            Statistics.LogPacketSent(length);
-            Listener.SendData(bytes, length, EndPoint);
+            Statistics.LogPacketSent(_length);
+            Listener.SendData(_bytes, _length, EndPoint);
         }
 
-        /// <remarks>
-        ///     This will always throw
-        /// </remarks>
-        public override void Connect(byte[] bytes = null, int timeout = 5000)
+        private void NotClient()
         {
             throw new InvalidOperationException("Cannot manually connect a UdpServerConnection, did you mean to use UdpClientConnection?");
         }
@@ -50,15 +47,27 @@ namespace Infinity.Core.Udp
         /// <remarks>
         ///     This will always throw
         /// </remarks>
-        public override void ConnectAsync(byte[] bytes = null)
+        public override void Connect(byte[] _bytes = null, int _timeout = 5000)
         {
-            throw new InvalidOperationException("Cannot manually connect a UdpServerConnection, did you mean to use UdpClientConnection?");
+            NotClient();
+        }
+
+        /// <remarks>
+        ///     This will always throw
+        /// </remarks>
+        public override void ConnectAsync(byte[] _bytes = null)
+        {
+            NotClient();
+        }
+
+        protected override void SetState(ConnectionState _state)
+        {
         }
 
         /// <summary>
         ///     Sends a disconnect message to the end point.
         /// </summary>
-        protected override bool SendDisconnect(MessageWriter data = null)
+        protected override bool SendDisconnect(MessageWriter _writer = null)
         {
             lock (this)
             {
@@ -70,15 +79,10 @@ namespace Infinity.Core.Udp
                 state = ConnectionState.NotConnected;
             }
             
-            var bytes = EmptyDisconnectBytes;
-            if (data != null && data.Length > 0)
+            var bytes = empty_disconnect_bytes;
+            if (_writer != null && _writer.Length > 0)
             {
-                if (data.SendOption != UdpSendOption.Unreliable)
-                {
-                    throw new ArgumentException("Disconnect messages can only be unreliable.");
-                }
-
-                bytes = data.ToByteArray(0);
+                bytes = _writer.ToByteArray(0);
                 bytes[0] = UdpSendOption.Disconnect;
             }
 
@@ -91,18 +95,13 @@ namespace Infinity.Core.Udp
             return true;
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool _disposing)
         {
             Listener.RemoveConnectionTo(EndPoint);
 
             SendDisconnect();
 
-            if (disposing)
-            {
-                SendDisconnect();
-            }
-
-            base.Dispose(disposing);
+            base.Dispose(_disposing);
         }
     }
 }

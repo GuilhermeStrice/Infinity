@@ -36,24 +36,24 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Holds the last ID allocated.
         /// </summary>
-        private int lastIDAllocated = -1;
+        private int last_id_allocated = -1;
 
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        internal ConcurrentDictionary<ushort, Packet> reliableDataPacketsSent = new ConcurrentDictionary<ushort, Packet>();
+        internal ConcurrentDictionary<ushort, Packet> reliable_data_packets_sent = new ConcurrentDictionary<ushort, Packet>();
 
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
         /// </summary>
-        private HashSet<ushort> reliableDataPacketsMissing = new HashSet<ushort>();
+        private HashSet<ushort> reliable_data_packets_missing = new HashSet<ushort>();
 
         /// <summary>
         ///     The packet id that was received last.
         /// </summary>
-        protected volatile ushort reliableReceiveLast = ushort.MaxValue;
+        protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
-        private object PingLock = new object();
+        private object ping_lock = new object();
 
         /// <summary>
         ///     Returns the average ping to this endpoint.
@@ -62,7 +62,7 @@ namespace Infinity.Core.Udp
         ///     This returns the average ping for a one-way trip as calculated from the reliable packets that have been sent 
         ///     and acknowledged by the endpoint.
         /// </remarks>
-        private float _pingMs = 500;
+        private float ping_ms = 500;
 
         /// <summary>
         ///     The maximum times a message should be resent before marking the endpoint as disconnected.
@@ -78,15 +78,15 @@ namespace Infinity.Core.Udp
         public int ManageReliablePackets()
         {
             int output = 0;
-            if (reliableDataPacketsSent.Count > 0)
+            if (reliable_data_packets_sent.Count > 0)
             {
-                foreach (var kvp in reliableDataPacketsSent)
+                foreach (var id_packet in reliable_data_packets_sent)
                 {
-                    Packet pkt = kvp.Value;
+                    Packet packet = id_packet.Value;
 
                     try
                     {
-                        output += pkt.Resend();
+                        output += packet.Resend();
                     }
                     catch { }
                 }
@@ -98,31 +98,31 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Adds a 2 byte ID to the packet at offset and stores the packet reference for retransmission.
         /// </summary>
-        /// <param name="buffer">The buffer to attach to.</param>
-        /// <param name="offset">The offset to attach at.</param>
-        /// <param name="ackCallback">The callback to make once the packet has been acknowledged.</param>
-        protected void AttachReliableID(byte[] buffer, int offset, Action ackCallback = null)
+        /// <param name="_buffer">The buffer to attach to.</param>
+        /// <param name="_offset">The offset to attach at.</param>
+        /// <param name="_ack_callback">The callback to make once the packet has been acknowledged.</param>
+        protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
         {
-            ushort id = (ushort)Interlocked.Increment(ref lastIDAllocated);
+            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
-            buffer[offset] = (byte)(id >> 8);
-            buffer[offset + 1] = (byte)id;
+            _buffer[_offset] = (byte)(id >> 8);
+            _buffer[_offset + 1] = (byte)id;
 
-            int resendDelayMs = ResendTimeoutMs;
-            if (resendDelayMs <= 0)
+            int resend_delay_ms = ResendTimeoutMs;
+            if (resend_delay_ms <= 0)
             {
-                resendDelayMs = Math.Clamp((int)(_pingMs * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
+                resend_delay_ms = Math.Clamp((int)(ping_ms * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
             }
 
             Packet packet = PacketPool.GetObject();
             packet.Set(
                 id,
-                buffer,
-                buffer.Length,
-                resendDelayMs,
-                ackCallback);
+                _buffer,
+                _buffer.Length,
+                resend_delay_ms,
+                _ack_callback);
 
-            if (!reliableDataPacketsSent.TryAdd(id, packet))
+            if (!reliable_data_packets_sent.TryAdd(id, packet))
             {
                 throw new Exception("That shouldn't be possible");
             }
@@ -131,24 +131,24 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Sends the bytes reliably and stores the send.
         /// </summary>
-        /// <param name="sendOption"></param>
-        /// <param name="data">The byte array to write to.</param>
-        /// <param name="ackCallback">The callback to make once the packet has been acknowledged.</param>
-        private void ReliableSend(byte sendOption, byte[] data, Action ackCallback = null)
+        /// <param name="_send_option"></param>
+        /// <param name="_data">The byte array to write to.</param>
+        /// <param name="_ack_callback">The callback to make once the packet has been acknowledged.</param>
+        private void ReliableSend(byte _send_option, byte[] _data, Action _ack_callback = null)
         {
             //Inform keepalive not to send for a while
             ResetKeepAliveTimer();
 
-            byte[] bytes = new byte[data.Length + 3];
+            byte[] bytes = new byte[_data.Length + 3];
 
             //Add message type
-            bytes[0] = sendOption;
+            bytes[0] = _send_option;
 
             //Add reliable ID
-            AttachReliableID(bytes, 1, ackCallback);
+            AttachReliableID(bytes, 1, _ack_callback);
 
             //Copy data into new array
-            Buffer.BlockCopy(data, 0, bytes, bytes.Length - data.Length, data.Length);
+            Buffer.BlockCopy(_data, 0, bytes, bytes.Length - _data.Length, _data.Length);
 
             //Write to connection
             WriteBytesToConnection(bytes, bytes.Length);
@@ -159,33 +159,33 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Handles a reliable message being received and invokes the data event.
         /// </summary>
-        /// <param name="message">The buffer received.</param>
-        private void ReliableMessageReceive(MessageReader message)
+        /// <param name="_reader">The buffer received.</param>
+        private void ReliableMessageReceive(MessageReader _reader)
         {
             ushort id;
-            if (ProcessReliableReceive(message.Buffer, 1, out id))
+            if (ProcessReliableReceive(_reader.Buffer, 1, out id))
             {
-                InvokeDataReceived(UdpSendOption.Reliable, message, 3, message.Length);
+                InvokeDataReceived(_reader);
             }
             else
             {
-                message.Recycle();
+                _reader.Recycle();
             }
         }
 
         /// <summary>
         ///     Handles receives from reliable packets.
         /// </summary>
-        /// <param name="bytes">The buffer containing the data.</param>
-        /// <param name="offset">The offset of the reliable header.</param>
+        /// <param name="_bytes">The buffer containing the data.</param>
+        /// <param name="_offset">The offset of the reliable header.</param>
         /// <returns>Whether the packet was a new packet or not.</returns>
-        private bool ProcessReliableReceive(byte[] bytes, int offset, out ushort id)
+        private bool ProcessReliableReceive(byte[] _bytes, int _offset, out ushort _id)
         {
-            byte b1 = bytes[offset];
-            byte b2 = bytes[offset + 1];
+            byte b1 = _bytes[_offset];
+            byte b2 = _bytes[_offset + 1];
 
             //Get the ID form the packet
-            id = (ushort)((b1 << 8) + b2);
+            _id = (ushort)((b1 << 8) + b2);
 
             /*
              * It gets a little complicated here (note the fact I'm actually using a multiline comment for once...)
@@ -214,51 +214,51 @@ namespace Infinity.Core.Udp
 
             bool result = true;
             
-            lock (reliableDataPacketsMissing)
+            lock (reliable_data_packets_missing)
             {
                 //Calculate overwritePointer
-                ushort overwritePointer = (ushort)(reliableReceiveLast - 32768);
+                ushort overwrite_pointer = (ushort)(reliable_receive_last - 32768);
 
                 //Calculate if it is a new packet by examining if it is within the range
-                bool isNew;
-                if (overwritePointer < reliableReceiveLast)
+                bool is_new;
+                if (overwrite_pointer < reliable_receive_last)
                 {
-                    isNew = id > reliableReceiveLast || id <= overwritePointer;     //Figure (2)
+                    is_new = _id > reliable_receive_last || _id <= overwrite_pointer;     //Figure (2)
                 }
                 else
                 {
-                    isNew = id > reliableReceiveLast && id <= overwritePointer;     //Figure (3)
+                    is_new = _id > reliable_receive_last && _id <= overwrite_pointer;     //Figure (3)
                 }
                 
                 //If it's new or we've not received anything yet
-                if (isNew)
+                if (is_new)
                 {
                     // Mark items between the most recent receive and the id received as missing
-                    if (id > reliableReceiveLast)
+                    if (_id > reliable_receive_last)
                     {
-                        for (ushort i = (ushort)(reliableReceiveLast + 1); i < id; i++)
+                        for (ushort i = (ushort)(reliable_receive_last + 1); i < _id; i++)
                         {
-                            reliableDataPacketsMissing.Add(i);
+                            reliable_data_packets_missing.Add(i);
                         }
                     }
                     else
                     {
-                        int cnt = (ushort.MaxValue - reliableReceiveLast) + id;
+                        int cnt = (ushort.MaxValue - reliable_receive_last) + _id;
                         for (ushort i = 1; i <= cnt; ++i)
                         {
-                            reliableDataPacketsMissing.Add((ushort)(i + reliableReceiveLast));
+                            reliable_data_packets_missing.Add((ushort)(i + reliable_receive_last));
                         }
                     }
 
                     //Update the most recently received
-                    reliableReceiveLast = id;
+                    reliable_receive_last = _id;
                 }
                 
                 //Else it could be a missing packet
                 else
                 {
                     //See if we're missing it, else this packet is a duplicate as so we return false
-                    if (!reliableDataPacketsMissing.Remove(id))
+                    if (!reliable_data_packets_missing.Remove(_id))
                     {
                         result = false;
                     }
@@ -266,7 +266,7 @@ namespace Infinity.Core.Udp
             }
 
             // Send an acknowledgement
-            SendAck(id);
+            SendAck(_id);
 
             return result;
         }
@@ -274,33 +274,33 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Handles acknowledgement packets to us.
         /// </summary>
-        /// <param name="bytes">The buffer containing the data.</param>
-        private void AcknowledgementMessageReceive(byte[] bytes, int bytesReceived)
+        /// <param name="_bytes">The buffer containing the data.</param>
+        private void AcknowledgementMessageReceive(byte[] _bytes, int _bytes_received)
         {
-            pingsSinceAck = 0;
+            pings_since_ack = 0;
 
-            ushort id = (ushort)((bytes[1] << 8) + bytes[2]);
+            ushort id = (ushort)((_bytes[1] << 8) + _bytes[2]);
             AcknowledgeMessageId(id);
 
-            if (bytesReceived == 4)
+            if (_bytes_received == 4)
             {
-                byte recentPackets = bytes[3];
+                byte recent_packets = _bytes[3];
                 for (int i = 1; i <= 8; ++i)
                 {
-                    if ((recentPackets & 1) != 0)
+                    if ((recent_packets & 1) != 0)
                     {
                         AcknowledgeMessageId((ushort)(id - i));
                     }
 
-                    recentPackets >>= 1;
+                    recent_packets >>= 1;
                 }
             }
         }
 
-        private void AcknowledgeMessageId(ushort id)
+        private void AcknowledgeMessageId(ushort _id)
         {
             // Dispose of timer and remove from dictionary
-            if (reliableDataPacketsSent.TryRemove(id, out Packet packet))
+            if (reliable_data_packets_sent.TryRemove(_id, out Packet packet))
             {
                 Statistics.LogReliablePacketAcknowledged();
                 float rt = packet.Stopwatch.ElapsedMilliseconds;
@@ -308,19 +308,19 @@ namespace Infinity.Core.Udp
                 packet.AckCallback?.Invoke();
                 packet.Recycle();
 
-                lock (PingLock)
+                lock (ping_lock)
                 {
-                    _pingMs = _pingMs * .7f + rt * .3f;
+                    ping_ms = ping_ms * .7f + rt * .3f;
                 }
             }
-            else if (activePings.TryFindPing(id, out DateTime pingPkt))
+            else if (active_pings.TryFindPing(_id, out DateTime pingPkt))
             {
                 Statistics.LogReliablePacketAcknowledged();
                 float rt = (float)(DateTime.UtcNow - pingPkt).TotalMilliseconds;
 
-                lock (PingLock)
+                lock (ping_lock)
                 {
-                    _pingMs = _pingMs * .7f + rt * .3f;
+                    ping_ms = ping_ms * .7f + rt * .3f;
                 }
             }
         }
@@ -330,16 +330,16 @@ namespace Infinity.Core.Udp
         /// </summary>
         /// <param name="byte1">The first identification byte.</param>
         /// <param name="byte2">The second identification byte.</param>
-        private void SendAck(ushort id)
+        private void SendAck(ushort _id)
         {
-            byte recentPackets = 0;
-            lock (reliableDataPacketsMissing)
+            byte recent_packets = 0;
+            lock (reliable_data_packets_missing)
             {
                 for (int i = 1; i <= 8; ++i)
                 {
-                    if (!reliableDataPacketsMissing.Contains((ushort)(id - i)))
+                    if (!reliable_data_packets_missing.Contains((ushort)(_id - i)))
                     {
-                        recentPackets |= (byte)(1 << (i - 1));
+                        recent_packets |= (byte)(1 << (i - 1));
                     }
                 }
             }
@@ -347,9 +347,9 @@ namespace Infinity.Core.Udp
             byte[] bytes = new byte[]
             {
                 UdpSendOptionInternal.Acknowledgement,
-                (byte)(id >> 8),
-                (byte)(id >> 0),
-                recentPackets
+                (byte)(_id >> 8),
+                (byte)(_id >> 0),
+                recent_packets
             };
 
             WriteBytesToConnection(bytes, bytes.Length);
@@ -357,11 +357,12 @@ namespace Infinity.Core.Udp
 
         private void DisposeReliablePackets()
         {
-            foreach (var kvp in reliableDataPacketsSent)
+            foreach (var id_packet in reliable_data_packets_sent)
             {
-                if (reliableDataPacketsSent.TryRemove(kvp.Key, out var pkt))
+                ushort id = id_packet.Key;
+                if (reliable_data_packets_sent.TryRemove(id, out var packet))
                 {
-                    pkt.Recycle();
+                    packet.Recycle();
                 }
             }
         }

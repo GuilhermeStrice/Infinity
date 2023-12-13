@@ -7,28 +7,28 @@ namespace Infinity.Core.Udp
     /// </summary>
     public abstract partial class UdpConnection : NetworkConnection
     {
-        internal static readonly byte[] EmptyDisconnectBytes = new byte[1];
+        protected static readonly byte[] empty_disconnect_bytes = new byte[1];
 
-        public override float AveragePingMs => _pingMs;
+        public override float AveragePingMs => ping_ms;
         protected readonly ILogger logger;
 
         public UdpConnectionStatistics Statistics { get; private set; }
 
-        public UdpConnection(ILogger logger) : base()
+        public UdpConnection(ILogger _logger) : base()
         {
             Statistics = new UdpConnectionStatistics();
 
-            this.logger = logger;
+            logger = _logger;
             PacketPool = new ObjectPool<Packet>(() => new Packet(this));
         }
 
         /// <summary>
         ///     Writes the given bytes to the connection.
         /// </summary>
-        /// <param name="bytes">The bytes to write.</param>
-        public abstract void WriteBytesToConnection(byte[] bytes, int length);
+        /// <param name="_bytes">The bytes to write.</param>
+        public abstract void WriteBytesToConnection(byte[] _bytes, int _length);
 
-        public override SendErrors Send(MessageWriter msg)
+        public override SendErrors Send(MessageWriter _writer)
         {
             if (state != ConnectionState.Connected)
             {
@@ -37,15 +37,15 @@ namespace Infinity.Core.Udp
 
             try
             {
-                InvokeBeforeSend(msg);
+                InvokeBeforeSend(_writer);
 
-                byte[] buffer = new byte[msg.Length];
-                Buffer.BlockCopy(msg.Buffer, 0, buffer, 0, msg.Length);
+                byte[] buffer = new byte[_writer.Length];
+                Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
-                if (msg.SendOption == UdpSendOption.Reliable)
+                if (_writer.Buffer[0] == UdpSendOption.Reliable)
                 {
                     // we automagically send fragments if its greater than fragment size
-                    if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
+                    if (_writer.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                     {
                         FragmentedSend(buffer);
                         Statistics.LogFragmentedMessageSent(buffer.Length);
@@ -57,9 +57,9 @@ namespace Infinity.Core.Udp
                         Statistics.LogReliableMessageSent(buffer.Length);
                     }
                 }
-                else if (msg.SendOption == UdpSendOption.ReliableOrdered)
+                else if (_writer.Buffer[0] == UdpSendOption.ReliableOrdered)
                 {
-                    if (msg.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
+                    if (_writer.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                         throw new InfinityException("not allowed");
 
                     OrderedSend(buffer);
@@ -83,136 +83,121 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Handles the receiving of data.
         /// </summary>
-        /// <param name="message">The buffer containing the bytes received.</param>
-        internal virtual void HandleReceive(MessageReader message, int bytesReceived)
+        /// <param name="_reader">The buffer containing the bytes received.</param>
+        internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
         {
             ushort id;
-            switch (message.Buffer[0])
+            switch (_reader.Buffer[0])
             {
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
                     {
-                        InvokeBeforeReceive(message);
-                        ReliableMessageReceive(message);
-                        Statistics.LogReliableMessageReceived(bytesReceived);
+                        InvokeBeforeReceive(_reader);
+                        ReliableMessageReceive(_reader);
+                        Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOption.ReliableOrdered:
                     {
-                        InvokeBeforeReceive(message);
-                        OrderedMessageReceived(message);
-                        Statistics.LogReliableMessageReceived(bytesReceived);
+                        InvokeBeforeReceive(_reader);
+                        OrderedMessageReceived(_reader);
+                        Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
                     }
 
                 //Handle acknowledgments
                 case UdpSendOptionInternal.Acknowledgement:
                     {
-                        AcknowledgementMessageReceive(message.Buffer, bytesReceived);
-                        Statistics.LogAcknowledgementReceived(bytesReceived);
-                        message.Recycle();
+                        AcknowledgementMessageReceive(_reader.Buffer, _bytes_received);
+                        Statistics.LogAcknowledgementReceived(_bytes_received);
+                        _reader.Recycle();
                         break;
                     }
 
                 //We need to acknowledge Handshake and ping messages but dont want to invoke any events!
                 case UdpSendOptionInternal.Ping:
                     {
-                        ProcessReliableReceive(message.Buffer, 1, out id);
-                        Statistics.LogPingReceived(bytesReceived);
-                        message.Recycle();
+                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        Statistics.LogPingReceived(_bytes_received);
+                        _reader.Recycle();
                         break;
                     }
 
                     // we only receive handshakes at the beggining of the connection in the listener
                 case UdpSendOptionInternal.Handshake:
                     {
-                        ProcessReliableReceive(message.Buffer, 1, out id);
-                        Statistics.LogHandshakeReceived(bytesReceived);
-                        message.Recycle();
+                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        Statistics.LogHandshakeReceived(_bytes_received);
+                        _reader.Recycle();
                         break;
                     }
 
                 //Handle fragmented messages
                 case UdpSendOptionInternal.Fragment:
                     {
-                        FragmentMessageReceive(message);
-                        Statistics.LogFragmentedMessageReceived(bytesReceived);
+                        FragmentMessageReceive(_reader);
+                        Statistics.LogFragmentedMessageReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOption.Disconnect:
                     {
-                        message.Offset = 1;
-                        message.Position = 0;
-                        DisconnectRemote("The remote sent a disconnect request", message);
-                        Statistics.LogUnreliableMessageReceived(bytesReceived);
+                        _reader.Offset = 1;
+                        _reader.Position = 0;
+                        DisconnectRemote("The remote sent a disconnect request", _reader);
+                        Statistics.LogUnreliableMessageReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOption.Unreliable:
                     {
-                        InvokeBeforeReceive(message);
-                        InvokeDataReceived(UdpSendOption.Unreliable, message, 1, bytesReceived);
-                        Statistics.LogUnreliableMessageReceived(bytesReceived);
+                        InvokeBeforeReceive(_reader);
+                        InvokeDataReceived(_reader);
+                        Statistics.LogUnreliableMessageReceived(_bytes_received);
                         break;
                     }
 
                 // Treat everything else as garbage
                 default:
                     {
-                        message.Recycle();
+                        _reader.Recycle();
 
-                        Statistics.LogGarbageMessageReceived(bytesReceived);
+                        Statistics.LogGarbageMessageReceived(_bytes_received);
                         break;
                     }
             }
         }
 
         /// <summary>
-        ///     Helper method to invoke the data received event.
-        /// </summary>
-        /// <param name="sendOption">The send option the message was received with.</param>
-        /// <param name="buffer">The buffer received.</param>
-        /// <param name="dataOffset">The offset of data in the buffer.</param>
-        void InvokeDataReceived(byte sendOption, MessageReader buffer, int dataOffset, int bytesReceived)
-        {
-            buffer.Offset = dataOffset;
-            buffer.Length = bytesReceived - dataOffset;
-            buffer.Position = 0;
-
-            InvokeDataReceived(buffer, sendOption);
-        }
-
-        /// <summary>
         ///     Sends a Handshake packet to the remote endpoint.
         /// </summary>
-        /// <param name="acknowledgeCallback">The callback to invoke when the Handshake packet is acknowledged.</param>
-        protected void SendHandshake(byte[] bytes, Action acknowledgeCallback)
+        /// <param name="_acknowledge_callback">The callback to invoke when the Handshake packet is acknowledged.</param>
+        protected void SendHandshake(byte[] _bytes, Action _acknowledge_callback)
         {
-            byte[] actualBytes;
-            if (bytes == null)
+            byte[] actual_bytes;
+            if (_bytes == null)
             {
-                actualBytes = new byte[1];
+                actual_bytes = new byte[1];
             }
             else
             {
-                actualBytes = new byte[bytes.Length + 1];
-                Buffer.BlockCopy(bytes, 0, actualBytes, 1, bytes.Length);
+                actual_bytes = new byte[_bytes.Length + 1];
+                Buffer.BlockCopy(_bytes, 0, actual_bytes, 1, _bytes.Length);
             }
 
-            ReliableSend(UdpSendOptionInternal.Handshake, actualBytes, acknowledgeCallback);
+            ReliableSend(UdpSendOptionInternal.Handshake, actual_bytes, _acknowledge_callback);
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool _disposing)
         {
-            if (disposing)
+            if (_disposing)
             {
                 DisposeKeepAliveTimer();
                 DisposeReliablePackets();
             }
 
-            base.Dispose(disposing);
+            base.Dispose(_disposing);
         }
     }
 }

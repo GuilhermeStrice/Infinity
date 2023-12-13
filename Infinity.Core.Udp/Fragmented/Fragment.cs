@@ -5,7 +5,7 @@
         public static readonly ObjectPool<Fragment> FragmentPool = new ObjectPool<Fragment>(() => new Fragment());
 
         public int Id { get; set; }
-        public MessageReader Data { get; set; }
+        public MessageReader Reader { get; set; }
 
         public Fragment()
         {
@@ -18,7 +18,7 @@
 
         public void Recycle()
         {
-            Data.Recycle();
+            Reader.Recycle();
             Id = -1;
 
             FragmentPool.PutObject(this);

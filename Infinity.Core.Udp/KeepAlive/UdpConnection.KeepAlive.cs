@@ -2,7 +2,7 @@
 {
     partial class UdpConnection
     {
-        private PingBuffer activePings = new PingBuffer(16);
+        private PingBuffer active_pings = new PingBuffer(16);
 
         /// <summary>
         ///     The interval from data being received or transmitted to a keepalive packet being sent in milliseconds.
@@ -21,56 +21,56 @@
         {
             get
             {
-                return keepAliveInterval;
+                return keep_alive_interval;
             }
 
             set
             {
-                keepAliveInterval = value;
+                keep_alive_interval = value;
                 ResetKeepAliveTimer();
             }
         }
-        private int keepAliveInterval = 1500;
+        private int keep_alive_interval = 1500;
 
         public int MissingPingsUntilDisconnect { get; set; } = 6;
-        private volatile int pingsSinceAck = 0;
+        private volatile int pings_since_ack = 0;
 
         /// <summary>
         ///     The timer creating keepalive pulses.
         /// </summary>
-        private Timer keepAliveTimer;
+        private Timer keep_alive_timer;
 
         /// <summary>
         ///     Starts the keepalive timer.
         /// </summary>
         protected void InitializeKeepAliveTimer()
         {
-            keepAliveTimer = new Timer(
+            keep_alive_timer = new Timer(
                 HandleKeepAlive,
                 null,
-                keepAliveInterval,
-                keepAliveInterval
+                keep_alive_interval,
+                keep_alive_interval
             );
         }
 
-        private void HandleKeepAlive(object ?state)
+        private void HandleKeepAlive(object? _state)
         {
             if (State != ConnectionState.Connected)
             {
                 return;
             }
 
-            if (pingsSinceAck >= MissingPingsUntilDisconnect)
+            if (pings_since_ack >= MissingPingsUntilDisconnect)
             {
                 DisposeKeepAliveTimer();
                 DisconnectInternal(InfinityInternalErrors.PingsWithoutResponse, 
-                    $"Sent {pingsSinceAck} pings that remote has not responded to.");
+                    $"Sent {pings_since_ack} pings that remote has not responded to.");
                 return;
             }
 
             try
             {
-                pingsSinceAck++;
+                pings_since_ack++;
                 SendPing();
             }
             catch
@@ -85,14 +85,14 @@
         // pings should cause a disconnect.
         private void SendPing()
         {
-            ushort id = (ushort)Interlocked.Increment(ref lastIDAllocated);
+            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
             byte[] bytes = new byte[3];
             bytes[0] = UdpSendOptionInternal.Ping;
             bytes[1] = (byte)(id >> 8);
             bytes[2] = (byte)id;
 
-            activePings.AddPing(id);
+            active_pings.AddPing(id);
 
             WriteBytesToConnection(bytes, bytes.Length);
 
@@ -106,7 +106,7 @@
         {
             try
             {
-                keepAliveTimer?.Change(keepAliveInterval, keepAliveInterval);
+                keep_alive_timer?.Change(keep_alive_interval, keep_alive_interval);
             }
             catch { }
         }
@@ -116,7 +116,7 @@
         /// </summary>
         private void DisposeKeepAliveTimer()
         {
-            keepAliveTimer?.Dispose();
+            keep_alive_timer?.Dispose();
         }
     }
 }

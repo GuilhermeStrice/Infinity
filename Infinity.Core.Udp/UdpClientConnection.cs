@@ -18,23 +18,23 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Reset event that is triggered when the connection is marked Connected.
         /// </summary>
-        private ManualResetEvent connectWaitLock = new ManualResetEvent(false);
+        private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
 
-        private Timer reliablePacketTimer;
+        private Timer reliable_packet_timer;
 
         /// <summary>
         ///     Creates a new UdpClientConnection.
         /// </summary>
-        /// <param name="remoteEndPoint">A <see cref="NetworkEndPoint"/> to connect to.</param>
-        public UdpClientConnection(ILogger logger, IPEndPoint remoteEndPoint, IPMode ipMode = IPMode.IPv4)
-            : base(logger)
+        /// <param name="_remote_end_point">A <see cref="NetworkEndPoint"/> to connect to.</param>
+        public UdpClientConnection(ILogger _logger, IPEndPoint _remote_end_point, IPMode _ip_mode = IPMode.IPv4)
+            : base(_logger)
         {
-            EndPoint = remoteEndPoint;
-            IPMode = ipMode;
+            EndPoint = _remote_end_point;
+            IPMode = _ip_mode;
 
-            socket = CreateSocket(Protocol.Udp, ipMode);
+            socket = CreateSocket(Protocol.Udp, _ip_mode);
 
-            reliablePacketTimer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
+            reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
             InitializeKeepAliveTimer();
         }
         
@@ -43,39 +43,38 @@ namespace Infinity.Core.Udp
             Dispose(false);
         }
 
-        private void ManageReliablePacketsInternal(object state)
+        private void ManageReliablePacketsInternal(object? _state)
         {
             ManageReliablePackets();
             try
             {
-                reliablePacketTimer.Change(100, Timeout.Infinite);
+                reliable_packet_timer.Change(100, Timeout.Infinite);
             }
             catch { }
         }
 
-        public override void WriteBytesToConnection(byte[] bytes, int length)
+        public override void WriteBytesToConnection(byte[] _bytes, int _length)
         {
 #if DEBUG
             if (TestLagMs > 0)
             {
-                ThreadPool.QueueUserWorkItem(a => { Thread.Sleep(TestLagMs); WriteBytesToConnectionReal(bytes, length); });
+                ThreadPool.QueueUserWorkItem(a => { Thread.Sleep(TestLagMs); WriteBytesToConnectionReal(_bytes, _length); });
             }
             else
 #endif
             {
-                WriteBytesToConnectionReal(bytes, length);
+                WriteBytesToConnectionReal(_bytes, _length);
             }
         }
 
-        private void WriteBytesToConnectionReal(byte[] bytes, int length)
+        private void WriteBytesToConnectionReal(byte[] _bytes, int _length)
         {
             try
             {
-                Statistics.LogPacketSent(length);
                 socket.BeginSendTo(
-                    bytes,
+                    _bytes,
                     0,
-                    length,
+                    _length,
                     SocketFlags.None,
                     EndPoint,
                     HandleSendTo,
@@ -92,11 +91,12 @@ namespace Infinity.Core.Udp
             }
         }
 
-        private void HandleSendTo(IAsyncResult result)
+        private void HandleSendTo(IAsyncResult _result)
         {
             try
             {
-                socket.EndSendTo(result);
+                int sent = socket.EndSendTo(_result);
+                Statistics.LogPacketSent(sent);
             }
             catch (NullReferenceException) { }
             catch (ObjectDisposedException)
@@ -109,22 +109,22 @@ namespace Infinity.Core.Udp
             }
         }
 
-        public override void Connect(byte[] bytes = null, int timeout = 5000)
+        public override void Connect(byte[] _bytes = null, int _timeout = 5000)
         {
-            ConnectAsync(bytes);
+            ConnectAsync(_bytes);
 
             //Wait till Handshake packet is acknowledged and the state is set to Connected
-            bool timedOut = !connectWaitLock.WaitOne(timeout);
+            bool timed_out = !connect_wait_lock.WaitOne(_timeout);
 
             //If we timed out raise an exception
-            if (timedOut)
+            if (timed_out)
             {
                 Dispose();
                 throw new InfinityException("Connection attempt timed out.");
             }
         }
 
-        public override void ConnectAsync(byte[] bytes = null)
+        public override void ConnectAsync(byte[] _bytes = null)
         {
             State = ConnectionState.Connecting;
 
@@ -164,7 +164,7 @@ namespace Infinity.Core.Udp
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             // When acknowledged set the state to connected
-            SendHandshake(bytes, () =>
+            SendHandshake(_bytes, () =>
             {
                 State = ConnectionState.Connected;
                 InitializeKeepAliveTimer();
@@ -183,36 +183,15 @@ namespace Infinity.Core.Udp
             }
 #endif
 
-            var msg = MessageReader.GetSized(ReceiveBufferSize);
+            var reader = MessageReader.GetSized(ReceiveBufferSize);
             try
             {
-                socket.BeginReceive(msg.Buffer, 0, msg.Buffer.Length, SocketFlags.None, ReadCallback, msg);
+                socket.BeginReceive(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ReadCallback, reader);
             }
             catch
             {
-                msg.Recycle();
+                reader.Recycle();
                 Dispose();
-            }
-        }
-
-        protected override void SetState(ConnectionState state)
-        {
-            try
-            {
-                // If the server disconnects you during the Handshake
-                // you can go straight from Connecting to NotConnected.
-                if (state == ConnectionState.Connected
-                    || state == ConnectionState.NotConnected)
-                {
-                    connectWaitLock.Set();
-                }
-                else
-                {
-                    connectWaitLock.Reset();
-                }
-            }
-            catch (ObjectDisposedException)
-            {
             }
         }
 
@@ -222,29 +201,29 @@ namespace Infinity.Core.Udp
         /// <param name="result">The asyncronous operation's result.</param>
         void ReadCallback(IAsyncResult result)
         {
-            var msg = (MessageReader)result.AsyncState;
+            var reader = (MessageReader)result.AsyncState;
 
             try
             {
-                msg.Length = socket.EndReceive(result);
+                reader.Length = socket.EndReceive(result);
             }
             catch (SocketException e)
             {
-                msg.Recycle();
+                reader.Recycle();
                 DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "Socket exception while reading data: " + e.Message);
                 return;
             }
             catch (Exception e)
             {
-                msg.Recycle();
+                reader.Recycle();
                 DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "No idea what happened here: " + e.Message);
                 return;
             }
 
             //Exit if no bytes read, we've failed.
-            if (msg.Length == 0)
+            if (reader.Length == 0)
             {
-                msg.Recycle();
+                reader.Recycle();
                 DisconnectInternal(InfinityInternalErrors.ReceivedZeroBytes, "Received 0 bytes");
                 return;
             }
@@ -273,18 +252,39 @@ namespace Infinity.Core.Udp
                 }
             }
 #endif
-            HandleReceive(msg, msg.Length);
+            HandleReceive(reader, reader.Length);
+        }
+
+        protected override void SetState(ConnectionState _state)
+        {
+            try
+            {
+                // If the server disconnects you during the Handshake
+                // you can go straight from Connecting to NotConnected.
+                if (_state == ConnectionState.Connected
+                    || _state == ConnectionState.NotConnected)
+                {
+                    connect_wait_lock.Set();
+                }
+                else
+                {
+                    connect_wait_lock.Reset();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
         /// <summary>
         ///     Sends a disconnect message to the end point.
         ///     You may include optional disconnect data. The SendOption must be unreliable.
         /// </summary>
-        protected override bool SendDisconnect(MessageWriter data = null)
+        protected override bool SendDisconnect(MessageWriter _writer = null)
         {
             lock (this)
             {
-                if (state == ConnectionState.NotConnected) 
+                if (State == ConnectionState.NotConnected) 
                 {
                     return false;
                 }
@@ -292,13 +292,10 @@ namespace Infinity.Core.Udp
                 State = ConnectionState.NotConnected;
             }
 
-            var bytes = EmptyDisconnectBytes;
-            if (data != null && data.Length > 0)
+            var bytes = empty_disconnect_bytes;
+            if (_writer != null && _writer.Length > 0)
             {
-                if (data.SendOption != UdpSendOption.Unreliable)
-                    throw new ArgumentException("Disconnect messages can only be unreliable.");
-
-                bytes = data.ToByteArray(3);
+                bytes = _writer.ToByteArray(3);
             }
 
             bytes[0] = UdpSendOption.Disconnect;
@@ -328,8 +325,8 @@ namespace Infinity.Core.Udp
             try { socket.Close(); } catch { }
             try { socket.Dispose(); } catch { }
 
-            reliablePacketTimer.Dispose();
-            connectWaitLock.Dispose();
+            reliable_packet_timer.Dispose();
+            connect_wait_lock.Dispose();
 
             base.Dispose(disposing);
         }

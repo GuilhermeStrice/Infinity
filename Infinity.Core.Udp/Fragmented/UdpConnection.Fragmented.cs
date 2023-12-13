@@ -11,7 +11,7 @@ namespace Infinity.Core.Udp
         {
             get
             {
-                return 576 - FragmentHeaderSize; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791
+                return 576 - fragment_header_size; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791
             }
         }
 
@@ -22,100 +22,103 @@ namespace Infinity.Core.Udp
         {
             get
             {
-                return 1280 - FragmentHeaderSize; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460
+                return 1280 - fragment_header_size; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460
             }
         }
 
         /// <summary>
         ///     The last fragmented message ID that was written.
         /// </summary>
-        volatile int lastFragmentIDAllocated;
+        volatile int last_fragment_id_allocated = 0;
 
-        ConcurrentDictionary<ushort, FragmentedMessage> fragmentedMessagesReceived = new ConcurrentDictionary<ushort, FragmentedMessage>();
+        ConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<ushort, FragmentedMessage>();
 
-        private const byte FragmentHeaderSize = sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort);
+        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort);
 
         /// <summary>
         ///     Sends a message fragmenting it as needed to pass over the network.
         /// </summary>
         /// <param name="sendOption">The send option the message was sent with.</param>
-        /// <param name="data">The data of the message to send.</param>
-        void FragmentedSend(byte[] data)
+        /// <param name="_data">The data of the message to send.</param>
+        void FragmentedSend(byte[] _data)
         {
-            var id = (ushort)Interlocked.Increment(ref lastFragmentIDAllocated);
+            var id = (ushort)Interlocked.Increment(ref last_fragment_id_allocated);
             var mtu = (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6);
-            var fragmentsCount = (int)Math.Ceiling(data.Length / (double)mtu);
 
-            if (fragmentsCount >= ushort.MaxValue)
+            var data_without_header = new byte[_data.Length - 3];
+            Array.Copy(_data, 3, data_without_header, 0, data_without_header.Length);
+
+            var fragments_count = (int)Math.Ceiling(data_without_header.Length / (double)mtu);
+
+            if (fragments_count >= ushort.MaxValue)
             {
                 throw new InfinityException("Too many fragments");
             }
 
-            for (ushort i = 0; i < fragmentsCount; i++)
+            for (ushort i = 0; i < fragments_count; i++)
             {
-                var dataLength = Math.Min(mtu, data.Length - mtu * i);
-                var buffer = new byte[dataLength + FragmentHeaderSize];
+                var data_length = Math.Min(mtu, data_without_header.Length - mtu * i);
+                var buffer = new byte[data_length + fragment_header_size];
 
                 buffer[0] = UdpSendOptionInternal.Fragment;
 
                 AttachReliableID(buffer, 1);
 
-                buffer[3] = (byte)fragmentsCount;
-                buffer[4] = (byte)(fragmentsCount >> 8);
+                buffer[3] = (byte)fragments_count;
+                buffer[4] = (byte)(fragments_count >> 8);
 
                 buffer[5] = (byte)id;
                 buffer[6] = (byte)(id >> 8);
 
-                Buffer.BlockCopy(data, mtu * i, buffer, FragmentHeaderSize, dataLength);
+                Buffer.BlockCopy(data_without_header, mtu * i, buffer, fragment_header_size, data_length);
                 
                 WriteBytesToConnection(buffer, buffer.Length);
             }
         }
 
-        void FragmentMessageReceive(MessageReader messageReader)
+        void FragmentMessageReceive(MessageReader _reader)
         {
-            if (ProcessReliableReceive(messageReader.Buffer, 1, out var id))
+            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
-                messageReader.Position += 3;
+                _reader.Position += 3;
 
-                var fragmentsCount = messageReader.ReadUInt16();
-                var fragmentedMessageId = messageReader.ReadUInt16();
+                var fragments_count = _reader.ReadUInt16();
+                var fragmented_message_id = _reader.ReadUInt16();
 
-                if (!fragmentedMessagesReceived.TryGetValue(fragmentedMessageId, out var fragmentedMessage))
+                if (!fragmented_messages_received.TryGetValue(fragmented_message_id, out var fragmented_message))
                 {
-                    fragmentedMessage = FragmentedMessage.Get();
-                    fragmentedMessage.FragmentsCount = fragmentsCount;
+                    fragmented_message = FragmentedMessage.Get();
+                    fragmented_message.FragmentsCount = fragments_count;
 
-                    fragmentedMessagesReceived.TryAdd(fragmentedMessageId, fragmentedMessage);
+                    fragmented_messages_received.TryAdd(fragmented_message_id, fragmented_message);
                 }
 
                 var fragment = Fragment.Get();
                 fragment.Id = id;
-                fragment.Data = messageReader;
+                fragment.Reader = _reader;
 
-                lock (fragmentedMessage.Fragments)
+                lock (fragmented_message.Fragments)
                 {
-                    fragmentedMessage.Fragments.Add(fragment);
+                    fragmented_message.Fragments.Add(fragment);
 
-                    if (fragmentedMessage.Fragments.Count == fragmentsCount)
+                    if (fragmented_message.Fragments.Count == fragments_count)
                     {
-                        var writer = MessageWriter.Get(UdpSendOption.Reliable, 3);
-                        writer.Position = 1;
-                        writer.Write(fragmentedMessageId);
+                        var writer = MessageWriter.Get(3);
+                        writer.Buffer[0] = UdpSendOption.Reliable;
 
-                        foreach (var f in fragmentedMessage.Fragments.OrderBy(fragment => fragment.Id))
+                        foreach (var f in fragmented_message.Fragments.OrderBy(fragment => fragment.Id))
                         {
-                            writer.Write(f.Data.Buffer, f.Data.Position, f.Data.Length - f.Data.Position);
+                            writer.Write(f.Reader.Buffer, f.Reader.Position, f.Reader.Length - f.Reader.Position);
                         }
 
                         var reader = writer.AsReader();
                         writer.Recycle();
 
                         InvokeBeforeReceive(reader);
-                        InvokeDataReceived(UdpSendOption.Reliable, reader, 3, reader.Length);
+                        InvokeDataReceived(reader);
 
                         FragmentedMessage reference;
-                        fragmentedMessagesReceived.Remove(fragmentedMessageId, out reference);
+                        fragmented_messages_received.Remove(fragmented_message_id, out reference);
 
                         reference.Recycle();
                     }

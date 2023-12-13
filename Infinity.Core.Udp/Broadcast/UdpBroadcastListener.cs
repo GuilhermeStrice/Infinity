@@ -9,7 +9,7 @@ namespace Infinity.Core.Udp.Broadcast
     public class UdpBroadcastListener : IDisposable
     {
         private Socket socket;
-        private IPEndPoint endpoint;
+        private EndPoint endpoint;
         private ILogger logger;
 
         private byte[] buffer = new byte[8086];
@@ -35,7 +35,7 @@ namespace Infinity.Core.Udp.Broadcast
             this.logger = logger;
 
             endpoint = new IPEndPoint(IPAddress.Any, port);
-            socket = CreateSocket(endpoint);
+            socket = CreateSocket((IPEndPoint)endpoint);
         }
 
         private static Socket CreateSocket(IPEndPoint endPoint)
@@ -59,8 +59,7 @@ namespace Infinity.Core.Udp.Broadcast
 
             try
             {
-                EndPoint endpt = new IPEndPoint(IPAddress.Any, 0);
-                socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endpt, HandleData, null);
+                socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endpoint, HandleData, null);
             }
             catch (NullReferenceException) { }
             catch (ObjectDisposedException)
@@ -76,14 +75,12 @@ namespace Infinity.Core.Udp.Broadcast
 
         private void HandleData(IAsyncResult result)
         {
-            Running = false;
-
-            int len = 0;
-            EndPoint endpt = new IPEndPoint(IPAddress.Any, 0);
+            EndPoint receive_endpoint = new IPEndPoint(IPAddress.Any, 0);
+            int length = 0;
 
             try
             {
-                len = socket.EndReceiveFrom(result, ref endpt);
+                length = socket.EndReceiveFrom(result, ref receive_endpoint);
             }
             catch (NullReferenceException) { }
             catch (ObjectDisposedException)
@@ -97,12 +94,12 @@ namespace Infinity.Core.Udp.Broadcast
                 return;
             }
 
-            var identifier_len = identifier.Count();
+            var identifier_length = identifier.Count();
 
             // if its equals to the length of identifier it means there's no data
-            if (len > identifier_len)
+            if (length > identifier_length)
             {
-                for (int i = 0; i < identifier_len; i++)
+                for (int i = 0; i < identifier_length; i++)
                 {
                     if (buffer[i] != identifier[i])
                     {
@@ -111,11 +108,10 @@ namespace Infinity.Core.Udp.Broadcast
                     }
                 }
 
-                var ipEnd = (IPEndPoint)endpt;
-                var data = new byte[len - identifier_len];
-                Array.Copy(buffer, identifier_len, data, 0, len - identifier_len);
+                var data = new byte[length - identifier_length];
+                Array.Copy(buffer, identifier_length, data, 0, length - identifier_length);
 
-                OnBroadcastReceive?.Invoke(data, ipEnd);
+                OnBroadcastReceive?.Invoke(data, (IPEndPoint)receive_endpoint);
             }
 
             // Since this is an async operation we don't really care if we sleep here
@@ -126,6 +122,8 @@ namespace Infinity.Core.Udp.Broadcast
 
         public void Dispose()
         {
+            Running = false;
+
             if (socket != null)
             {
                 try { socket.Shutdown(SocketShutdown.Both); } catch { }

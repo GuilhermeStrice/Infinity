@@ -138,7 +138,8 @@ namespace Infinity.Core.Tcp
         /// <param name="acknowledgeCallback">The callback to invoke when the Handshake packet is acknowledged.</param>
         protected void SendHandshake(byte[] bytes, Action acknowledgeCallback)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Handshake, 1);
+            MessageWriter msg = MessageWriter.Get(1);
+            msg.Buffer[0] = TcpSendOptionInternal.Handshake;
 
             if (bytes != null)
             {
@@ -204,7 +205,7 @@ namespace Infinity.Core.Tcp
             buffer.Length = bytesReceived - dataOffset;
             buffer.Position = 0;
 
-            InvokeDataReceived(buffer, sendOption);
+            InvokeDataReceived(buffer);
         }
 
         void HandleMessage(byte[] message)
@@ -435,7 +436,8 @@ namespace Infinity.Core.Tcp
 
         protected override bool SendDisconnect(MessageWriter data = null)
         {
-            MessageWriter msg = MessageWriter.Get(TcpSendOptionInternal.Disconnect, 1);
+            MessageWriter msg = MessageWriter.Get(1);
+            msg.Buffer[0] = TcpSendOptionInternal.Disconnect;
 
             if (data != null)
             {
@@ -490,7 +492,7 @@ namespace Infinity.Core.Tcp
 
         public override SendErrors Send(MessageWriter msg)
         {
-            if (_state != ConnectionState.Connected)
+            if (state != ConnectionState.Connected)
             {
                 return SendErrors.Disconnected;
             }
@@ -500,6 +502,11 @@ namespace Infinity.Core.Tcp
 
             var res = SendBytes(buffer);
             return res;
+        }
+
+        protected override void SetState(ConnectionState _state)
+        {
+            throw new NotImplementedException();
         }
     }
 }

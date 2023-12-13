@@ -7,19 +7,19 @@ namespace Infinity.Core.Udp.Broadcast
 {
     public class UdpBroadcaster : IDisposable
     {
-        private ConcurrentDictionary<IPEndPoint, Socket> availableAddresses = new ConcurrentDictionary<IPEndPoint, Socket>();
+        private ConcurrentDictionary<IPEndPoint, Socket> available_addresses = new ConcurrentDictionary<IPEndPoint, Socket>();
         private byte[] identifier;
         private ILogger logger;
 
-        public UdpBroadcaster(int port, byte[] identifier, ILogger logger = null)
+        public UdpBroadcaster(int _port, byte[] _identifier, ILogger _logger = null)
         {
-            if (identifier == null || identifier.Length == 0)
+            if (_identifier == null || _identifier.Length == 0)
             {
                 throw new ArgumentException("UdpBroadcaster: identifier can't be null and it's length must be greater than 0");
             }
 
-            this.identifier = identifier;
-            this.logger = logger;
+            identifier = _identifier;
+            logger = _logger;
 
             var addresses = Util.GetAddressesFromNetworkInterfaces(AddressFamily.InterNetwork);
 
@@ -30,42 +30,42 @@ namespace Infinity.Core.Udp.Broadcast
                     Socket socket = CreateSocket(new IPEndPoint(addressInformation.Address, 0));
                     IPAddress broadcast = Util.GetBroadcastAddress(addressInformation);
 
-                    availableAddresses.TryAdd(new IPEndPoint(broadcast, port), socket);
+                    available_addresses.TryAdd(new IPEndPoint(broadcast, _port), socket);
                 }
             }
             else
             {
                 Socket socket = CreateSocket(new IPEndPoint(IPAddress.Any, 0));
-                availableAddresses.TryAdd(new IPEndPoint(IPAddress.Broadcast, port), socket);
+                available_addresses.TryAdd(new IPEndPoint(IPAddress.Broadcast, _port), socket);
             }
         }
 
-        private static Socket CreateSocket(IPEndPoint endPoint)
+        private static Socket CreateSocket(IPEndPoint _endpoint)
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.EnableBroadcast = true;
             socket.MulticastLoopback = false;
-            socket.Bind(endPoint);
+            socket.Bind(_endpoint);
 
             return socket;
         }
 
-        public void Broadcast(byte[] data)
+        public void Broadcast(byte[] _data)
         {
-            if (data == null || data.Length == 0)
+            if (_data == null || _data.Length == 0)
             {
                 throw new ArgumentException("Data argument must not be null and it's length must be greater than 0");
             }
 
-            int data_length = data.Length;
+            int data_length = _data.Length;
             int identifier_length = identifier.Length;
 
             var buffer = new byte[identifier_length + data_length];
 
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
-            Array.Copy(data, 0, buffer, identifier_length, data_length);
+            Array.Copy(_data, 0, buffer, identifier_length, data_length);
 
-            foreach (var available_addr in availableAddresses)
+            foreach (var available_addr in available_addresses)
             {
                 try
                 {
@@ -80,12 +80,12 @@ namespace Infinity.Core.Udp.Broadcast
             }
         }
 
-        private void FinishSendTo(IAsyncResult evt)
+        private void FinishSendTo(IAsyncResult result)
         {
             try
             {
-                Socket socket = (Socket)evt.AsyncState;
-                socket.EndSendTo(evt);
+                Socket socket = (Socket)result.AsyncState;
+                socket.EndSendTo(result);
             }
             catch (Exception e)
             {
@@ -105,13 +105,13 @@ namespace Infinity.Core.Udp.Broadcast
 
         public void Dispose()
         {
-            foreach (var aa in availableAddresses)
+            foreach (var available_addr in available_addresses)
             {
-                Socket socket = aa.Value;
+                Socket socket = available_addr.Value;
                 CloseSocket(socket);
             }
 
-            availableAddresses.Clear();
+            available_addresses.Clear();
         }
     }
 }

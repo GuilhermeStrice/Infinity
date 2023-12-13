@@ -47,14 +47,14 @@ namespace Infinity.Core.Tests
             //Wait until data is received
             mutex.WaitOne();
 
-            var reader = ConvertToMessageReader(data);
-            Assert.Equal(reader.Length, result.Value.Message.Length);
+            var reader = data.AsReader();
+            Assert.Equal(reader.Length, result.Value.Message.Length); // + 3 to account for sendOption and reliable id
             for (int i = reader.Offset; i < reader.Length; i++)
             {
                 Assert.Equal(reader.Buffer[i], result.Value.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.SendOption);
+            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
         }
 
         /// <summary>
@@ -97,14 +97,22 @@ namespace Infinity.Core.Tests
             //Wait until data is received
             Assert.True(mutex2.WaitOne(100), "Timeout while sending data");
 
-            var dataReader = ConvertToMessageReader(data);
+            var dataReader = data.AsReader();
+
+            // account for sendOption and id
+            if (sendOption != UdpSendOption.Unreliable)
+            {
+                dataReader.Position += 3;
+                result.Value.Message.Position += 3;
+            }
+
             Assert.Equal(dataReader.Length, result.Value.Message.Length);
             for (int i = 0; i < dataReader.Length; i++)
             {
                 Assert.Equal(dataReader.ReadByte(), result.Value.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.SendOption);
+            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
         }
 
         /// <summary>
@@ -201,17 +209,6 @@ namespace Infinity.Core.Tests
             }
         }
 
-        private static MessageReader ConvertToMessageReader(MessageWriter writer)
-        {
-            var output = new MessageReader();
-            output.Buffer = writer.Buffer;
-            output.Offset = writer.SendOption == UdpSendOption.Unreliable ? 1 : 3;
-            output.Length = writer.Length - output.Offset;
-            output.Position = 0;
-
-            return output;
-        }
-
         /// <summary>
         ///     Builds new data of increaseing value bytes.
         /// </summary>
@@ -225,7 +222,8 @@ namespace Infinity.Core.Tests
                 offset = 1;
             }
 
-            var output = MessageWriter.Get(sendOption, offset);
+            var output = MessageWriter.Get(offset);
+            output.Buffer[0] = sendOption;
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);

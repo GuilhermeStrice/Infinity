@@ -24,20 +24,20 @@ namespace Infinity.Core.Udp
         public int Retransmissions;
         public Stopwatch Stopwatch = new Stopwatch();
 
-        public Packet(UdpConnection connection)
+        public Packet(UdpConnection _connection)
         {
-            Connection = connection;
+            Connection = _connection;
         }
 
-        public void Set(ushort id, byte[] data, int length, int timeout, Action ackCallback)
+        public void Set(ushort _id, byte[] _data, int _length, int _timeout, Action _ack_callback)
         {
-            Id = id;
-            Data = data;
-            Length = length;
+            Id = _id;
+            Data = _data;
+            Length = _length;
 
             Acknowledged = false;
-            NextTimeoutMs = timeout;
-            AckCallback = ackCallback;
+            NextTimeoutMs = _timeout;
+            AckCallback = _ack_callback;
             Retransmissions = 0;
 
             Stopwatch.Restart();
@@ -46,15 +46,14 @@ namespace Infinity.Core.Udp
         // Packets resent
         public int Resend()
         {
-            var connection = Connection;
-            if (!Acknowledged && connection != null)
+            if (!Acknowledged && Connection != null)
             {
                 long lifetimeMs = Stopwatch.ElapsedMilliseconds;
-                if (lifetimeMs >= connection.DisconnectTimeoutMs)
+                if (lifetimeMs >= Connection.DisconnectTimeoutMs)
                 {
-                    if (connection.reliableDataPacketsSent.TryRemove(Id, out Packet self))
+                    if (Connection.reliable_data_packets_sent.TryRemove(Id, out Packet self))
                     {
-                        connection.DisconnectInternal(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
+                        Connection.DisconnectInternal(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
                         self.Recycle();
                     }
 
@@ -66,34 +65,34 @@ namespace Infinity.Core.Udp
                     // if it's not 0 it means we already sent it once
                     if (Retransmissions != 0)
                     {
-                        connection.Statistics.LogDroppedPacket();
+                        Connection.Statistics.LogDroppedPacket();
                     }
 
                     ++Retransmissions;
-                    if (connection.ResendLimit != 0
-                        && Retransmissions > connection.ResendLimit)
+                    if (Connection.ResendLimit != 0
+                        && Retransmissions > Connection.ResendLimit)
                     {
-                        if (connection.reliableDataPacketsSent.TryRemove(Id, out Packet self))
+                        if (Connection.reliable_data_packets_sent.TryRemove(Id, out Packet self))
                         {
-                            connection.DisconnectInternal(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
+                            Connection.DisconnectInternal(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
                             self.Recycle();
                         }
 
                         return 0;
                     }
 
-                    NextTimeoutMs += (int)Math.Min(NextTimeoutMs * connection.ResendPingMultiplier, MaxAdditionalResendDelayMs);
+                    NextTimeoutMs += (int)Math.Min(NextTimeoutMs * Connection.ResendPingMultiplier, MaxAdditionalResendDelayMs);
 
                     try
                     {
-                        connection.WriteBytesToConnection(Data, Length);
-                        connection.Statistics.LogMessageResent(Length);
+                        Connection.WriteBytesToConnection(Data, Length);
+                        Connection.Statistics.LogMessageResent(Length);
 
                         return 1;
                     }
                     catch (InvalidOperationException)
                     {
-                        connection.DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Could not resend data as connection is no longer connected");
+                        Connection.DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Could not resend data as connection is no longer connected");
                     }
                 }
             }

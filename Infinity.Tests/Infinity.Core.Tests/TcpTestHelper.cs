@@ -54,7 +54,7 @@ namespace Infinity.Core.Tests
                 Assert.Equal(reader.Buffer[i], result.Value.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.SendOption);
+            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace Infinity.Core.Tests
                 Assert.Equal(dataReader.ReadByte(), result.Value.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.SendOption);
+            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
         }
 
         /// <summary>
@@ -219,7 +219,8 @@ namespace Infinity.Core.Tests
         /// <returns>The data.</returns>
         static MessageWriter BuildData(byte sendOption, int dataSize)
         {
-            var output = MessageWriter.Get(sendOption, 1);
+            var output = MessageWriter.Get(1);
+            output.Buffer[0] = sendOption;
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);
