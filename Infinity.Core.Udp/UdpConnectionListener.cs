@@ -21,7 +21,7 @@ namespace Infinity.Core.Udp
         public UdpListenerStatistics Statistics { get; private set; }
 
         public override double AveragePing => allConnections.Values.Sum(c => c.AveragePingMs) / allConnections.Count;
-        public override int ConnectionCount { get { return allConnections.Count; } }
+        public override int ConnectionCount => allConnections.Count;
 
         /// <summary>
         ///     Creates a new UdpConnectionListener for the given <see cref="IPAddress"/>, port and <see cref="IPMode"/>.
@@ -35,7 +35,7 @@ namespace Infinity.Core.Udp
             EndPoint = endPoint;
             IPMode = ipMode;
 
-            socket = CreateSocket(IPMode);
+            socket = CreateSocket(Protocol.Udp, IPMode);
 
             socket.ReceiveBufferSize = SendReceiveBufferSize;
             socket.SendBufferSize = SendReceiveBufferSize;
@@ -46,39 +46,6 @@ namespace Infinity.Core.Udp
         ~UdpConnectionListener()
         {
             Dispose(false);
-        }
-
-        public Socket CreateSocket(IPMode ipMode)
-        {
-            Socket socket;
-            if (ipMode == IPMode.IPv4)
-            {
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            }
-            else
-            {
-                if (!Socket.OSSupportsIPv6)
-                    throw new InvalidOperationException("IPV6 not supported!");
-
-                socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
-            }
-
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-
-            try
-            {
-                socket.DontFragment = false;
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    const int SIO_UDP_CONNRESET = -1744830452;
-                    socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
-                }
-            }
-            catch { }
-
-            return socket;
         }
 
         private void ManageReliablePackets(object ?state)
@@ -169,11 +136,6 @@ namespace Infinity.Core.Udp
                     return;
                 }
 
-                // Client no longer reachable, pretend it didn't happen
-                // TODO should this not inform the connection this client is lost???
-
-                // This thread suggests the IP is not passed out from WinSoc so maybe not possible
-                // http://stackoverflow.com/questions/2576926/python-socket-error-on-udp-data-receive-10054
                 Logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
 
                 Thread.Sleep(10);

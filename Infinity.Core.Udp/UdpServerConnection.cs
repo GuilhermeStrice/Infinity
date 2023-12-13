@@ -63,7 +63,9 @@ namespace Infinity.Core.Udp
             lock (this)
             {
                 if (_state != ConnectionState.Connected)
+                {
                     return false;
+                }
 
                 _state = ConnectionState.NotConnected;
             }
@@ -72,7 +74,9 @@ namespace Infinity.Core.Udp
             if (data != null && data.Length > 0)
             {
                 if (data.SendOption != UdpSendOption.Unreliable)
+                {
                     throw new ArgumentException("Disconnect messages can only be unreliable.");
+                }
 
                 bytes = data.ToByteArray(0);
                 bytes[0] = UdpSendOption.Disconnect;

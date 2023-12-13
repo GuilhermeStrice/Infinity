@@ -131,9 +131,13 @@ namespace Infinity.Core.Udp
             try
             {
                 if (IPMode == IPMode.IPv4)
+                {
                     socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+                }
                 else
+                {
                     socket.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                }
             }
             catch (SocketException e)
             {
@@ -281,7 +285,10 @@ namespace Infinity.Core.Udp
             lock (this)
             {
                 if (_state == ConnectionState.NotConnected) 
+                {
                     return false;
+                }
+
                 State = ConnectionState.NotConnected;
             }
 
@@ -292,8 +299,9 @@ namespace Infinity.Core.Udp
                     throw new ArgumentException("Disconnect messages can only be unreliable.");
 
                 bytes = data.ToByteArray(3);
-                bytes[0] = UdpSendOption.Disconnect;
             }
+
+            bytes[0] = UdpSendOption.Disconnect;
 
             try
             {
@@ -312,7 +320,9 @@ namespace Infinity.Core.Udp
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 SendDisconnect();
+            }
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }

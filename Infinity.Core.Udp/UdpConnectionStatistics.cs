@@ -85,7 +85,9 @@
             get
             {
                 if (TotalMessagesSent == 0)
+                {
                     return 0;
+                }
 
                 return DroppedPackets * 100 / TotalMessagesSent;
             }

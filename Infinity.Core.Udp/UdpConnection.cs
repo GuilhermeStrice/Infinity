@@ -7,7 +7,7 @@ namespace Infinity.Core.Udp
     /// </summary>
     public abstract partial class UdpConnection : NetworkConnection
     {
-        public static readonly byte[] EmptyDisconnectBytes = new byte[] { UdpSendOption.Disconnect };
+        internal static readonly byte[] EmptyDisconnectBytes = new byte[1];
 
         public override float AveragePingMs => _pingMs;
         protected readonly ILogger logger;
@@ -91,61 +91,81 @@ namespace Infinity.Core.Udp
             {
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
-                    InvokeBeforeReceive(message);
-                    ReliableMessageReceive(message);
-                    Statistics.LogReliableMessageReceived(bytesReceived);
-                    break;
+                    {
+                        InvokeBeforeReceive(message);
+                        ReliableMessageReceive(message);
+                        Statistics.LogReliableMessageReceived(bytesReceived);
+                        break;
+                    }
 
                 case UdpSendOption.ReliableOrdered:
-                    InvokeBeforeReceive(message);
-                    OrderedMessageReceived(message);
-                    Statistics.LogReliableMessageReceived(bytesReceived);
-                    break;
+                    {
+                        InvokeBeforeReceive(message);
+                        OrderedMessageReceived(message);
+                        Statistics.LogReliableMessageReceived(bytesReceived);
+                        break;
+                    }
 
                 //Handle acknowledgments
                 case UdpSendOptionInternal.Acknowledgement:
-                    AcknowledgementMessageReceive(message.Buffer, bytesReceived);
-                    Statistics.LogAcknowledgementReceived(bytesReceived);
-                    message.Recycle();
-                    break;
+                    {
+                        AcknowledgementMessageReceive(message.Buffer, bytesReceived);
+                        Statistics.LogAcknowledgementReceived(bytesReceived);
+                        message.Recycle();
+                        break;
+                    }
 
                 //We need to acknowledge Handshake and ping messages but dont want to invoke any events!
                 case UdpSendOptionInternal.Ping:
-                    ProcessReliableReceive(message.Buffer, 1, out id);
-                    Statistics.LogPingReceived(bytesReceived);
-                    message.Recycle();
-                    break;
+                    {
+                        ProcessReliableReceive(message.Buffer, 1, out id);
+                        Statistics.LogPingReceived(bytesReceived);
+                        message.Recycle();
+                        break;
+                    }
+
+                    // we only receive handshakes at the beggining of the connection in the listener
                 case UdpSendOptionInternal.Handshake:
-                    ProcessReliableReceive(message.Buffer, 1, out id);
-                    Statistics.LogHandshakeReceived(bytesReceived);
-                    message.Recycle();
-                    break;
+                    {
+                        ProcessReliableReceive(message.Buffer, 1, out id);
+                        Statistics.LogHandshakeReceived(bytesReceived);
+                        message.Recycle();
+                        break;
+                    }
 
                 //Handle fragmented messages
                 case UdpSendOptionInternal.Fragment:
-                    FragmentMessageReceive(message);
-                    Statistics.LogFragmentedMessageReceived(bytesReceived);
-                    break;
+                    {
+                        FragmentMessageReceive(message);
+                        Statistics.LogFragmentedMessageReceived(bytesReceived);
+                        break;
+                    }
 
                 case UdpSendOption.Disconnect:
-                    message.Offset = 1;
-                    message.Position = 0;
-                    DisconnectRemote("The remote sent a disconnect request", message);
-                    Statistics.LogUnreliableMessageReceived(bytesReceived);
-                    break;
+                    {
+                        message.Offset = 1;
+                        message.Position = 0;
+                        DisconnectRemote("The remote sent a disconnect request", message);
+                        Statistics.LogUnreliableMessageReceived(bytesReceived);
+                        break;
+                    }
 
                 case UdpSendOption.Unreliable:
-                    InvokeBeforeReceive(message);
-                    InvokeDataReceived(UdpSendOption.Unreliable, message, 1, bytesReceived);
-                    Statistics.LogUnreliableMessageReceived(bytesReceived);
-                    break;
+                    {
+                        InvokeBeforeReceive(message);
+                        InvokeDataReceived(UdpSendOption.Unreliable, message, 1, bytesReceived);
+                        Statistics.LogUnreliableMessageReceived(bytesReceived);
+                        break;
+                    }
 
                 // Treat everything else as garbage
                 default:
-                    message.Recycle();
+                    {
+                        message.Recycle();
 
-                    Statistics.LogGarbageMessageReceived(bytesReceived);
-                    break;
+                        Statistics.LogGarbageMessageReceived(bytesReceived);
+                        break;
+                    }
             }
         }
 

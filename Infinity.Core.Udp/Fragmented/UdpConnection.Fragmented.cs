@@ -111,6 +111,7 @@ namespace Infinity.Core.Udp
                         var reader = writer.AsReader();
                         writer.Recycle();
 
+                        InvokeBeforeReceive(reader);
                         InvokeDataReceived(UdpSendOption.Reliable, reader, 3, reader.Length);
 
                         FragmentedMessage reference;
