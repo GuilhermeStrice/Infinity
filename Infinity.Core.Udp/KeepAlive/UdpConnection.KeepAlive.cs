@@ -55,12 +55,16 @@
 
         private void HandleKeepAlive(object ?state)
         {
-            if (State != ConnectionState.Connected) return;
+            if (State != ConnectionState.Connected)
+            {
+                return;
+            }
 
             if (pingsSinceAck >= MissingPingsUntilDisconnect)
             {
                 DisposeKeepAliveTimer();
-                DisconnectInternal(InfinityInternalErrors.PingsWithoutResponse, $"Sent {pingsSinceAck} pings that remote has not responded to.");
+                DisconnectInternal(InfinityInternalErrors.PingsWithoutResponse, 
+                    $"Sent {pingsSinceAck} pings that remote has not responded to.");
                 return;
             }
 

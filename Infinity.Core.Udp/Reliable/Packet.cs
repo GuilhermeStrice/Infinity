@@ -5,7 +5,7 @@ namespace Infinity.Core.Udp
     /// <summary>
     ///     Class to hold packet data
     /// </summary>
-    public class Packet : IRecyclable
+    internal class Packet : IRecyclable
     {
         public const int MaxInitialResendDelayMs = 300;
         public const int MinResendDelayMs = 50;
@@ -65,7 +65,9 @@ namespace Infinity.Core.Udp
                 {
                     // if it's not 0 it means we already sent it once
                     if (Retransmissions != 0)
+                    {
                         connection.Statistics.LogDroppedPacket();
+                    }
 
                     ++Retransmissions;
                     if (connection.ResendLimit != 0
@@ -81,10 +83,12 @@ namespace Infinity.Core.Udp
                     }
 
                     NextTimeoutMs += (int)Math.Min(NextTimeoutMs * connection.ResendPingMultiplier, MaxAdditionalResendDelayMs);
+
                     try
                     {
                         connection.WriteBytesToConnection(Data, Length);
                         connection.Statistics.LogMessageResent(Length);
+
                         return 1;
                     }
                     catch (InvalidOperationException)

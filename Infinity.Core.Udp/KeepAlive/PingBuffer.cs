@@ -19,7 +19,9 @@
 
             // We don't want the first few packets to match id before we set anything.
             for (int i = 0; i < activePings.Length; ++i)
+            {
                 activePings[i].Id = InvalidatingFactor;
+            }
         }
 
         public void AddPing(ushort id)
@@ -32,7 +34,9 @@
                 head++;
 
                 if (head >= activePings.Length)
+                {
                     head = 0;
+                }
             }
         }
 

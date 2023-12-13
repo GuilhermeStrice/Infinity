@@ -4,7 +4,7 @@ namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
-        public readonly ObjectPool<Packet> PacketPool;
+        internal readonly ObjectPool<Packet> PacketPool;
 
         /// <summary>
         ///     The starting timeout, in miliseconds, at which data will be resent.
@@ -41,7 +41,7 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        public ConcurrentDictionary<ushort, Packet> reliableDataPacketsSent = new ConcurrentDictionary<ushort, Packet>();
+        internal ConcurrentDictionary<ushort, Packet> reliableDataPacketsSent = new ConcurrentDictionary<ushort, Packet>();
 
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
@@ -222,9 +222,13 @@ namespace Infinity.Core.Udp
                 //Calculate if it is a new packet by examining if it is within the range
                 bool isNew;
                 if (overwritePointer < reliableReceiveLast)
+                {
                     isNew = id > reliableReceiveLast || id <= overwritePointer;     //Figure (2)
+                }
                 else
+                {
                     isNew = id > reliableReceiveLast && id <= overwritePointer;     //Figure (3)
+                }
                 
                 //If it's new or we've not received anything yet
                 if (isNew)
@@ -348,11 +352,7 @@ namespace Infinity.Core.Udp
                 recentPackets
             };
 
-            try
-            {
-                WriteBytesToConnection(bytes, bytes.Length);
-            }
-            catch (InvalidOperationException) { }
+            WriteBytesToConnection(bytes, bytes.Length);
         }
 
         private void DisposeReliablePackets()

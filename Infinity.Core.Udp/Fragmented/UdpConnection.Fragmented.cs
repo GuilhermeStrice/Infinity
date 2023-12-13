@@ -93,7 +93,6 @@ namespace Infinity.Core.Udp
                 fragment.Id = id;
                 fragment.Data = messageReader;
 
-                // locking a HashSet is faster than anything else
                 lock (fragmentedMessage.Fragments)
                 {
                     fragmentedMessage.Fragments.Add(fragment);
