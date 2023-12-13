@@ -9,17 +9,11 @@ namespace Infinity.Core
     /// <threadsafety static="true" instance="true"/>
     public sealed class ObjectPool<T> where T : IRecyclable
     {
-        private int numberCreated;
-        public int NumberCreated { get { return numberCreated; } }
+        public int InUse{ get; private set; }
+        public int MaxNumberObjects;
 
-        public int NumberInUse { get { return inUse.Count; } }
-        public int NumberNotInUse { get { return pool.Count; } }
-        public int Size { get { return NumberInUse + NumberNotInUse; } }
-
-        private readonly List<T> pool = new List<T>();
-
-        // Unavailable objects
-        private readonly ConcurrentDictionary<T, bool> inUse = new ConcurrentDictionary<T, bool>();
+        private readonly T[] pool;
+        private int instanceCount;
 
         /// <summary>
         ///     The generator for creating new objects.
@@ -30,9 +24,12 @@ namespace Infinity.Core
         /// <summary>
         ///     public constructor for our ObjectPool.
         /// </summary>
-        public ObjectPool(Func<T> objectFactory)
+        public ObjectPool(Func<T> objectFactory, int maxNumberObjects = 5000)
         {
             this.objectFactory = objectFactory;
+
+            MaxNumberObjects = maxNumberObjects;
+            pool = new T[maxNumberObjects];
         }
 
         /// <summary>
@@ -41,28 +38,10 @@ namespace Infinity.Core
         /// <returns>An instance of T.</returns>
         public T GetObject()
         {
-            T item;
-            lock (pool)
-            {
-                if (pool.Count > 0)
-                {
-                    var idx = pool.Count - 1;
-                    item = pool[idx];
-                    pool.RemoveAt(idx);
-                }
-                else
-                {
-                    Interlocked.Increment(ref numberCreated);
-                    item = objectFactory.Invoke();
-                }
-            }
-
-            if (!inUse.TryAdd(item, true))
-            {
-                throw new Exception("Duplicate pull " + typeof(T).Name);
-            }
-
-            return item;
+            if (instanceCount > 0)
+                return pool[--instanceCount];
+            else
+                return objectFactory.Invoke();
         }
 
         /// <summary>
@@ -71,18 +50,9 @@ namespace Infinity.Core
         /// <param name="item">The item to return.</param>
         public void PutObject(T item)
         {
-            if (inUse.TryRemove(item, out bool b))
+            if (instanceCount < MaxNumberObjects)
             {
-                lock (pool)
-                {
-                    pool.Add(item);
-                }
-            }
-            else
-            {
-#if DEBUG
-                throw new Exception("Duplicate add " + typeof(T).Name);
-#endif
+                pool[instanceCount++] = item;
             }
         }
     }
