@@ -39,9 +39,13 @@ namespace Infinity.Core
         public T GetObject()
         {
             if (instanceCount > 0)
+            {
                 return pool[--instanceCount];
+            }
             else
+            {
                 return objectFactory.Invoke();
+            }
         }
 
         /// <summary>

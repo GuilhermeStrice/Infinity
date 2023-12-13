@@ -128,40 +128,49 @@ namespace Infinity.Core
         {
             Socket socket;
 
-            var socketType = (protocol == Protocol.Udp ? SocketType.Dgram : SocketType.Stream);
-            var protoType = (protocol == Protocol.Udp ? ProtocolType.Udp : ProtocolType.Tcp);
+            SocketType socket_type;
+            ProtocolType protocol_type;
+
+            if (protocol == Protocol.Udp)
+            {
+                socket_type = SocketType.Dgram;
+                protocol_type = ProtocolType.Udp;
+            }
+            else
+            {
+                socket_type = SocketType.Stream;
+                protocol_type = ProtocolType.Tcp;
+            }
 
             if (ipMode == IPMode.IPv4)
             {
-                socket = new Socket(AddressFamily.InterNetwork, socketType, protoType);
+                socket = new Socket(AddressFamily.InterNetwork, socket_type, protocol_type);
             }
             else
             {
                 if (!Socket.OSSupportsIPv6)
+                {
                     throw new InvalidOperationException("IPV6 not supported!");
+                }
 
-                socket = new Socket(AddressFamily.InterNetworkV6, socketType, protoType);
+                socket = new Socket(AddressFamily.InterNetworkV6, socket_type, protocol_type);
                 socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             }
 
-            try
+            if (protocol == Protocol.Udp)
             {
-                if (protocol == Protocol.Udp)
-                {
-                    socket.DontFragment = false;
+                socket.DontFragment = false;
 
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        const int SIO_UDP_CONNRESET = -1744830452;
-                        socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
-                    }
-                }
-                else
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    socket.NoDelay = true;
+                    const int SIO_UDP_CONNRESET = -1744830452;
+                    socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
                 }
             }
-            catch { }
+            else
+            {
+                socket.NoDelay = true;
+            }
 
             return socket;
         }
@@ -177,11 +186,7 @@ namespace Infinity.Core
         {
             if (SendDisconnect(null))
             {
-                try
-                {
-                    InvokeDisconnected(reason, msg);
-                }
-                catch { }
+                InvokeDisconnected(reason, msg);
             }
 
             Dispose();
@@ -192,30 +197,8 @@ namespace Infinity.Core
         /// </summary>
         public void DisconnectInternal(InfinityInternalErrors error, string reason)
         {
-            var handler = OnInternalDisconnect;
-            if (handler != null)
-            {
-                MessageWriter messageToRemote = handler(error);
-                if (messageToRemote != null)
-                {
-                    try
-                    {
-                        Disconnect(reason, messageToRemote);
-                    }
-                    finally
-                    {
-                        messageToRemote.Recycle();
-                    }
-                }
-                else
-                {
-                    Disconnect(reason);
-                }
-            }
-            else
-            {
-                Disconnect(reason);
-            }
+            var msg = OnInternalDisconnect?.Invoke(error);
+            Disconnect(reason, msg);
         }
 
         /// <summary>
@@ -225,11 +208,7 @@ namespace Infinity.Core
         {
             if (SendDisconnect(writer))
             {
-                try
-                {
-                    InvokeDisconnected(reason, null);
-                }
-                catch { }
+                InvokeDisconnected(reason, null);
             }
 
             Dispose();
@@ -247,17 +226,10 @@ namespace Infinity.Core
         /// </remarks>
         protected void InvokeDataReceived(MessageReader msg, byte sendOption)
         {
-            // Make a copy to avoid race condition between null check and invocation
-            Action<DataReceivedEventArgs> handler = DataReceived;
-            if (handler != null)
+            if (DataReceived != null)
             {
-                try
-                {
-                    handler(new DataReceivedEventArgs(this, msg, sendOption));
-                }
-                catch
-                {
-                }
+                var args = new DataReceivedEventArgs(this, msg, sendOption);
+                DataReceived.Invoke(args);
             }
             else
             {
@@ -279,13 +251,15 @@ namespace Infinity.Core
         {
             if (Disconnected != null)
             {
-                DisconnectedEventArgs args = new DisconnectedEventArgs(this, e, msg);
-                Disconnected?.Invoke(args);
+                var args = new DisconnectedEventArgs(this, e, msg);
+                Disconnected.Invoke(args);
             }
             else
             {
                 if (msg != null)
+                {
                     msg.Recycle();
+                }
             }
         }
 

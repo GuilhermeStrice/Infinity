@@ -1060,12 +1060,21 @@ namespace test
         }
     }
 
+    public class thing
+    {
+        public Func<InfinityInternalErrors, MessageWriter>? OnInternalDisconnect;
+    }
+
     static class Program
     {
         static volatile int count = 1;
-
+        
         static void Main(string[] args)
         {
+            thing t = new thing();
+            var s = t.OnInternalDisconnect?.Invoke(InfinityInternalErrors.SocketExceptionSend);
+            Console.WriteLine(s == null);
+            Console.ReadKey();
             /*TaskCompletionSource<bool> result = new TaskCompletionSource<bool>();
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -1116,7 +1125,7 @@ namespace test
             Console.WriteLine("done");
             Console.ReadKey();*/
 
-            using (RandomNumberGenerator random = RandomNumberGenerator.Create())
+            /*using (RandomNumberGenerator random = RandomNumberGenerator.Create())
             {
                 byte[] secret = new byte[X25519.KeySize];
                 random.GetBytes(secret);
@@ -1134,7 +1143,7 @@ namespace test
 
                 Console.WriteLine(Convert.ToBase64String(output));
                 Console.ReadKey();
-            }
+            }*/
         }
     }
 }

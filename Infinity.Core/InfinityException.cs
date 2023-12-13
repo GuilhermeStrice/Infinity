@@ -8,12 +8,10 @@
     {
         public InfinityException(string msg) : base(msg)
         {
-
         }
 
         public InfinityException(string msg, Exception e) : base(msg, e)
         {
-
         }
     }
 }

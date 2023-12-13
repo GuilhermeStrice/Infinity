@@ -54,7 +54,7 @@ namespace Infinity.Core
         /// <example>
         ///     <code language="C#" source="DocInclude/TcpListenerExample.cs"/>
         /// </example>
-        public event Action<NewConnectionEventArgs> NewConnection;
+        public event Action<NewConnectionEventArgs>? NewConnection;
 
         /// <summary>
         ///      Invoked when an internal error causes the listener to be unable to continue handling messages.
@@ -64,7 +64,7 @@ namespace Infinity.Core
         ///      When iOS suspends an app, it might also free our socket while not allowing Unity to run in the background.
         ///      When Unity resumes, it can't know that time passed or the socket is freed, so we used to continuously throw internal errors.
         /// </remarks>
-        public event Action<InfinityInternalErrors> OnInternalError;
+        public event Action<InfinityInternalErrors>? OnInternalError;
 
         /// <summary>
         ///     Makes this connection listener begin listening for connections.

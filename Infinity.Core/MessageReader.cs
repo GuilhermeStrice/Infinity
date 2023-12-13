@@ -62,7 +62,8 @@ namespace Infinity.Core
 
         public uint ReadUInt32()
         {
-            uint output = FastByte()
+            uint output =
+                FastByte()
                 | (uint)FastByte() << 8
                 | (uint)FastByte() << 16
                 | (uint)FastByte() << 24;
@@ -72,7 +73,8 @@ namespace Infinity.Core
 
         public int ReadInt32()
         {
-            int output = FastByte()
+            int output =
+                FastByte()
                 | FastByte() << 8
                 | FastByte() << 16
                 | FastByte() << 24;
@@ -82,7 +84,8 @@ namespace Infinity.Core
 
         public ulong ReadUInt64()
         {
-            ulong output = (ulong)FastByte()
+            ulong output =
+                (ulong)FastByte()
                 | (ulong)FastByte() << 8
                 | (ulong)FastByte() << 16
                 | (ulong)FastByte() << 24
@@ -96,7 +99,8 @@ namespace Infinity.Core
 
         public long ReadInt64()
         {
-            long output = (long)FastByte()
+            long output =
+                (long)FastByte()
                 | (long)FastByte() << 8
                 | (long)FastByte() << 16
                 | (long)FastByte() << 24
@@ -111,6 +115,7 @@ namespace Infinity.Core
         public unsafe float ReadSingle()
         {
             float output = 0;
+
             fixed (byte* bufPtr = &Buffer[readHead])
             {
                 byte* outPtr = (byte*)&output;
@@ -128,7 +133,11 @@ namespace Infinity.Core
         public string ReadString()
         {
             int len = ReadPackedInt32();
-            if (BytesRemaining < len) throw new InvalidDataException($"Read length is longer than message length: {len} of {BytesRemaining}");
+
+            if (BytesRemaining < len)
+            {
+                throw new InvalidDataException($"Read length is longer than message length: {len} of {BytesRemaining}");
+            }
 
             string output = Encoding.UTF8.GetString(Buffer, readHead, len);
 
@@ -139,18 +148,26 @@ namespace Infinity.Core
         public byte[] ReadBytesAndSize()
         {
             int len = ReadPackedInt32();
-            if (BytesRemaining < len) throw new InvalidDataException($"Read length is longer than message length: {len} of {BytesRemaining}");
+
+            if (BytesRemaining < len)
+            {
+                throw new InvalidDataException($"Read length is longer than message length: {len} of {BytesRemaining}");
+            }
 
             return ReadBytes(len);
         }
 
         public byte[] ReadBytes(int length)
         {
-            if (BytesRemaining < length) throw new InvalidDataException($"Read length is longer than message length: {length} of {BytesRemaining}");
+            if (BytesRemaining < length)
+            {
+                throw new InvalidDataException($"Read length is longer than message length: {length} of {BytesRemaining}");
+            }
 
             byte[] output = new byte[length];
             Array.Copy(Buffer, readHead, output, 0, output.Length);
             Position += output.Length;
+
             return output;
         }
 
@@ -169,9 +186,13 @@ namespace Infinity.Core
 
             while (readMore)
             {
-                if (BytesRemaining < 1) throw new InvalidDataException($"Read length is longer than message length.");
+                if (BytesRemaining < 1)
+                {
+                    throw new InvalidDataException($"Read length is longer than message length.");
+                }
 
                 byte b = ReadByte();
+
                 if (b >= 0x80)
                 {
                     readMore = true;

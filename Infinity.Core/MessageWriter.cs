@@ -14,49 +14,56 @@ namespace Infinity.Core
 
         public byte SendOption { get; private set; }
 
-        public MessageWriter(byte[] buffer)
+        internal MessageWriter(byte[] buffer)
         {
             Buffer = buffer;
             Length = Buffer.Length;
         }
 
-        public MessageWriter(int bufferSize)
+        internal MessageWriter(int bufferSize)
         {
             Buffer = new byte[bufferSize];
         }
 
         #region WriteMethods
+        private void FixLength()
+        {
+            if (Position > Length)
+            {
+                Length = Position;
+            }
+        }
 
         public void Write(bool value)
         {
             Buffer[Position++] = (byte)(value ? 1 : 0);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(sbyte value)
         {
             Buffer[Position++] = (byte)value;
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(byte value)
         {
             Buffer[Position++] = value;
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(short value)
         {
             Buffer[Position++] = (byte)value;
             Buffer[Position++] = (byte)(value >> 8);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(ushort value)
         {
             Buffer[Position++] = (byte)value;
             Buffer[Position++] = (byte)(value >> 8);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(uint value)
@@ -65,7 +72,7 @@ namespace Infinity.Core
             Buffer[Position++] = (byte)(value >> 8);
             Buffer[Position++] = (byte)(value >> 16);
             Buffer[Position++] = (byte)(value >> 24);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(int value)
@@ -74,7 +81,7 @@ namespace Infinity.Core
             Buffer[Position++] = (byte)(value >> 8);
             Buffer[Position++] = (byte)(value >> 16);
             Buffer[Position++] = (byte)(value >> 24);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(ulong value)
@@ -87,7 +94,7 @@ namespace Infinity.Core
             Buffer[Position++] = (byte)(value >> 40);
             Buffer[Position++] = (byte)(value >> 48);
             Buffer[Position++] = (byte)(value >> 56);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(long value)
@@ -100,7 +107,7 @@ namespace Infinity.Core
             Buffer[Position++] = (byte)(value >> 40);
             Buffer[Position++] = (byte)(value >> 48);
             Buffer[Position++] = (byte)(value >> 56);
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public unsafe void Write(float value)
@@ -116,7 +123,7 @@ namespace Infinity.Core
             }
 
             Position += 4;
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(string value)
@@ -148,21 +155,21 @@ namespace Infinity.Core
         {
             Array.Copy(bytes, 0, Buffer, Position, bytes.Length);
             Position += bytes.Length;
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(byte[] bytes, int offset, int length)
         {
             Array.Copy(bytes, offset, Buffer, Position, length);
             Position += length;
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void Write(byte[] bytes, int length)
         {
             Array.Copy(bytes, 0, Buffer, Position, length);
             Position += length;
-            if (Position > Length) Length = Position;
+            FixLength();
         }
 
         public void WritePacked(int value)
@@ -182,7 +189,8 @@ namespace Infinity.Core
 
                 Write(b);
                 value >>= 7;
-            } while (value > 0);
+            }
+            while (value > 0);
         }
         #endregion
 
