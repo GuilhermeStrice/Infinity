@@ -71,6 +71,11 @@ namespace Infinity.Core.Udp
                 
                 WriteBytesToConnection(buffer, buffer.Length);
             }
+
+            if (last_fragment_id_allocated > ushort.MaxValue)
+            {
+                Interlocked.Exchange(ref last_fragment_id_allocated, 0);
+            }
         }
 
         void FragmentMessageReceive(MessageReader _reader)

@@ -94,15 +94,13 @@ namespace Infinity.Core.Tests
 
                 Thread.Sleep(100);
 
-                var message = MessageWriter.Get();
-                message.Write(UdpSendOption.Reliable);
-                message.Position += 2;
+                var message = UdpMessageFactory.BuildFragmentedMessage();
                 message.Write(_testData, _testData.Length);
 
                 for (int i = 0; i < 100; i++)
                 {
                     connection.Send(message);
-                    Thread.Sleep(5);
+                    Thread.Sleep(1);
                 }
 
                 message.Recycle();
