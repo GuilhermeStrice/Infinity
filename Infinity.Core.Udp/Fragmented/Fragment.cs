@@ -2,8 +2,8 @@
 {
     internal class Fragment : IRecyclable
     {
-        public int Id { get; set; }
-        public MessageReader Reader { get; set; }
+        public int Id;
+        public MessageReader Reader;
 
         public Fragment()
         {

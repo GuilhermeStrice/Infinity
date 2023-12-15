@@ -12,11 +12,11 @@ namespace Infinity.Server
         private TcpConnectionListener tcpListener;
         private UdpConnectionListener udpListener;
 
-        public int TcpPort { get; set; }
-        public int UdpPort { get; set; }
+        public int TcpPort;
+        public int UdpPort;
 
-        public bool UseUdp { get; set; }
-        public bool UseTcp { get; set; }
+        public bool UseUdp;
+        public bool UseTcp;
 
         private IPMode ipMode;
         private IPAddress ipAddress;

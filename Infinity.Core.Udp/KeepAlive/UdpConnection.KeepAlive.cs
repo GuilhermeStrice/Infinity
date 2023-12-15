@@ -32,7 +32,7 @@
         }
         private int keep_alive_interval = 1500;
 
-        public int MissingPingsUntilDisconnect { get; set; } = 6;
+        public int MissingPingsUntilDisconnect = 6;
         private volatile int pings_since_ack = 0;
 
         /// <summary>
