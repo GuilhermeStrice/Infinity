@@ -4,8 +4,6 @@ namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
-        internal readonly ObjectPool<Packet> PacketPool;
-
         /// <summary>
         ///     The starting timeout, in miliseconds, at which data will be resent.
         /// </summary>
@@ -114,8 +112,9 @@ namespace Infinity.Core.Udp
                 resend_delay_ms = Math.Clamp((int)(ping_ms * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
             }
 
-            Packet packet = PacketPool.GetObject();
+            Packet packet = Pools.PacketPool.GetObject();
             packet.Set(
+                this,
                 id,
                 _buffer,
                 _buffer.Length,

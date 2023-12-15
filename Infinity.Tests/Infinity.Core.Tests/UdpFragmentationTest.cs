@@ -42,7 +42,7 @@ namespace Infinity.Core.Tests
                 connection.Connect();
 
                 var message = MessageWriter.Get(3);
-                message.Buffer[0] = UdpSendOption.Reliable;
+                message.Buffer[0] = UdpSendOption.Fragmented;
                 message.Write(_testData, _testData.Length);
 
                 connection.Send(message);

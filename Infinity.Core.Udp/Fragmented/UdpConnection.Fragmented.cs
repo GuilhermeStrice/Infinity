@@ -104,7 +104,7 @@ namespace Infinity.Core.Udp
                     if (fragmented_message.Fragments.Count == fragments_count)
                     {
                         var writer = MessageWriter.Get(3);
-                        writer.Buffer[0] = UdpSendOption.Reliable;
+                        writer.Buffer[0] = UdpSendOption.Fragmented;
 
                         foreach (var f in fragmented_message.Fragments.OrderBy(fragment => fragment.Id))
                         {

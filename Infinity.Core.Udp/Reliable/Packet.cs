@@ -13,7 +13,7 @@ namespace Infinity.Core.Udp
 
         public ushort Id;
         private byte[]? Data;
-        private readonly UdpConnection Connection;
+        private UdpConnection Connection;
         private int Length;
 
         public int NextTimeoutMs;
@@ -24,13 +24,13 @@ namespace Infinity.Core.Udp
         public int Retransmissions;
         public Stopwatch Stopwatch = new Stopwatch();
 
-        public Packet(UdpConnection _connection)
+        public Packet()
         {
-            Connection = _connection;
         }
 
-        public void Set(ushort _id, byte[] _data, int _length, int _timeout, Action _ack_callback)
+        public void Set(UdpConnection _connection, ushort _id, byte[] _data, int _length, int _timeout, Action _ack_callback)
         {
+            Connection = _connection;
             Id = _id;
             Data = _data;
             Length = _length;
@@ -107,7 +107,7 @@ namespace Infinity.Core.Udp
         {
             Acknowledged = true;
 
-            Connection.PacketPool.PutObject(this);
+            Pools.PacketPool.PutObject(this);
         }
     }
 }

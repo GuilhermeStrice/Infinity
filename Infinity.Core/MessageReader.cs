@@ -5,8 +5,6 @@ namespace Infinity.Core
 {
     public class MessageReader : IRecyclable
     {
-        internal static readonly ObjectPool<MessageReader> ReaderPool = new ObjectPool<MessageReader>(() => new MessageReader());
-
         public byte[] ?Buffer;
 
         public int Length;
@@ -220,7 +218,7 @@ namespace Infinity.Core
 
         public static MessageReader Get(byte[] _buffer)
         {
-            var output = ReaderPool.GetObject();
+            var output = Pools.ReaderPool.GetObject();
 
             output.Buffer = _buffer;
             output.Offset = 0;
@@ -232,7 +230,7 @@ namespace Infinity.Core
 
         public static MessageReader GetSized(int _min_size)
         {
-            var output = ReaderPool.GetObject();
+            var output = Pools.ReaderPool.GetObject();
 
             if (output.Buffer == null || output.Buffer.Length < _min_size)
             {
@@ -265,7 +263,7 @@ namespace Infinity.Core
 
         public void Recycle()
         {
-            ReaderPool.PutObject(this);
+            Pools.ReaderPool.PutObject(this);
         }
 
         public MessageReader Duplicate()

@@ -48,6 +48,8 @@
         /// </summary>
         public const byte ReliableOrdered = 20;
 
+        public const byte Fragmented = 21;
+
         /// <summary>
         ///     Message for discontinuing communication.
         /// </summary>

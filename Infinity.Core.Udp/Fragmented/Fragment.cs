@@ -2,8 +2,6 @@
 {
     internal class Fragment : IRecyclable
     {
-        public static readonly ObjectPool<Fragment> FragmentPool = new ObjectPool<Fragment>(() => new Fragment());
-
         public int Id { get; set; }
         public MessageReader Reader { get; set; }
 
@@ -13,7 +11,7 @@
 
         public static Fragment Get()
         {
-            return FragmentPool.GetObject();
+            return Pools.FragmentPool.GetObject();
         }
 
         public void Recycle()
@@ -21,7 +19,7 @@
             Reader.Recycle();
             Id = -1;
 
-            FragmentPool.PutObject(this);
+            Pools.FragmentPool.PutObject(this);
         }
     }
 }

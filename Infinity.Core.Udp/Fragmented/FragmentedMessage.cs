@@ -5,8 +5,6 @@
     /// </summary>
     internal class FragmentedMessage : IRecyclable
     {
-        public static readonly ObjectPool<FragmentedMessage> FragmentedMessagePool = new ObjectPool<FragmentedMessage>(() => new FragmentedMessage());
-
         /// <summary>
         ///     The total number of fragments expected.
         /// </summary>
@@ -23,7 +21,7 @@
 
         public static FragmentedMessage Get()
         {
-            return FragmentedMessagePool.GetObject();
+            return Pools.FragmentedMessagePool.GetObject();
         }
 
         public void Recycle()
@@ -35,7 +33,7 @@
 
             Fragments.Clear();
 
-            FragmentedMessagePool.PutObject(this);
+            Pools.FragmentedMessagePool.PutObject(this);
         }
     }
 }

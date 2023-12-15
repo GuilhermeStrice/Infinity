@@ -19,7 +19,6 @@ namespace Infinity.Core.Udp
             Statistics = new UdpConnectionStatistics();
 
             logger = _logger;
-            PacketPool = new ObjectPool<Packet>(() => new Packet(this));
         }
 
         /// <summary>
@@ -47,8 +46,7 @@ namespace Infinity.Core.Udp
                     // we automagically send fragments if its greater than fragment size
                     if (_writer.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                     {
-                        FragmentedSend(buffer);
-                        Statistics.LogFragmentedMessageSent(buffer.Length);
+                        throw new InfinityException("not allowed");
                     }
                     else
                     {
@@ -64,6 +62,13 @@ namespace Infinity.Core.Udp
 
                     OrderedSend(buffer);
                     Statistics.LogReliableMessageSent(buffer.Length);
+                }
+                else if (_writer.Buffer[0] == UdpSendOption.Fragmented)
+                {
+                    if (_writer.Length <= (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
+                        throw new InfinityException("Message not big enough");
+                    FragmentedSend(buffer);
+                    Statistics.LogFragmentedMessageSent(buffer.Length);
                 }
                 else
                 {
