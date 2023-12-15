@@ -12,16 +12,13 @@
             return writer;
         }
 
-        internal static MessageWriter BuildFragmentMessage(ushort _fragment_count, ushort _fragmented_message_id)
+        public static MessageWriter BuildOrderedMessage()
         {
             MessageWriter writer = MessageWriter.Get();
 
-            writer.Write(UdpSendOptionInternal.Fragment);
+            writer.Write(UdpSendOption.ReliableOrdered);
 
-            writer.Position += 2; // Reliable id
-
-            writer.Write(_fragment_count);
-            writer.Write(_fragmented_message_id);
+            writer.Position += 3; // Reliable id and the before id
 
             return writer;
         }

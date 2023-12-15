@@ -56,7 +56,9 @@ namespace Infinity.Core.Udp
                 else if (_writer.Buffer[0] == UdpSendOption.ReliableOrdered)
                 {
                     if (_writer.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
+                    {
                         throw new InfinityException("not allowed");
+                    }
 
                     byte[] buffer = new byte[_writer.Length];
                     Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
@@ -67,7 +69,9 @@ namespace Infinity.Core.Udp
                 else if (_writer.Buffer[0] == UdpSendOption.Fragmented)
                 {
                     if (_writer.Length <= (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
+                    {
                         throw new InfinityException("Message not big enough");
+                    }
 
                     byte[] buffer = new byte[_writer.Length - 3];
                     Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);

@@ -11,22 +11,15 @@ namespace Infinity.Core.Udp
         internal volatile int send_sequence = 0;
         internal volatile int receive_sequence = 1;
 
-        void OrderedSend(byte[] data)
+        void OrderedSend(byte[] _data)
         {
-            var buffer = new byte[data.Length + ordered_header_size - 3];
+            AttachReliableID(_data, 1);
 
-            buffer[0] = UdpSendOption.ReliableOrdered;
+            _data[3] = (byte)send_sequence;
 
-            AttachReliableID(buffer, 1);
-
-            int before = send_sequence;
             Interlocked.Exchange(ref send_sequence, (send_sequence + 1) % 255);
 
-            buffer[3] = (byte)before;
-
-            Buffer.BlockCopy(data, 3, buffer, ordered_header_size, data.Length - 3);
-
-            WriteBytesToConnection(buffer, buffer.Length);
+            WriteBytesToConnection(_data, _data.Length);
         }
 
         void OrderedMessageReceived(MessageReader _reader)

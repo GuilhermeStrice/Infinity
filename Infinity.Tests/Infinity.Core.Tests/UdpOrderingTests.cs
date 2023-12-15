@@ -50,19 +50,17 @@ namespace Infinity.Core.Tests
 
                 Thread.Sleep(100);
 
-                var message = MessageWriter.Get();
-                message.Write(UdpSendOption.ReliableOrdered);
-                message.Position += 2;
-                message.Write(20);
+                var writer = UdpMessageFactory.BuildOrderedMessage();
+                writer.Write(20);
 
                 // needs further testing
                 for (int i = 0; i < 300; i++)
                 {
-                    connection.Send(message);
+                    connection.Send(writer);
                     Thread.Sleep(1); // might be a local host problem, but if packets are sent too quickly this test doesn't run
                 }
 
-                message.Recycle();
+                writer.Recycle();
             }
 
             result.Task.Wait();
