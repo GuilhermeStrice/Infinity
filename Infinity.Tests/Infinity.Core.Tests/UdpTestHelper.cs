@@ -43,10 +43,10 @@ namespace Infinity.Core.Tests
             mutex.WaitOne();
 
             var reader = data.ToReader();
-            Assert.Equal(reader.Length, result.Value.Message.Length); // + 3 to account for sendOption and reliable id
+            Assert.Equal(reader.Length, result.Value.Message.Length);
             for (int i = reader.Offset; i < reader.Length; i++)
             {
-                Assert.Equal(reader.Buffer[i], result.Value.Message.ReadByte());
+                Assert.Equal(reader.Buffer[i], result.Value.Message.Buffer[i]);
             }
 
             Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
@@ -100,6 +100,11 @@ namespace Infinity.Core.Tests
             {
                 dataReader.Position += 3;
                 result.Value.Message.Position += 3;
+            }
+            else
+            {
+                dataReader.Position += 1;
+                result.Value.Message.Position += 1;
             }
 
             Assert.Equal(dataReader.Length, result.Value.Message.Length);

@@ -12,6 +12,15 @@
             return writer;
         }
 
+        public static MessageWriter BuildUnreliableMessage()
+        {
+            MessageWriter writer = MessageWriter.Get();
+
+            writer.Write(UdpSendOption.Unreliable);
+
+            return writer;
+        }
+
         public static MessageWriter BuildReliableMessage()
         {
             MessageWriter writer = MessageWriter.Get();

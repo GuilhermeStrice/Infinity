@@ -43,12 +43,10 @@ namespace Infinity.Core.Tests
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
 
-                var message = MessageWriter.Get();
-                message.Write(UdpSendOption.Fragmented);
-                message.Position += 2;
-                message.Write(_testData, _testData.Length);
+                var writer = UdpMessageFactory.BuildFragmentedMessage();
+                writer.Write(_testData);
 
-                connection.Send(message);
+                connection.Send(writer);
 
                 result.Task.Wait();
             }

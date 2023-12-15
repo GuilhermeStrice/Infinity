@@ -135,7 +135,6 @@ namespace Infinity.Core.Tests
         [Fact]
         public void UdpUnreliableMessageSendTest()
         {
-            byte[] TestData = new byte[] { 1, 2, 3, 4, 5, 6 };
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -145,7 +144,6 @@ namespace Infinity.Core.Tests
                     e.Connection.DataReceived += delegate (DataReceivedEventArgs evt)
                     {
                         output = evt.Message;
-                        output.Position++;
                     };
                 };
 
@@ -154,19 +152,20 @@ namespace Infinity.Core.Tests
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
 
+                var writer = UdpMessageFactory.BuildUnreliableMessage();
+                writer.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
+
                 for (int i = 0; i < 4; ++i)
                 {
-                    var msg = MessageWriter.Get();
-                    msg.Write(UdpSendOption.Unreliable);
-                    msg.Write(TestData);
-                    connection.Send(msg);
-                    msg.Recycle();
+                    connection.Send(writer);
                 }
 
+                writer.Recycle();
+
                 Thread.Sleep(10);
-                for (int i = 0; i < TestData.Length; ++i)
+                for (int i = 0; i < writer.Length; ++i)
                 {
-                    Assert.Equal(TestData[i], output.ReadByte());
+                    Assert.Equal(writer.Buffer[i], output.Buffer[i]);
                 }
             }
         }
@@ -510,8 +509,7 @@ namespace Infinity.Core.Tests
                     Task.Run(async () =>
                     {
                         await Task.Delay(100);
-                        MessageWriter writer = MessageWriter.Get();
-                        writer.Write(UdpSendOption.Unreliable);
+                        MessageWriter writer = UdpMessageFactory.BuildUnreliableMessage();
                         writer.Write("Goodbye");
                         args.Connection.Disconnect("Testing", writer);
                     });
