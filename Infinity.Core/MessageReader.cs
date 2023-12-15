@@ -169,13 +169,11 @@ namespace Infinity.Core
             return output;
         }
 
-        ///
         public int ReadPackedInt32()
         {
             return (int)ReadPackedUInt32();
         }
 
-        ///
         public uint ReadPackedUInt32()
         {
             bool read_more = true;
@@ -243,21 +241,6 @@ namespace Infinity.Core
 
             output.Offset = 0;
             output.Position = 0;
-            return output;
-        }
-
-        public static MessageReader Get(MessageReader _source)
-        {
-            var output = GetSized(_source.Buffer.Length);
-            System.Buffer.BlockCopy(_source.Buffer, 0, output.Buffer, 0, _source.Buffer.Length);
-
-            output.Offset = _source.Offset;
-
-            output._position = _source._position;
-            output.head = _source.head;
-
-            output.Length = _source.Length;
-
             return output;
         }
 

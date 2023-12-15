@@ -10,12 +10,6 @@ namespace Infinity.Core
         public int Length;
         public int Position;
 
-        internal MessageWriter(byte[] _buffer)
-        {
-            Buffer = _buffer;
-            Length = Buffer.Length;
-        }
-
         internal MessageWriter(int _buffer_size)
         {
             Buffer = new byte[_buffer_size];
@@ -202,24 +196,18 @@ namespace Infinity.Core
             return output;
         }
 
-        public static MessageWriter Get(int _offset)
+        public static MessageWriter Get()
         {
             var output = Pools.WriterPool.GetObject();
-            output.Clear(_offset);
+
+            Array.Clear(output.Buffer, 0, output.Buffer.Length);
+            output.Length = output.Position = 0;
 
             return output;
         }
 
-        public void Clear(int _offset)
-        {
-            Array.Clear(Buffer, 0, Buffer.Length);
-
-            Length = Position = _offset;
-        }
-
         public void Recycle()
         {
-            Position = Length = 0;
             Pools.WriterPool.PutObject(this);
         }
 

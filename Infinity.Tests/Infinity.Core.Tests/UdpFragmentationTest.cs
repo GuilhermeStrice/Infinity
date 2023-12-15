@@ -41,8 +41,9 @@ namespace Infinity.Core.Tests
                 listener.Start();
                 connection.Connect();
 
-                var message = MessageWriter.Get(3);
-                message.Buffer[0] = UdpSendOption.Fragmented;
+                var message = MessageWriter.Get();
+                message.Write(UdpSendOption.Fragmented);
+                message.Position += 2;
                 message.Write(_testData, _testData.Length);
 
                 connection.Send(message);
@@ -89,8 +90,9 @@ namespace Infinity.Core.Tests
 
                 Thread.Sleep(100);
 
-                var message = MessageWriter.Get(3);
-                message.Buffer[0] = UdpSendOption.Reliable;
+                var message = MessageWriter.Get();
+                message.Write(UdpSendOption.Reliable);
+                message.Position += 2;
                 message.Write(_testData, _testData.Length);
 
                 for (int i = 0; i < 100; i++)

@@ -45,10 +45,7 @@ namespace Infinity.Core.Udp
             var id = (ushort)Interlocked.Increment(ref last_fragment_id_allocated);
             var mtu = (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6);
 
-            var data_without_header = new byte[_data.Length - 3];
-            Array.Copy(_data, 3, data_without_header, 0, data_without_header.Length);
-
-            var fragments_count = (int)Math.Ceiling(data_without_header.Length / (double)mtu);
+            var fragments_count = (int)Math.Ceiling(_data.Length / (double)mtu);
 
             if (fragments_count >= ushort.MaxValue)
             {
@@ -57,7 +54,7 @@ namespace Infinity.Core.Udp
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(mtu, data_without_header.Length - mtu * i);
+                var data_length = Math.Min(mtu, _data.Length - mtu * i);
                 var buffer = new byte[data_length + fragment_header_size];
 
                 buffer[0] = UdpSendOptionInternal.Fragment;
@@ -70,7 +67,7 @@ namespace Infinity.Core.Udp
                 buffer[5] = (byte)id;
                 buffer[6] = (byte)(id >> 8);
 
-                Buffer.BlockCopy(data_without_header, mtu * i, buffer, fragment_header_size, data_length);
+                Buffer.BlockCopy(_data, mtu * i, buffer, fragment_header_size, data_length);
                 
                 WriteBytesToConnection(buffer, buffer.Length);
             }
@@ -103,8 +100,7 @@ namespace Infinity.Core.Udp
 
                     if (fragmented_message.Fragments.Count == fragments_count)
                     {
-                        var writer = MessageWriter.Get(3);
-                        writer.Buffer[0] = UdpSendOption.Fragmented;
+                        var writer = UdpMessageFactory.BuildFragmentedMessage();
 
                         foreach (var f in fragmented_message.Fragments.OrderBy(fragment => fragment.Id))
                         {

@@ -38,9 +38,6 @@ namespace Infinity.Core.Udp
             {
                 InvokeBeforeSend(_writer);
 
-                byte[] buffer = new byte[_writer.Length];
-                Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
                 if (_writer.Buffer[0] == UdpSendOption.Reliable)
                 {
                     // we automagically send fragments if its greater than fragment size
@@ -48,17 +45,21 @@ namespace Infinity.Core.Udp
                     {
                         throw new InfinityException("not allowed");
                     }
-                    else
-                    {
-                        AttachReliableID(buffer, 1);
-                        WriteBytesToConnection(buffer, buffer.Length);
-                        Statistics.LogReliableMessageSent(buffer.Length);
-                    }
+
+                    byte[] buffer = new byte[_writer.Length];
+                    Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+                    AttachReliableID(buffer, 1);
+                    WriteBytesToConnection(buffer, buffer.Length);
+                    Statistics.LogReliableMessageSent(buffer.Length);
                 }
                 else if (_writer.Buffer[0] == UdpSendOption.ReliableOrdered)
                 {
                     if (_writer.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                         throw new InfinityException("not allowed");
+
+                    byte[] buffer = new byte[_writer.Length];
+                    Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
                     OrderedSend(buffer);
                     Statistics.LogReliableMessageSent(buffer.Length);
@@ -67,11 +68,18 @@ namespace Infinity.Core.Udp
                 {
                     if (_writer.Length <= (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                         throw new InfinityException("Message not big enough");
+
+                    byte[] buffer = new byte[_writer.Length - 3];
+                    Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
+
                     FragmentedSend(buffer);
                     Statistics.LogFragmentedMessageSent(buffer.Length);
                 }
                 else
                 {
+                    byte[] buffer = new byte[_writer.Length];
+                    Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
                     WriteBytesToConnection(buffer, buffer.Length);
                     Statistics.LogUnreliableMessageSent(buffer.Length);
                 }

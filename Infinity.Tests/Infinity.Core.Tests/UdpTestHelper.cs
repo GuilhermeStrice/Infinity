@@ -216,14 +216,15 @@ namespace Infinity.Core.Tests
         /// <returns>The data.</returns>
         static MessageWriter BuildData(byte sendOption, int dataSize)
         {
-            int offset = 3;
+            int offset = 2;
             if (sendOption == UdpSendOption.Unreliable)
             {
-                offset = 1;
+                offset = 0;
             }
 
-            var output = MessageWriter.Get(offset);
-            output.Buffer[0] = sendOption;
+            var output = MessageWriter.Get();
+            output.Write(sendOption);
+            output.Position += offset;
             for (int i = 0; i < dataSize; i++)
             {
                 output.Write((byte)i);
