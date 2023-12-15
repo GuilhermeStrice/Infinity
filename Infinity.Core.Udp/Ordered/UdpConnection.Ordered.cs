@@ -11,15 +11,15 @@ namespace Infinity.Core.Udp
         internal volatile int send_sequence = 0;
         internal volatile int receive_sequence = 1;
 
-        void OrderedSend(byte[] _data)
+        void OrderedSend(byte[] _buffer)
         {
-            AttachReliableID(_data, 1);
+            AttachReliableID(_buffer, 1);
 
-            _data[3] = (byte)send_sequence;
+            _buffer[3] = (byte)send_sequence;
 
             Interlocked.Exchange(ref send_sequence, (send_sequence + 1) % 255);
 
-            WriteBytesToConnection(_data, _data.Length);
+            WriteBytesToConnection(_buffer, _buffer.Length);
         }
 
         void OrderedMessageReceived(MessageReader _reader)

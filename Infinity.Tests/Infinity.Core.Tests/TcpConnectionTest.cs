@@ -1,4 +1,6 @@
 ﻿using Infinity.Core.Tcp;
+using Infinity.Core.Udp;
+using System.ComponentModel;
 using System.Net;
 using Xunit.Abstractions;
 
@@ -24,7 +26,8 @@ namespace Infinity.Core.Tests
             {
                 listener.Start();
 
-                connection.Connect();
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
 
                 //Connection fields
                 Assert.Equal(ep, connection.EndPoint);
@@ -48,7 +51,9 @@ namespace Infinity.Core.Tests
                     Assert.True(Enumerable.SequenceEqual(e.HandshakeData.Buffer, new byte[] { 1, 2, 3, 4, 5, 6 }));
                 };
 
-                connection.Connect(new byte[] { 1, 2, 3, 4, 5, 6 });
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                handshake.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
+                connection.Connect(handshake);
             }
         }
 
@@ -63,7 +68,8 @@ namespace Infinity.Core.Tests
             {
                 listener.Start();
 
-                connection.Connect();
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
             }
         }
 
@@ -79,7 +85,8 @@ namespace Infinity.Core.Tests
 
                 using (TcpConnection connection = new TcpConnection(new IPEndPoint(IPAddress.IPv6Loopback, 4296), IPMode.IPv6))
                 {
-                    connection.Connect();
+                    var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                    connection.Connect(handshake);
                 }
             }
         }

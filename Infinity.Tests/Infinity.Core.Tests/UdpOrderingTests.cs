@@ -36,7 +36,7 @@ namespace Infinity.Core.Tests
 
                         var receivedData = data.Message.ReadInt32();
 
-                        Assert.Equal(receivedData, 20);
+                        Assert.Equal(20, receivedData);
 
                         Interlocked.Increment(ref count);
 
@@ -46,7 +46,9 @@ namespace Infinity.Core.Tests
                 };
 
                 listener.Start();
-                connection.Connect();
+
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
 
                 Thread.Sleep(100);
 

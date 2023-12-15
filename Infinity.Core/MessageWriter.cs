@@ -200,7 +200,7 @@ namespace Infinity.Core
         {
             var output = Pools.WriterPool.GetObject();
 
-            Array.Clear(output.Buffer, 0, output.Buffer.Length);
+            Array.Clear(output.Buffer, 0, output.Length);
             output.Length = output.Position = 0;
 
             return output;

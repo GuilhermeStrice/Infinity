@@ -18,7 +18,9 @@ namespace Infinity.Core.Tests
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.KeepAliveInterval = 50;
 
-                    connection.Connect(new byte[5]);
+                    var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                    handshake.Write(new byte[5]);
+                    connection.Connect(handshake);
                 });
         }
 

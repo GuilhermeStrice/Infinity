@@ -12,7 +12,7 @@ namespace Infinity.Core.Udp
         public const int MaxAdditionalResendDelayMs = 1000;
 
         public ushort Id;
-        private byte[]? Data;
+        private byte[] Buffer;
         private UdpConnection Connection;
         private int Length;
 
@@ -24,15 +24,11 @@ namespace Infinity.Core.Udp
         public int Retransmissions;
         public Stopwatch Stopwatch = new Stopwatch();
 
-        public Packet()
-        {
-        }
-
-        public void Set(UdpConnection _connection, ushort _id, byte[] _data, int _length, int _timeout, Action _ack_callback)
+        public void Set(UdpConnection _connection, ushort _id, byte[] _buffer, int _length, int _timeout, Action _ack_callback)
         {
             Connection = _connection;
             Id = _id;
-            Data = _data;
+            Buffer = _buffer;
             Length = _length;
 
             Acknowledged = false;
@@ -85,7 +81,7 @@ namespace Infinity.Core.Udp
 
                     try
                     {
-                        Connection.WriteBytesToConnection(Data, Length);
+                        Connection.WriteBytesToConnection(Buffer, Length);
                         Connection.Statistics.LogMessageResent(Length);
 
                         return 1;

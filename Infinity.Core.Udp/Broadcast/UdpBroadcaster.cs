@@ -50,20 +50,20 @@ namespace Infinity.Core.Udp.Broadcast
             return socket;
         }
 
-        public void Broadcast(byte[] _data)
+        public void Broadcast(byte[] _buffer)
         {
-            if (_data == null || _data.Length == 0)
+            if (_buffer == null || _buffer.Length == 0)
             {
                 throw new ArgumentException("Data argument must not be null and it's length must be greater than 0");
             }
 
-            int data_length = _data.Length;
+            int data_length = _buffer.Length;
             int identifier_length = identifier.Length;
 
             var buffer = new byte[identifier_length + data_length];
 
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
-            Array.Copy(_data, 0, buffer, identifier_length, data_length);
+            Array.Copy(_buffer, 0, buffer, identifier_length, data_length);
 
             foreach (var available_addr in available_addresses)
             {

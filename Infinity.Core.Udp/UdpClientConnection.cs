@@ -109,9 +109,9 @@ namespace Infinity.Core.Udp
             }
         }
 
-        public override void Connect(byte[] _bytes = null, int _timeout = 5000)
+        public override void Connect(MessageWriter _writer, int _timeout = 5000)
         {
-            ConnectAsync(_bytes);
+            ConnectAsync(_writer);
 
             //Wait till Handshake packet is acknowledged and the state is set to Connected
             bool timed_out = !connect_wait_lock.WaitOne(_timeout);
@@ -124,7 +124,7 @@ namespace Infinity.Core.Udp
             }
         }
 
-        public override void ConnectAsync(byte[] _bytes = null)
+        public override void ConnectAsync(MessageWriter _writer)
         {
             State = ConnectionState.Connecting;
 
@@ -164,7 +164,7 @@ namespace Infinity.Core.Udp
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             // When acknowledged set the state to connected
-            SendHandshake(_bytes, () =>
+            SendHandshake(_writer, () =>
             {
                 State = ConnectionState.Connected;
                 InitializeKeepAliveTimer();

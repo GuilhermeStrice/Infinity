@@ -175,9 +175,9 @@ namespace Infinity.Core
             return socket;
         }
 
-        public abstract void Connect(byte[] _bytes = null, int _timeout = 5000);
+        public abstract void Connect(MessageWriter _writer, int _timeout = 5000);
 
-        public abstract void ConnectAsync(byte[] _bytes = null);
+        public abstract void ConnectAsync(MessageWriter _writer);
 
         /// <summary>
         ///     Called when the socket has been disconnected at the remote host.

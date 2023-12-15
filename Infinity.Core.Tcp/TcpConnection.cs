@@ -54,7 +54,7 @@ namespace Infinity.Core.Tcp
             socket = CreateSocket(Protocol.Tcp, ipMode);
         }
 
-        public override void Connect(byte[] bytes = null, int timeout = 5000)
+        public override void Connect(MessageWriter _writer, int timeout = 5000)
         {
             //Connect
             State = ConnectionState.Connecting;
@@ -84,19 +84,19 @@ namespace Infinity.Core.Tcp
                 throw new InfinityException("An exception occured while initiating the first receive operation.", e);
             }
 
-            SendHandshake(bytes, () =>
+            SendHandshake(_writer, () =>
             {
             });
         }
 
-        public override void ConnectAsync(byte[] bytes = null)
+        public override void ConnectAsync(MessageWriter _writer)
         {
             //Connect
             State = ConnectionState.Connecting;
 
             try
             {
-                IAsyncResult result = socket.BeginConnect(EndPoint, HandleConnectAsync, bytes);
+                IAsyncResult result = socket.BeginConnect(EndPoint, HandleConnectAsync, _writer);
             }
             catch (Exception e)
             {
@@ -122,7 +122,7 @@ namespace Infinity.Core.Tcp
                     throw new InfinityException("An exception occured while initiating the first receive operation.", e);
                 }
 
-                SendHandshake((byte[])result.AsyncState, () =>
+                SendHandshake((MessageWriter)result.AsyncState, () =>
                 {
                 });
             }
@@ -136,17 +136,9 @@ namespace Infinity.Core.Tcp
         ///     Sends a Handshake packet to the remote endpoint.
         /// </summary>
         /// <param name="acknowledgeCallback">The callback to invoke when the Handshake packet is acknowledged.</param>
-        protected void SendHandshake(byte[] bytes, Action acknowledgeCallback)
+        protected void SendHandshake(MessageWriter _writer, Action acknowledgeCallback)
         {
-            MessageWriter msg = MessageWriter.Get();
-            msg.Write(TcpSendOptionInternal.Handshake);
-
-            if (bytes != null)
-            {
-                Buffer.BlockCopy(bytes, 0, msg.Buffer, 1, bytes.Length);
-            }
-
-            Send(msg);
+            Send(_writer);
         }
 
         /// <summary>

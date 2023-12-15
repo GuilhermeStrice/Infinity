@@ -49,9 +49,7 @@ namespace Infinity.Core.Udp
                     byte[] buffer = new byte[_writer.Length];
                     Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
-                    AttachReliableID(buffer, 1);
-                    WriteBytesToConnection(buffer, buffer.Length);
-                    Statistics.LogReliableMessageSent(buffer.Length);
+                    ReliableSend(buffer);
                 }
                 else if (_writer.Buffer[0] == UdpSendOption.ReliableOrdered)
                 {
@@ -190,20 +188,12 @@ namespace Infinity.Core.Udp
         ///     Sends a Handshake packet to the remote endpoint.
         /// </summary>
         /// <param name="_acknowledge_callback">The callback to invoke when the Handshake packet is acknowledged.</param>
-        protected void SendHandshake(byte[] _bytes, Action _acknowledge_callback)
+        protected void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
         {
-            byte[] actual_bytes;
-            if (_bytes == null)
-            {
-                actual_bytes = new byte[1];
-            }
-            else
-            {
-                actual_bytes = new byte[_bytes.Length + 1];
-                Buffer.BlockCopy(_bytes, 0, actual_bytes, 1, _bytes.Length);
-            }
+            byte[] buffer = new byte[_writer.Length];
+            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
-            ReliableSend(UdpSendOptionInternal.Handshake, actual_bytes, _acknowledge_callback);
+            ReliableSend(buffer, _acknowledge_callback);
         }
 
         protected override void Dispose(bool _disposing)

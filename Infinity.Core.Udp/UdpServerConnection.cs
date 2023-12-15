@@ -47,7 +47,7 @@ namespace Infinity.Core.Udp
         /// <remarks>
         ///     This will always throw
         /// </remarks>
-        public override void Connect(byte[] _bytes = null, int _timeout = 5000)
+        public override void Connect(MessageWriter _writer, int _timeout = 5000)
         {
             NotClient();
         }
@@ -55,7 +55,7 @@ namespace Infinity.Core.Udp
         /// <remarks>
         ///     This will always throw
         /// </remarks>
-        public override void ConnectAsync(byte[] _bytes = null)
+        public override void ConnectAsync(MessageWriter _writer)
         {
             NotClient();
         }

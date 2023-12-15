@@ -202,8 +202,8 @@ namespace Infinity.Core.Udp
             if (!aware)
             {
                 // Skip header and Handshake byte;
-                reader.Offset = 4;
-                reader.Length = bytes_received - 4;
+                reader.Offset = 3;
+                reader.Length = bytes_received - 3;
                 reader.Position = 0;
                 InvokeNewConnection(connection, reader);
             }

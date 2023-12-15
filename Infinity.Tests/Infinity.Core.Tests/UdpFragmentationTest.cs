@@ -39,7 +39,9 @@ namespace Infinity.Core.Tests
                 };
 
                 listener.Start();
-                connection.Connect();
+
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
 
                 var message = MessageWriter.Get();
                 message.Write(UdpSendOption.Fragmented);
@@ -86,7 +88,9 @@ namespace Infinity.Core.Tests
                 };
 
                 listener.Start();
-                connection.Connect();
+
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
 
                 Thread.Sleep(100);
 

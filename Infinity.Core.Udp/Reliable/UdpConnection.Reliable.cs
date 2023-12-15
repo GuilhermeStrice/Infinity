@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
 namespace Infinity.Core.Udp
 {
@@ -131,28 +132,16 @@ namespace Infinity.Core.Udp
         ///     Sends the bytes reliably and stores the send.
         /// </summary>
         /// <param name="_send_option"></param>
-        /// <param name="_data">The byte array to write to.</param>
+        /// <param name="_buffer">The byte array to write to.</param>
         /// <param name="_ack_callback">The callback to make once the packet has been acknowledged.</param>
-        private void ReliableSend(byte _send_option, byte[] _data, Action _ack_callback = null)
+        private void ReliableSend(byte[] _buffer, Action _ack_callback = null)
         {
             //Inform keepalive not to send for a while
             ResetKeepAliveTimer();
 
-            byte[] bytes = new byte[_data.Length + 3];
-
-            //Add message type
-            bytes[0] = _send_option;
-
-            //Add reliable ID
-            AttachReliableID(bytes, 1, _ack_callback);
-
-            //Copy data into new array
-            Buffer.BlockCopy(_data, 0, bytes, bytes.Length - _data.Length, _data.Length);
-
-            //Write to connection
-            WriteBytesToConnection(bytes, bytes.Length);
-
-            Statistics.LogReliableMessageSent(bytes.Length);
+            AttachReliableID(_buffer, 1, _ack_callback);
+            WriteBytesToConnection(_buffer, _buffer.Length);
+            Statistics.LogReliableMessageSent(_buffer.Length);
         }
 
         /// <summary>

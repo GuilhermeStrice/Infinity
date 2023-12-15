@@ -42,7 +42,8 @@ namespace Infinity.Core.Tests
                 }
             };
 
-            connection.Connect();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            connection.Connect(handshake);
 
             //Wait until data is received
             mutex.WaitOne();
@@ -88,7 +89,8 @@ namespace Infinity.Core.Tests
             listener.Start();
 
             //Connect
-            connection.Connect();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            connection.Connect(handshake);
 
             Assert.True(mutex.WaitOne(100), "Timeout while connecting");
 
@@ -136,7 +138,8 @@ namespace Infinity.Core.Tests
 
             listener.Start();
 
-            connection.Connect();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            connection.Connect(handshake);
 
             mutex.WaitOne();
         }
@@ -163,7 +166,8 @@ namespace Infinity.Core.Tests
 
             listener.Start();
 
-            connection.Connect();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            connection.Connect(handshake);
 
             mutex.WaitOne();
 
@@ -194,7 +198,8 @@ namespace Infinity.Core.Tests
 
             listener.Start();
 
-            connection.Connect();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            connection.Connect(handshake);
 
             if (!mutex.WaitOne(TimeSpan.FromSeconds(1)))
             {
