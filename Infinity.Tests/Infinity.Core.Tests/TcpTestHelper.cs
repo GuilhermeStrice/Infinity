@@ -49,7 +49,7 @@ namespace Infinity.Core.Tests
             //Wait until data is received
             mutex.WaitOne();
 
-            var reader = ConvertToMessageReader(data);
+            var reader = data.ToReader();
             Assert.Equal(reader.Length, result.Value.Message.Length);
             for (int i = reader.Offset; i < reader.Length; i++)
             {
@@ -100,7 +100,7 @@ namespace Infinity.Core.Tests
             //Wait until data is received
             Assert.True(mutex2.WaitOne(100), "Timeout while sending data");
 
-            var dataReader = ConvertToMessageReader(data);
+            var dataReader = data.ToReader();
             Assert.Equal(dataReader.Length, result.Value.Message.Length);
             for (int i = dataReader.Offset; i < dataReader.Length; i++)
             {
@@ -205,17 +205,6 @@ namespace Infinity.Core.Tests
             {
                 Assert.Fail("Timeout waiting for client disconnect packet");
             }
-        }
-
-        private static MessageReader ConvertToMessageReader(MessageWriter writer)
-        {
-            var output = new MessageReader();
-            output.Buffer = writer.Buffer;
-            output.Offset = 1;
-            output.Length = writer.Length - output.Offset;
-            output.Position = 0;
-
-            return output;
         }
 
         /// <summary>

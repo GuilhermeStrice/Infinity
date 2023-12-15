@@ -5,6 +5,8 @@ namespace Infinity.Core
 {
     public class MessageReader : IRecyclable
     {
+        public static int BufferSize = 64000;
+
         public byte[] ?Buffer;
 
         public int Length;
@@ -23,6 +25,11 @@ namespace Infinity.Core
                 _position = value;
                 head = value + Offset;
             }
+        }
+
+        internal MessageReader(int _buffer_size)
+        {
+            Buffer = new byte[_buffer_size];
         }
 
         #region Read Methods
@@ -214,34 +221,27 @@ namespace Infinity.Core
             return Buffer[head++];
         }
 
-        public static MessageReader Get(byte[] _buffer)
+        public static MessageReader Get(byte[] _buffer, int _offset, int _length)
         {
-            var output = Pools.ReaderPool.GetObject();
+            MessageReader reader = Pools.ReaderPool.GetObject();
 
-            output.Buffer = _buffer;
-            output.Offset = 0;
-            output.Position = 0;
-            output.Length = _buffer.Length;
+            System.Buffer.BlockCopy(_buffer, _offset, reader.Buffer, 0, _length);
 
-            return output;
+            reader.Offset = 0;
+            reader.Position = 0;
+            reader.Length = _length;
+
+            return reader;
         }
 
-        public static MessageReader GetSized(int _min_size)
+        public static MessageReader Get(byte[] _buffer)
         {
-            var output = Pools.ReaderPool.GetObject();
+            return Get(_buffer, 0, _buffer.Length);
+        }
 
-            if (output.Buffer == null || output.Buffer.Length < _min_size)
-            {
-                output.Buffer = new byte[_min_size];
-            }
-            else
-            {
-                Array.Clear(output.Buffer, 0, output.Buffer.Length);
-            }
-
-            output.Offset = 0;
-            output.Position = 0;
-            return output;
+        public static MessageReader Get()
+        {
+            return Pools.ReaderPool.GetObject();
         }
 
         public void Recycle()
@@ -251,13 +251,8 @@ namespace Infinity.Core
 
         public MessageReader Duplicate()
         {
-            var output = GetSized(Length);
-            Array.Copy(Buffer, Offset, output.Buffer, 0, Length);
-            output.Length = Length;
-            output.Offset = 0;
-            output.Position = 0;
-
-            return output;
+            MessageReader reader = Get(Buffer, 0, Length);
+            return reader;
         }
     }
 }

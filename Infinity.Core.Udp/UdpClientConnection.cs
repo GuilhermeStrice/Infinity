@@ -183,7 +183,7 @@ namespace Infinity.Core.Udp
             }
 #endif
 
-            var reader = MessageReader.GetSized(ReceiveBufferSize);
+            var reader = MessageReader.Get();
             try
             {
                 socket.BeginReceive(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ReadCallback, reader);

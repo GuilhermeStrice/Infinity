@@ -211,13 +211,9 @@ namespace Infinity.Core
             Pools.WriterPool.PutObject(this);
         }
 
-        public MessageReader AsReader()
+        public MessageReader ToReader()
         {
-            var reader = MessageReader.GetSized(Length);
-
-            Array.Copy(Buffer, 0, reader.Buffer, 0, Length);
-            reader.Length = Length;
-
+            MessageReader reader = MessageReader.Get(Buffer, 0, Length);
             return reader;
         }
     }

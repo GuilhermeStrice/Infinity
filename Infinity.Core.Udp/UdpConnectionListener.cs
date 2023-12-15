@@ -87,7 +87,7 @@ namespace Infinity.Core.Udp
             MessageReader reader = null;
             try
             {
-                reader = MessageReader.GetSized(ReceiveBufferSize);
+                reader = MessageReader.Get();
                 socket.BeginReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, reader);
             }
             catch (SocketException sx)
@@ -203,7 +203,7 @@ namespace Infinity.Core.Udp
             {
                 // Skip header and Handshake byte;
                 reader.Offset = 3;
-                reader.Length = bytes_received - 3;
+                reader.Length = bytes_received;
                 reader.Position = 0;
                 InvokeNewConnection(connection, reader);
             }

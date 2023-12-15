@@ -32,14 +32,8 @@ namespace Infinity.Core.Tests
             {
                 _output.WriteLine("Data was received correctly.");
 
-                try
-                {
-                    result = a;
-                }
-                finally
-                {
-                    mutex.Set();
-                }
+                result = a;
+                mutex.Set();
             };
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
@@ -48,7 +42,7 @@ namespace Infinity.Core.Tests
             //Wait until data is received
             mutex.WaitOne();
 
-            var reader = data.AsReader();
+            var reader = data.ToReader();
             Assert.Equal(reader.Length, result.Value.Message.Length); // + 3 to account for sendOption and reliable id
             for (int i = reader.Offset; i < reader.Length; i++)
             {
@@ -99,7 +93,7 @@ namespace Infinity.Core.Tests
             //Wait until data is received
             Assert.True(mutex2.WaitOne(100), "Timeout while sending data");
 
-            var dataReader = data.AsReader();
+            var dataReader = data.ToReader();
 
             // account for sendOption and id
             if (sendOption != UdpSendOption.Unreliable)

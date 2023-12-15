@@ -109,7 +109,6 @@ namespace Infinity.Core.Tests
         [Fact]
         public void UdpHandshakeTest()
         {
-            byte[] TestData = new byte[] { 1, 2, 3, 4, 5, 6 };
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -122,13 +121,13 @@ namespace Infinity.Core.Tests
                 };
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                handshake.Write(TestData);
+                handshake.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
                 connection.Connect(handshake);
 
                 Thread.Sleep(10);
-                for (int i = 0; i < TestData.Length; ++i)
+                for (int i = 0; i < handshake.Length; ++i)
                 {
-                    Assert.Equal(TestData[i], output.ReadByte());
+                    Assert.Equal(handshake.Buffer[i], output.Buffer[i]);
                 }
             }
         }

@@ -112,7 +112,7 @@ namespace Infinity.Core.Udp
                             writer.Write(f.Reader.Buffer, f.Reader.Position, f.Reader.Length - f.Reader.Position);
                         }
 
-                        var reader = writer.AsReader();
+                        var reader = writer.ToReader();
                         writer.Recycle();
 
                         InvokeBeforeReceive(reader);
