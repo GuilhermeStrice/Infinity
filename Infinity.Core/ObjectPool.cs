@@ -24,7 +24,7 @@ namespace Infinity.Core
         /// <summary>
         ///     public constructor for our ObjectPool.
         /// </summary>
-        public ObjectPool(Func<T> objectFactory, int maxNumberObjects = 5000)
+        public ObjectPool(Func<T> objectFactory, int maxNumberObjects = 10000)
         {
             this.objectFactory = objectFactory;
 
