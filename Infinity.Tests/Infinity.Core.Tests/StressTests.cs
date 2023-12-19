@@ -1,27 +1,96 @@
 ﻿using Infinity.Core.Udp;
+using System.Diagnostics;
 using System.Net;
 
 namespace Infinity.Core.Tests
 {
     public class StressTests
     {
-        // [TestMethod]
+        [Fact]
         public void StressTestOpeningConnections()
         {
-            // Start a listener in another process, or even better, 
-            // adjust the target IP and start listening on another computer.
-            var ep = new IPEndPoint(IPAddress.Loopback, 22023);
-            Parallel.For(0, 10000,
-                new ParallelOptions { MaxDegreeOfParallelism = 64 },
-                (i) => {
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            handshake.Write(new byte[5]);
 
+            var ep = new IPEndPoint(IPAddress.Loopback, 22023);
+            using (var listener = new UdpConnectionListener(ep))
+            {
+                listener.NewConnection += delegate (NewConnectionEventArgs obj)
+                {
+                    obj.Connection.DataReceived += delegate (DataReceivedEventArgs data_args)
+                    {
+                        data_args.Message.Recycle();
+                    };
+
+                    obj.Connection.Disconnected += delegate (DisconnectedEventArgs e)
+                    {
+                        e.Message?.Recycle();
+                    };
+
+                    obj.HandshakeData.Recycle();
+                };
+                listener.Start();
+
+                for (int i = 0; i < 2000; i++)
+                {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
+                    connection.DataReceived += delegate (DataReceivedEventArgs obj)
+                    {
+                        obj.Message.Recycle();
+                    };
+                    connection.Disconnected += delegate (DisconnectedEventArgs obj)
+                    {
+                        obj.Message?.Recycle();
+                    };
                     connection.KeepAliveInterval = 50;
 
-                    var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                    handshake.Write(new byte[5]);
                     connection.Connect(handshake);
-                });
+
+                    Thread.Sleep(100);
+                }
+
+                handshake.Recycle();
+
+                Console.WriteLine("bla");
+
+                Thread.Sleep(5000); // lets wait a bit to see where it leaks
+
+                Console.WriteLine("yes");
+            }
+        }
+
+        [Fact]
+        public void ServerDisposeDisconnectsTest()
+        {
+            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 4296);
+
+            bool serverConnected = false;
+            bool serverDisconnected = false;
+            bool clientDisconnected = false;
+
+            using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
+            using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
+            {
+                listener.NewConnection += (evt) =>
+                {
+                    serverConnected = true;
+                    evt.Connection.Disconnected += (et) => clientDisconnected = true;
+                };
+                connection.Disconnected += (evt) => serverDisconnected = true;
+
+                listener.Start();
+
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
+
+                Thread.Sleep(300); // Gotta wait for the server to set up the events.
+                listener.Dispose();
+                Thread.Sleep(300);
+
+                Assert.True(serverConnected);
+                Assert.True(serverDisconnected);
+                Assert.False(clientDisconnected);
+            }
         }
 
         // This was a thing that happened to us a DDoS. Mildly instructional that we straight up ignore it.
