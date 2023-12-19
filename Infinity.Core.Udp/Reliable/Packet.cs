@@ -49,7 +49,7 @@ namespace Infinity.Core.Udp
                 {
                     if (Connection.reliable_data_packets_sent.TryRemove(Id, out Packet self))
                     {
-                        Connection.DisconnectInternal(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
+                        Connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
                         self.Recycle();
                     }
 
@@ -70,7 +70,7 @@ namespace Infinity.Core.Udp
                     {
                         if (Connection.reliable_data_packets_sent.TryRemove(Id, out Packet self))
                         {
-                            Connection.DisconnectInternal(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
+                            Connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
                             self.Recycle();
                         }
 
@@ -88,7 +88,7 @@ namespace Infinity.Core.Udp
                     }
                     catch (InvalidOperationException)
                     {
-                        Connection.DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Could not resend data as connection is no longer connected");
+                        Connection.DisconnectInternalPacket(InfinityInternalErrors.ConnectionDisconnected, "Could not resend data as connection is no longer connected");
                     }
                 }
             }

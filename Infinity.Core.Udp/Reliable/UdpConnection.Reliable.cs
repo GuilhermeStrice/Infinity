@@ -74,6 +74,11 @@ namespace Infinity.Core.Udp
         /// </remarks>
         public volatile int DisconnectTimeoutMs = 5000;
 
+        internal void DisconnectInternalPacket(InfinityInternalErrors _error, string _reason)
+        {
+            DisconnectInternal(_error, _reason);
+        }
+
         public int ManageReliablePackets()
         {
             int output = 0;

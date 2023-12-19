@@ -124,7 +124,7 @@ namespace Infinity.Core
         /// <param name="msg">The message to send.</param>
         public abstract SendErrors Send(MessageWriter _writer);
 
-        public Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
+        protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
         {
             Socket socket;
 
@@ -195,7 +195,7 @@ namespace Infinity.Core
         /// <summary>
         /// Called when socket is disconnected publicly
         /// </summary>
-        public void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        protected void DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {
             var msg = OnInternalDisconnect?.Invoke(_error);
             Disconnect(_reason, msg);
