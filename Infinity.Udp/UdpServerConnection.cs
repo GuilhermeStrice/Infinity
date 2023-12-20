@@ -2,26 +2,10 @@ using System.Net;
 
 namespace Infinity.Core.Udp
 {
-    /// <summary>
-    ///     Represents a servers's connection to a client that uses the UDP protocol.
-    /// </summary>
     public sealed class UdpServerConnection : UdpConnection
     {
-        /// <summary>
-        ///     The connection listener that we use the socket of.
-        /// </summary>
-        /// <remarks>
-        ///     Udp server connections utilize the same socket in the listener for sends/receives, this is the listener that 
-        ///     created this connection and is hence the listener this conenction sends and receives via.
-        /// </remarks>
         public UdpConnectionListener Listener { get; private set; }
 
-        /// <summary>
-        ///     Creates a UdpConnection for the virtual connection to the endpoint.
-        /// </summary>
-        /// <param name="_listener">The listener that created this connection.</param>
-        /// <param name="_endpoint">The endpoint that we are connected to.</param>
-        /// <param name="IPMode">The IPMode we are connected using.</param>
         public UdpServerConnection(UdpConnectionListener _listener, IPEndPoint _endpoint, IPMode _ip_mode, ILogger _logger)
             : base(_logger)
         {
@@ -44,17 +28,11 @@ namespace Infinity.Core.Udp
             throw new InvalidOperationException("Cannot manually connect a UdpServerConnection, did you mean to use UdpClientConnection?");
         }
 
-        /// <remarks>
-        ///     This will always throw
-        /// </remarks>
         public override void Connect(MessageWriter _writer, int _timeout = 5000)
         {
             NotClient();
         }
 
-        /// <remarks>
-        ///     This will always throw
-        /// </remarks>
         public override void ConnectAsync(MessageWriter _writer)
         {
             NotClient();
@@ -64,9 +42,6 @@ namespace Infinity.Core.Udp
         {
         }
 
-        /// <summary>
-        ///     Sends a disconnect message to the end point.
-        /// </summary>
         protected override bool SendDisconnect(MessageWriter _writer = null)
         {
             lock (this)

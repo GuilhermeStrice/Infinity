@@ -1,13 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 
 namespace Infinity.Core.Udp
 {
-    /// <summary>
-    ///     Listens for new UDP connections and creates UdpConnections for them.
-    /// </summary>
     public class UdpConnectionListener : NetworkConnectionListener
     {
         private const int send_receive_buffer_size = 1024 * 1024;
@@ -23,10 +19,6 @@ namespace Infinity.Core.Udp
         public override double AveragePing => all_connections.Values.Sum(c => c.AveragePingMs) / all_connections.Count;
         public override int ConnectionCount => all_connections.Count;
 
-        /// <summary>
-        ///     Creates a new UdpConnectionListener for the given <see cref="IPAddress"/>, port and <see cref="IPMode"/>.
-        /// </summary>
-        /// <param name="_endpoint">The endpoint to listen on.</param>
         public UdpConnectionListener(IPEndPoint _endpoint, IPMode _ip_mode = IPMode.IPv4, ILogger _logger = null)
         {
             Statistics = new UdpListenerStatistics();
@@ -77,9 +69,6 @@ namespace Infinity.Core.Udp
             StartListeningForData();
         }
 
-        /// <summary>
-        ///     Instructs the listener to begin listening.
-        /// </summary>
         private void StartListeningForData()
         {
             EndPoint remoteEP = EndPoint;
@@ -217,11 +206,6 @@ namespace Infinity.Core.Udp
         private int drop_counter = 0;
 #endif
 
-        /// <summary>
-        ///     Sends data from the listener socket.
-        /// </summary>
-        /// <param name="_bytes">The bytes to send.</param>
-        /// <param name="_endpoint">The endpoint to send to.</param>
         internal void SendData(byte[] _bytes, int _length, EndPoint _endpoint)
         {
             if (_length > _bytes.Length)
@@ -272,11 +256,6 @@ namespace Infinity.Core.Udp
             catch { }
         }
 
-        /// <summary>
-        ///     Sends data from the listener socket.
-        /// </summary>
-        /// <param name="_bytes">The bytes to send.</param>
-        /// <param name="_endpoint">The endpoint to send to.</param>
         internal void SendDataSync(byte[] _bytes, int _length, EndPoint _endpoint)
         {
             try
@@ -294,10 +273,6 @@ namespace Infinity.Core.Udp
             catch { }
         }
 
-        /// <summary>
-        ///     Removes a virtual connection from the list.
-        /// </summary>
-        /// <param name="_endpoint">The endpoint of the virtual connection.</param>
         internal void RemoveConnectionTo(EndPoint _endpoint)
         {
             all_connections.TryRemove(_endpoint, out var conn);

@@ -3,29 +3,16 @@ using System.Net.Sockets;
 
 namespace Infinity.Core.Udp
 {
-    /// <summary>
-    ///     Represents a client's connection to a server that uses the UDP protocol.
-    /// </summary>
     public sealed class UdpClientConnection : UdpConnection
     {
         public int ReceiveBufferSize = 8096;
 
-        /// <summary>
-        ///     The socket we're connected via.
-        /// </summary>
         private Socket socket;
 
-        /// <summary>
-        ///     Reset event that is triggered when the connection is marked Connected.
-        /// </summary>
         private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
 
         private Timer reliable_packet_timer;
 
-        /// <summary>
-        ///     Creates a new UdpClientConnection.
-        /// </summary>
-        /// <param name="_remote_end_point">A <see cref="NetworkEndPoint"/> to connect to.</param>
         public UdpClientConnection(ILogger _logger, IPEndPoint _remote_end_point, IPMode _ip_mode = IPMode.IPv4)
             : base(_logger)
         {
@@ -171,9 +158,6 @@ namespace Infinity.Core.Udp
             });
         }
 
-        /// <summary>
-        ///     Instructs the listener to begin listening.
-        /// </summary>
         void StartListeningForData()
         {
 #if DEBUG
@@ -195,10 +179,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     Called when data has been received by the socket.
-        /// </summary>
-        /// <param name="result">The asyncronous operation's result.</param>
         void ReadCallback(IAsyncResult result)
         {
             var reader = (MessageReader)result.AsyncState;
@@ -276,10 +256,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     Sends a disconnect message to the end point.
-        ///     You may include optional disconnect data. The SendOption must be unreliable.
-        /// </summary>
         protected override bool SendDisconnect(MessageWriter _writer = null)
         {
             lock (this)

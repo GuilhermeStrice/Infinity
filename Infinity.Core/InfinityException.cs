@@ -1,9 +1,5 @@
 ﻿namespace Infinity.Core
 {
-    /// <summary>
-    ///     Wrapper for exceptions thrown
-    /// </summary>
-    [Serializable]
     public class InfinityException : Exception
     {
         public InfinityException(string _msg) : base(_msg)

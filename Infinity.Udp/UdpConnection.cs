@@ -2,9 +2,6 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Infinity.Core.Udp
 {
-    /// <summary>
-    ///     Represents a connection that uses the UDP protocol.
-    /// </summary>
     public abstract partial class UdpConnection : NetworkConnection
     {
         protected static readonly byte[] empty_disconnect_bytes = new byte[1];
@@ -21,10 +18,6 @@ namespace Infinity.Core.Udp
             logger = _logger;
         }
 
-        /// <summary>
-        ///     Writes the given bytes to the connection.
-        /// </summary>
-        /// <param name="_bytes">The bytes to write.</param>
         public abstract void WriteBytesToConnection(byte[] _bytes, int _length);
 
         public override SendErrors Send(MessageWriter _writer)
@@ -40,7 +33,6 @@ namespace Infinity.Core.Udp
 
                 if (_writer.Buffer[0] == UdpSendOption.Reliable)
                 {
-                    // we automagically send fragments if its greater than fragment size
                     if (_writer.Length > (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6))
                     {
                         throw new InfinityException("not allowed");
@@ -95,10 +87,6 @@ namespace Infinity.Core.Udp
             return SendErrors.None;
         }
         
-        /// <summary>
-        ///     Handles the receiving of data.
-        /// </summary>
-        /// <param name="_reader">The buffer containing the bytes received.</param>
         internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
         {
             ushort id;
@@ -121,7 +109,6 @@ namespace Infinity.Core.Udp
                         break;
                     }
 
-                //Handle acknowledgments
                 case UdpSendOptionInternal.Acknowledgement:
                     {
                         AcknowledgementMessageReceive(_reader.Buffer, _bytes_received);
@@ -130,7 +117,6 @@ namespace Infinity.Core.Udp
                         break;
                     }
 
-                //We need to acknowledge Handshake and ping messages but dont want to invoke any events!
                 case UdpSendOptionInternal.Ping:
                     {
                         ProcessReliableReceive(_reader.Buffer, 1, out id);
@@ -139,7 +125,6 @@ namespace Infinity.Core.Udp
                         break;
                     }
 
-                    // we only receive handshakes at the beggining of the connection in the listener
                 case UdpSendOptionInternal.Handshake:
                     {
                         ProcessReliableReceive(_reader.Buffer, 1, out id);
@@ -148,7 +133,6 @@ namespace Infinity.Core.Udp
                         break;
                     }
 
-                //Handle fragmented messages
                 case UdpSendOptionInternal.Fragment:
                     {
                         FragmentMessageReceive(_reader);
@@ -184,10 +168,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     Sends a Handshake packet to the remote endpoint.
-        /// </summary>
-        /// <param name="_acknowledge_callback">The callback to invoke when the Handshake packet is acknowledged.</param>
         protected void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
         {
             byte[] buffer = new byte[_writer.Length];

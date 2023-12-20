@@ -4,9 +4,6 @@ namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
-        /// <summary>
-        ///     The amount of data that can be put into a fragment if in IPv4 mode
-        /// </summary>
         public static int FragmentSizeIPv4
         {
             get
@@ -15,9 +12,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     The amount of data that can be put into a fragment if in IPv6 mode
-        /// </summary>
         public static int FragmentSizeIPv6
         {
             get
@@ -26,20 +20,12 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     The last fragmented message ID that was written.
-        /// </summary>
         volatile int last_fragment_id_allocated = 0;
 
         ConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<ushort, FragmentedMessage>();
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort);
 
-        /// <summary>
-        ///     Sends a message fragmenting it as needed to pass over the network.
-        /// </summary>
-        /// <param name="sendOption">The send option the message was sent with.</param>
-        /// <param name="_buffer">The data of the message to send.</param>
         void FragmentedSend(byte[] _buffer)
         {
             var id = (ushort)Interlocked.Increment(ref last_fragment_id_allocated);

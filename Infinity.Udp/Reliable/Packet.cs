@@ -2,9 +2,6 @@
 
 namespace Infinity.Core.Udp
 {
-    /// <summary>
-    ///     Class to hold packet data
-    /// </summary>
     internal class Packet : IRecyclable
     {
         public const int MaxInitialResendDelayMs = 300;
@@ -39,7 +36,6 @@ namespace Infinity.Core.Udp
             Stopwatch.Restart();
         }
 
-        // Packets resent
         public int Resend()
         {
             if (!Acknowledged && Connection != null)
@@ -96,9 +92,6 @@ namespace Infinity.Core.Udp
             return 0;
         }
 
-        /// <summary>
-        ///     Returns this object back to the object pool from whence it came.
-        /// </summary>
         public void Recycle()
         {
             Acknowledged = true;

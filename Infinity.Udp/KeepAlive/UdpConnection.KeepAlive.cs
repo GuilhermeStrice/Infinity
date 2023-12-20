@@ -4,19 +4,6 @@
     {
         private PingBuffer active_pings = new PingBuffer(16);
 
-        /// <summary>
-        ///     The interval from data being received or transmitted to a keepalive packet being sent in milliseconds.
-        /// </summary>
-        /// <remarks>
-        ///     <para>
-        ///         Keepalive packets serve to close connections when an endpoint abruptly disconnects and to ensure than any
-        ///         NAT devices do not close their translation for our argument. By ensuring there is regular contact the
-        ///         connection can detect and prevent these issues.
-        ///     </para>
-        ///     <para>
-        ///         The default value is 10 seconds, set to System.Threading.Timeout.Infinite to disable keepalive packets.
-        ///     </para>
-        /// </remarks>
         public int KeepAliveInterval
         {
             get
@@ -35,14 +22,8 @@
         public int MissingPingsUntilDisconnect = 6;
         private volatile int pings_since_ack = 0;
 
-        /// <summary>
-        ///     The timer creating keepalive pulses.
-        /// </summary>
         private Timer? keep_alive_timer;
 
-        /// <summary>
-        ///     Starts the keepalive timer.
-        /// </summary>
         protected void InitializeKeepAliveTimer()
         {
             keep_alive_timer = new Timer(
@@ -99,9 +80,6 @@
             Statistics.LogPingSent(3);
         }
 
-        /// <summary>
-        ///     Resets the keepalive timer to zero.
-        /// </summary>
         protected void ResetKeepAliveTimer()
         {
             try
@@ -111,9 +89,6 @@
             catch { }
         }
 
-        /// <summary>
-        ///     Disposes of the keep alive timer.
-        /// </summary>
         private void DisposeKeepAliveTimer()
         {
             keep_alive_timer?.Dispose();

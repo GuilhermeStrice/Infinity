@@ -5,20 +5,6 @@ namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
-        /// <summary>
-        ///     The starting timeout, in miliseconds, at which data will be resent.
-        /// </summary>
-        /// <remarks>
-        ///     <para>
-        ///         For reliable delivery data is resent at specified intervals unless an acknowledgement is received from the 
-        ///         receiving device. The ResendTimeout specifies the interval between the packets being resent, each time a packet
-        ///         is resent the interval is increased for that packet until the duration exceeds the <see cref="DisconnectTimeoutMs"/> value.
-        ///     </para>
-        ///     <para>
-        ///         Setting this to its default of 0 will mean the timeout is 2 times the value of the average ping, usually 
-        ///         resulting in a more dynamic resend that responds to endpoints on slower or faster connections.
-        ///     </para>
-        /// </remarks>
         public volatile int ResendTimeoutMs = 0;
 
         /// <summary>
@@ -32,9 +18,6 @@ namespace Infinity.Core.Udp
         /// </summary>
         public volatile float ResendPingMultiplier = 2;
 
-        /// <summary>
-        ///     Holds the last ID allocated.
-        /// </summary>
         private int last_id_allocated = -1;
 
         /// <summary>
@@ -47,31 +30,12 @@ namespace Infinity.Core.Udp
         /// </summary>
         private HashSet<ushort> reliable_data_packets_missing = new HashSet<ushort>();
 
-        /// <summary>
-        ///     The packet id that was received last.
-        /// </summary>
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
         private object ping_lock = new object();
 
-        /// <summary>
-        ///     Returns the average ping to this endpoint.
-        /// </summary>
-        /// <remarks>
-        ///     This returns the average ping for a one-way trip as calculated from the reliable packets that have been sent 
-        ///     and acknowledged by the endpoint.
-        /// </remarks>
         private float ping_ms = 500;
 
-        /// <summary>
-        ///     The maximum times a message should be resent before marking the endpoint as disconnected.
-        /// </summary>
-        /// <remarks>
-        ///     Reliable packets will be resent at an interval defined in <see cref="ResendTimeoutMs"/> for the number of times
-        ///     specified here. Once a packet has been retransmitted this number of times and has not been acknowledged the
-        ///     connection will be marked as disconnected and the <see cref="Connection.Disconnected">Disconnected</see> event
-        ///     will be invoked.
-        /// </remarks>
         public volatile int DisconnectTimeoutMs = 5000;
 
         internal void DisconnectInternalPacket(InfinityInternalErrors _error, string _reason)
@@ -99,12 +63,6 @@ namespace Infinity.Core.Udp
             return output;
         }
 
-        /// <summary>
-        ///     Adds a 2 byte ID to the packet at offset and stores the packet reference for retransmission.
-        /// </summary>
-        /// <param name="_buffer">The buffer to attach to.</param>
-        /// <param name="_offset">The offset to attach at.</param>
-        /// <param name="_ack_callback">The callback to make once the packet has been acknowledged.</param>
         protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
         {
             ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
@@ -133,12 +91,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     Sends the bytes reliably and stores the send.
-        /// </summary>
-        /// <param name="_send_option"></param>
-        /// <param name="_buffer">The byte array to write to.</param>
-        /// <param name="_ack_callback">The callback to make once the packet has been acknowledged.</param>
         private void ReliableSend(byte[] _buffer, Action _ack_callback = null)
         {
             //Inform keepalive not to send for a while
@@ -149,10 +101,6 @@ namespace Infinity.Core.Udp
             Statistics.LogReliableMessageSent(_buffer.Length);
         }
 
-        /// <summary>
-        ///     Handles a reliable message being received and invokes the data event.
-        /// </summary>
-        /// <param name="_reader">The buffer received.</param>
         private void ReliableMessageReceive(MessageReader _reader)
         {
             ushort id;
@@ -166,12 +114,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     Handles receives from reliable packets.
-        /// </summary>
-        /// <param name="_bytes">The buffer containing the data.</param>
-        /// <param name="_offset">The offset of the reliable header.</param>
-        /// <returns>Whether the packet was a new packet or not.</returns>
         private bool ProcessReliableReceive(byte[] _bytes, int _offset, out ushort _id)
         {
             byte b1 = _bytes[_offset];
@@ -264,10 +206,6 @@ namespace Infinity.Core.Udp
             return result;
         }
 
-        /// <summary>
-        ///     Handles acknowledgement packets to us.
-        /// </summary>
-        /// <param name="_bytes">The buffer containing the data.</param>
         private void AcknowledgementMessageReceive(byte[] _bytes, int _bytes_received)
         {
             pings_since_ack = 0;
@@ -318,11 +256,6 @@ namespace Infinity.Core.Udp
             }
         }
 
-        /// <summary>
-        ///     Sends an acknowledgement for a packet given its identification bytes.
-        /// </summary>
-        /// <param name="byte1">The first identification byte.</param>
-        /// <param name="byte2">The second identification byte.</param>
         private void SendAck(ushort _id)
         {
             byte recent_packets = 0;
