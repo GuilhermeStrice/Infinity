@@ -16,8 +16,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinity.Tcp", "Infinity.Tc
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infinity.Tests", "Infinity.Tests", "{07300268-B919-4187-80B7-EAC9CA65EE11}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test", "test\test.csproj", "{DCD171F3-4487-4003-8A9C-6F596E009DE8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinity.Tests", "Infinity.Tests\Infinity.Tests.csproj", "{DE7ACF5C-0BE3-40DC-B355-6CBF4CE50C79}"
 EndProject
 Global
@@ -38,10 +36,6 @@ Global
 		{2AD17D36-0D20-4FE8-A9C3-38E3D5A0B647}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AD17D36-0D20-4FE8-A9C3-38E3D5A0B647}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AD17D36-0D20-4FE8-A9C3-38E3D5A0B647}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DCD171F3-4487-4003-8A9C-6F596E009DE8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE7ACF5C-0BE3-40DC-B355-6CBF4CE50C79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DE7ACF5C-0BE3-40DC-B355-6CBF4CE50C79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE7ACF5C-0BE3-40DC-B355-6CBF4CE50C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
