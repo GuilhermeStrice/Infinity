@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -23,9 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Infinity.Core.Tcp\Infinity.Core.Tcp.csproj" />
-    <ProjectReference Include="..\..\Infinity.Core.Udp\Infinity.Core.Udp.csproj" />
-    <ProjectReference Include="..\..\Infinity.Core\Infinity.Core.csproj" />
+    <ProjectReference Include="..\Infinity.Core\Infinity.Core.csproj" />
+    <ProjectReference Include="..\Infinity.Core\Infinity.Core.csproj" />
+    <ProjectReference Include="..\Infinity.Tcp\Infinity.Tcp.csproj" />
+    <ProjectReference Include="..\Infinity.Udp\Infinity.Udp.csproj" />
   </ItemGroup>
 
 </Project>

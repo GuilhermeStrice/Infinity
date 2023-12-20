@@ -38,7 +38,7 @@
         /// <summary>
         ///     The timer creating keepalive pulses.
         /// </summary>
-        private Timer keep_alive_timer;
+        private Timer? keep_alive_timer;
 
         /// <summary>
         ///     Starts the keepalive timer.

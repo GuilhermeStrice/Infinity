@@ -26,8 +26,6 @@ namespace Infinity.Core.Tests
                     {
                         e.Message?.Recycle();
                     };
-
-                    obj.HandshakeData.Recycle();
                 };
                 listener.Start();
 

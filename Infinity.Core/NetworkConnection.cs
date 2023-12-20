@@ -96,7 +96,7 @@ namespace Infinity.Core
         /// <summary>
         /// An event that gives us a chance to send well-formed disconnect messages to clients when an internal disconnect happens.
         /// </summary>
-        public Func<InfinityInternalErrors, MessageWriter> ?OnInternalDisconnect;
+        public Func<InfinityInternalErrors, MessageWriter>? OnInternalDisconnect;
 
         public virtual float AveragePingMs { get; }
 

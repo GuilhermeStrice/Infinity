@@ -3,7 +3,7 @@
     internal class Fragment : IRecyclable
     {
         public int Id;
-        public MessageReader Reader;
+        public MessageReader? Reader;
 
         public Fragment()
         {
@@ -16,7 +16,7 @@
 
         public void Recycle()
         {
-            Reader.Recycle();
+            Reader?.Recycle();
             Id = -1;
 
             Pools.FragmentPool.PutObject(this);

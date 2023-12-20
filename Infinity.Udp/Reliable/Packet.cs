@@ -12,8 +12,8 @@ namespace Infinity.Core.Udp
         public const int MaxAdditionalResendDelayMs = 1000;
 
         public ushort Id;
-        private byte[] Buffer;
-        private UdpConnection Connection;
+        private byte[]? Buffer;
+        private UdpConnection? Connection;
         private int Length;
 
         public int NextTimeoutMs;
