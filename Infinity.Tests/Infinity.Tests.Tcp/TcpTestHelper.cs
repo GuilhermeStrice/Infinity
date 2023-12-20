@@ -1,5 +1,4 @@
 ﻿using Infinity.Core.Tcp;
-using Infinity.Core.Udp;
 using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests

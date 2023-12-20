@@ -23,10 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Infinity.Core\Infinity.Core.csproj" />
-    <ProjectReference Include="..\Infinity.Core\Infinity.Core.csproj" />
-    <ProjectReference Include="..\Infinity.Tcp\Infinity.Tcp.csproj" />
-    <ProjectReference Include="..\Infinity.Udp\Infinity.Udp.csproj" />
+    <ProjectReference Include="..\..\Infinity.Core\Infinity.Core.csproj" />
+    <ProjectReference Include="..\..\Infinity.Udp\Infinity.Udp.csproj" />
+    <ProjectReference Include="..\Infinity.Core.Tests\Infinity.Core.Tests.csproj" />
   </ItemGroup>
 
 </Project>
