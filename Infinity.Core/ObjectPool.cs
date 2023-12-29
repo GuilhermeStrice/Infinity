@@ -1,46 +1,38 @@
-﻿namespace Infinity.Core
+﻿using System.Collections.Concurrent;
+
+namespace Infinity.Core
 {
     public sealed class ObjectPool<T> where T : IRecyclable
     {
         public int InUse { get; internal set; }
         public int MaxNumberObjects;
 
-        private readonly T[] pool;
+        private readonly ConcurrentStack<T> pool;
 
-        private readonly Func<T> objectFactory;
+        private readonly Func<T> object_factory;
         
-        public ObjectPool(Func<T> objectFactory, int maxNumberObjects = 10000)
+        public ObjectPool(Func<T> object_factory, int maxNumberObjects = 10000)
         {
-            this.objectFactory = objectFactory;
+            this.object_factory = object_factory;
 
             MaxNumberObjects = maxNumberObjects;
-            pool = new T[maxNumberObjects];
+            pool = new ConcurrentStack<T>();
         }
 
         public T GetObject()
         {
-            if (InUse > 0)
+            T item;
+            if (pool.TryPop(out item))
             {
-                lock (pool)
-                {
-                    return pool[--InUse];
-                }
+                return item;
             }
-            else
-            {
-                return objectFactory.Invoke();
-            }
+
+            return object_factory();
         }
 
         public void PutObject(T item)
         {
-            if (InUse < MaxNumberObjects)
-            {
-                lock (pool)
-                {
-                    pool[InUse++] = item;
-                }
-            }
+            pool.Push(item);
         }
     }
 }
