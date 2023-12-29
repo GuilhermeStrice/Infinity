@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-
-namespace Infinity.Core
+﻿namespace Infinity.Core
 {
     public sealed class ObjectPool<T> where T : IRecyclable
     {
@@ -23,7 +21,10 @@ namespace Infinity.Core
         {
             if (InUse > 0)
             {
-                return pool[--InUse];
+                lock (pool)
+                {
+                    return pool[--InUse];
+                }
             }
             else
             {
@@ -35,7 +36,10 @@ namespace Infinity.Core
         {
             if (InUse < MaxNumberObjects)
             {
-                pool[InUse++] = item;
+                lock (pool)
+                {
+                    pool[InUse++] = item;
+                }
             }
         }
     }
