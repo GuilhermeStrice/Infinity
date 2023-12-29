@@ -4,11 +4,10 @@ namespace Infinity.Core
 {
     public sealed class ObjectPool<T> where T : IRecyclable
     {
-        public int InUse => MaxNumberObjects - instance_count;
+        public int InUse { get; internal set; }
         public int MaxNumberObjects;
 
         private readonly T[] pool;
-        private int instance_count;
 
         private readonly Func<T> objectFactory;
         
@@ -22,9 +21,9 @@ namespace Infinity.Core
 
         public T GetObject()
         {
-            if (instance_count > 0)
+            if (InUse > 0)
             {
-                return pool[--instance_count];
+                return pool[--InUse];
             }
             else
             {
@@ -34,9 +33,9 @@ namespace Infinity.Core
 
         public void PutObject(T item)
         {
-            if (instance_count < MaxNumberObjects)
+            if (InUse < MaxNumberObjects)
             {
-                pool[instance_count++] = item;
+                pool[InUse++] = item;
             }
         }
     }

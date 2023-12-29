@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Core.Udp
 {
-    internal class Fragment : IRecyclable
+    public class Fragment : IRecyclable
     {
         public int Id;
         public MessageReader? Reader;

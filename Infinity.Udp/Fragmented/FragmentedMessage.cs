@@ -3,7 +3,7 @@
     /// <summary>
     ///     Holding class for the parts of a fragmented message so far received.
     /// </summary>
-    internal class FragmentedMessage : IRecyclable
+    public class FragmentedMessage : IRecyclable
     {
         /// <summary>
         ///     The total number of fragments expected.

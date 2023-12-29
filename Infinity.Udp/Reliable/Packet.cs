@@ -2,7 +2,7 @@
 
 namespace Infinity.Core.Udp
 {
-    internal class Packet : IRecyclable
+    public class Packet : IRecyclable
     {
         public const int MaxInitialResendDelayMs = 300;
         public const int MinResendDelayMs = 50;

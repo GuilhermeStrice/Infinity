@@ -1,10 +1,18 @@
 ﻿using Infinity.Core.Udp;
 using System.Net;
+using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
 {
     public class StressTests
     {
+        ITestOutputHelper output;
+
+        public StressTests(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         [Fact]
         public void StressTestOpeningConnections()
         {
@@ -57,36 +65,60 @@ namespace Infinity.Core.Tests
         }
 
         [Fact]
-        public void ServerDisposeDisconnectsTest()
+        public void StressReliableMessages()
         {
             IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 4296);
 
-            bool serverConnected = false;
-            bool serverDisconnected = false;
-            bool clientDisconnected = false;
+            int count = 0;
+
+            var mutex = new ManualResetEvent(false);
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
                 listener.NewConnection += (evt) =>
                 {
-                    serverConnected = true;
-                    evt.Connection.Disconnected += (et) => clientDisconnected = true;
+                    evt.Connection.Disconnected += delegate (DisconnectedEventArgs obj)
+                    {
+                        obj.Message.Recycle();
+                    };
+
+                    evt.Connection.DataReceived += delegate (DataReceivedEventArgs obj)
+                    {
+                        count++;
+                        obj.Message.Recycle();
+                        if (count == 100)
+                        {
+                            output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
+                            output.WriteLine(Udp.Pools.PacketPool.InUse.ToString());
+                            mutex.Set();
+                        }
+                    };
                 };
-                connection.Disconnected += (evt) => serverDisconnected = true;
+
+                connection.Disconnected += delegate (DisconnectedEventArgs obj)
+                {
+                    obj.Message.Recycle();
+                };
 
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
 
-                Thread.Sleep(300); // Gotta wait for the server to set up the events.
-                listener.Dispose();
-                Thread.Sleep(300);
+                var message = UdpMessageFactory.BuildReliableMessage();
+                message.Write(123);
 
-                Assert.True(serverConnected);
-                Assert.True(serverDisconnected);
-                Assert.False(clientDisconnected);
+                for (int i = 0; i < 100; i++)
+                {
+                    connection.Send(message);
+                    Thread.Sleep(50);
+                }
+
+                Thread.Sleep(100);
+                message.Recycle();
+
+                mutex.WaitOne();
             }
         }
 

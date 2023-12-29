@@ -29,9 +29,8 @@ namespace Infinity.Core.Udp
         void FragmentedSend(byte[] _buffer)
         {
             var id = (ushort)Interlocked.Increment(ref last_fragment_id_allocated);
-            var mtu = (IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6);
 
-            var fragments_count = (int)Math.Ceiling(_buffer.Length / (double)mtu);
+            var fragments_count = (int)Math.Ceiling(_buffer.Length / (double)BufferSize);
 
             if (fragments_count >= ushort.MaxValue)
             {
@@ -40,7 +39,7 @@ namespace Infinity.Core.Udp
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(mtu, _buffer.Length - mtu * i);
+                var data_length = Math.Min(BufferSize, _buffer.Length - BufferSize * i);
                 var buffer = new byte[data_length + fragment_header_size];
 
                 buffer[0] = UdpSendOptionInternal.Fragment;
@@ -53,7 +52,7 @@ namespace Infinity.Core.Udp
                 buffer[5] = (byte)id;
                 buffer[6] = (byte)(id >> 8);
 
-                Buffer.BlockCopy(_buffer, mtu * i, buffer, fragment_header_size, data_length);
+                Buffer.BlockCopy(_buffer, BufferSize * i, buffer, fragment_header_size, data_length);
                 
                 WriteBytesToConnection(buffer, buffer.Length);
             }

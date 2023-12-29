@@ -5,8 +5,6 @@ namespace Infinity.Core.Udp
 {
     public sealed class UdpClientConnection : UdpConnection
     {
-        public int ReceiveBufferSize = 8096;
-
         private Socket socket;
 
         private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
@@ -154,7 +152,7 @@ namespace Infinity.Core.Udp
             SendHandshake(_writer, () =>
             {
                 State = ConnectionState.Connected;
-                InitializeKeepAliveTimer();
+                ResetKeepAliveTimer();
             });
         }
 
