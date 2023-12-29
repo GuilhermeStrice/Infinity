@@ -34,11 +34,12 @@ namespace Infinity.Core.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.KeepAliveInterval = 100;
                 connection.Connect(handshake);
 
-                Thread.Sleep(300); // Gotta wait for the server to set up the events.
+                Thread.Sleep(1500); // Gotta wait for the server to set up the events.
                 listener.Dispose();
-                Thread.Sleep(300);
+                Thread.Sleep(1500);
 
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
