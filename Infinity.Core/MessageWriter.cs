@@ -4,8 +4,6 @@ namespace Infinity.Core
 {
     public class MessageWriter : IRecyclable
     {
-        public static int BufferSize = 64000;
-
         public byte[] Buffer;
         public int Length;
         public int Position;
