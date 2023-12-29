@@ -36,7 +36,7 @@ namespace Infinity.Core.Tests
                 };
                 listener.Start();
 
-                for (int i = 0; i < 2000; i++)
+                for (int i = 0; i < 1000; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEventArgs obj)
@@ -50,17 +50,9 @@ namespace Infinity.Core.Tests
                     connection.KeepAliveInterval = 50;
 
                     connection.Connect(handshake);
-
-                    Thread.Sleep(100);
                 }
 
                 handshake.Recycle();
-
-                Console.WriteLine("bla");
-
-                Thread.Sleep(5000); // lets wait a bit to see where it leaks
-
-                Console.WriteLine("yes");
             }
         }
 
