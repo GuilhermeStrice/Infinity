@@ -35,8 +35,11 @@ namespace Infinity.Core
 
         public void PutObject(T item)
         {
-            Interlocked.Decrement(ref in_use);
-            pool.Push(item);
+            if (!pool.Contains(item))
+            {
+                Interlocked.Decrement(ref in_use);
+                pool.Push(item);
+            }
         }
     }
 }

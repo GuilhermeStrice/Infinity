@@ -110,15 +110,14 @@ namespace Infinity.Core.Udp
         {
             EndPoint remoteEP = EndPoint;
 
-            MessageReader reader = null;
+            MessageReader reader = MessageReader.Get();
             try
             {
-                reader = MessageReader.Get();
                 socket.BeginReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, reader);
             }
             catch (SocketException sx)
             {
-                reader?.Recycle();
+                reader.Recycle();
 
                 logger?.WriteError("Socket Ex in StartListening: " + sx.Message);
 
@@ -128,7 +127,7 @@ namespace Infinity.Core.Udp
             }
             catch (Exception ex)
             {
-                reader?.Recycle();
+                reader.Recycle();
                 logger?.WriteError("Stopped due to: " + ex.Message);
                 return;
             }
