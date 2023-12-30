@@ -1,9 +1,9 @@
 ﻿namespace Infinity.Core
 {
-    public struct DataReceivedEventArgs
+    public class DataReceivedEventArgs
     {
-        public readonly NetworkConnection Connection;
-        public readonly MessageReader Message;
+        public NetworkConnection Connection;
+        public MessageReader Message;
 
         public DataReceivedEventArgs(NetworkConnection _connection, MessageReader _reader)
         {
@@ -12,12 +12,12 @@
         }
     }
 
-    public struct DisconnectedEventArgs
+    public class DisconnectedEventArgs
     {
-        public readonly NetworkConnection Connection;
-        public readonly string Reason;
+        public NetworkConnection Connection;
+        public string Reason;
 
-        public readonly MessageReader Message;
+        public MessageReader Message;
 
         public DisconnectedEventArgs(NetworkConnection _connection, string _reason, MessageReader _reader)
         {
@@ -27,10 +27,10 @@
         }
     }
 
-    public struct NewConnectionEventArgs
+    public class NewConnectionEventArgs
     {
-        public readonly NetworkConnection Connection;
-        public readonly MessageReader HandshakeData;
+        public NetworkConnection Connection;
+        public MessageReader HandshakeData;
 
         public NewConnectionEventArgs(NetworkConnection _connection, MessageReader _reader)
         {

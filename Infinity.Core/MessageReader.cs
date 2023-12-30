@@ -1,14 +1,15 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Infinity.Core
 {
     public class MessageReader : IRecyclable
     {
-        public byte[] ?Buffer;
+        public byte[]? Buffer { get; set; }
 
-        public int Length;
-        public int Offset;
+        public int Length { get; set; }
+        public int Offset { get; set; }
 
         public int BytesRemaining => Length - Position;
 
@@ -17,7 +18,10 @@ namespace Infinity.Core
 
         public int Position
         {
-            get { return _position; }
+            get
+            {
+                return _position;
+            }
             set
             {
                 _position = value;
@@ -30,7 +34,6 @@ namespace Infinity.Core
             Buffer = new byte[_buffer_size];
         }
 
-        #region Read Methods
         public bool ReadBoolean()
         {
             byte val = FastByte();
@@ -210,7 +213,6 @@ namespace Infinity.Core
 
             return output;
         }
-        #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte FastByte()

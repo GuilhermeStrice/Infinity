@@ -4,13 +4,15 @@ namespace Infinity.Core
 {
     public sealed class ObjectPool<T> where T : IRecyclable
     {
-        public int InUse { get; internal set; }
+        public int InUse => in_use;
         public int MaxNumberObjects;
 
-        private readonly ConcurrentStack<T> pool;
+        private ConcurrentStack<T> pool;
 
-        private readonly Func<T> object_factory;
-        
+        private Func<T> object_factory;
+
+        private volatile int in_use = 0;
+            
         public ObjectPool(Func<T> object_factory, int maxNumberObjects = 10000)
         {
             this.object_factory = object_factory;
@@ -21,6 +23,7 @@ namespace Infinity.Core
 
         public T GetObject()
         {
+            Interlocked.Increment(ref in_use);
             T item;
             if (pool.TryPop(out item))
             {
@@ -32,6 +35,7 @@ namespace Infinity.Core
 
         public void PutObject(T item)
         {
+            Interlocked.Decrement(ref in_use);
             pool.Push(item);
         }
     }

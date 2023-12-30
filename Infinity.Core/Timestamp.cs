@@ -12,15 +12,18 @@
         {
             get
             {
-                return _Start;
+                return start;
             }
             set
             {
-                _Start = value.ToUniversalTime();
+                start = value.ToUniversalTime();
 
-                if (_End != null)
+                if (end != null)
                 {
-                    if (_Start > _End.Value) throw new ArgumentException("Start time must be before end time.");
+                    if (start > end.Value)
+                    {
+                        throw new ArgumentException("Start time must be before end time.");
+                    }
                 }
             }
         }
@@ -32,18 +35,22 @@
         {
             get
             {
-                return _End;
+                return end;
             }
             set
             {
                 if (value == null)
                 {
-                    _End = null;
+                    end = null;
                 }
                 else
                 {
-                    if (value < _Start) throw new ArgumentException("End time must be after start time.");
-                    _End = value.Value.ToUniversalTime();
+                    if (value < start)
+                    {
+                        throw new ArgumentException("End time must be after start time.");
+                    }
+
+                    end = value.Value.ToUniversalTime();
                 }
             }
         }
@@ -55,13 +62,13 @@
         {
             get
             {
-                if (_End == null)
+                if (end == null)
                 {
-                    return Math.Round(TotalMsBetween(_Start, DateTime.UtcNow), 2);
+                    return Math.Round(TotalMsBetween(start, DateTime.UtcNow), 2);
                 }
                 else
                 {
-                    return Math.Round(TotalMsBetween(_Start, _End.Value), 2);
+                    return Math.Round(TotalMsBetween(start, end.Value), 2);
                 }
             }
         }
@@ -73,9 +80,9 @@
         {
             get
             {
-                lock (_Lock)
+                lock (@lock)
                 {
-                    return _Messages;
+                    return messages;
                 }
             }
         }
@@ -87,20 +94,20 @@
         {
             get
             {
-                return _Metadata;
+                return metadata;
             }
             set
             {
-                _Metadata = value;
+                metadata = value;
             }
         }
 
-        private DateTime _Start = DateTime.UtcNow;
-        private DateTime? _End = null;
-        private readonly object _Lock = new object();
-        private Dictionary<DateTime, string> _Messages = new Dictionary<DateTime, string>();
-        private object _Metadata = null;
-        private bool _Disposed = false;
+        private DateTime start = DateTime.UtcNow;
+        private DateTime? end = null;
+        private readonly object @lock = new object();
+        private Dictionary<DateTime, string> messages = new Dictionary<DateTime, string>();
+        private object metadata = null;
+        private bool disposed = false;
 
         /// <summary>
         /// Instantiate.
@@ -113,14 +120,17 @@
         /// <summary>
         /// Add a message.
         /// </summary>
-        /// <param name="msg">Message.</param>
-        public void AddMessage(string msg)
+        /// <param name="_msg">Message.</param>
+        public void AddMessage(string _msg)
         {
-            if (String.IsNullOrEmpty(msg)) throw new ArgumentNullException(nameof(msg));
-
-            lock (_Lock)
+            if (string.IsNullOrEmpty(_msg))
             {
-                _Messages.Add(DateTime.UtcNow, msg);
+                throw new ArgumentNullException(nameof(_msg));
+            }
+
+            lock (@lock)
+            {
+                messages.Add(DateTime.UtcNow, _msg);
             }
         }
 
@@ -128,19 +138,14 @@
         /// Dispose.
         /// </summary>
         /// <param name="disposing">Disposing.</param>
-        protected virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool _disposing)
         {
-            if (!_Disposed)
+            if (!disposed)
             {
-                if (disposing)
-                {
-
-                }
-
-                _End = null;
-                _Messages = null;
-                _Metadata = null;
-                _Disposed = true;
+                end = null;
+                messages = null;
+                metadata = null;
+                disposed = true;
             }
         }
 
@@ -153,13 +158,13 @@
             GC.SuppressFinalize(this);
         }
 
-        private double TotalMsBetween(DateTime start, DateTime end)
+        private double TotalMsBetween(DateTime _start, DateTime _end)
         {
             try
             {
-                start = start.ToUniversalTime();
-                end = end.ToUniversalTime();
-                TimeSpan total = end - start;
+                start = _start.ToUniversalTime();
+                end = _end.ToUniversalTime();
+                TimeSpan total = _end - _start;
                 return total.TotalMilliseconds;
             }
             catch (Exception)

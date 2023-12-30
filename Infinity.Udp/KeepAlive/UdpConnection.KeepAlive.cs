@@ -2,8 +2,6 @@
 {
     partial class UdpConnection
     {
-        private PingBuffer active_pings = new PingBuffer(16);
-
         public int KeepAliveInterval
         {
             get
@@ -17,9 +15,11 @@
                 ResetKeepAliveTimer();
             }
         }
-        private int keep_alive_interval = 1500;
 
-        public int MissingPingsUntilDisconnect = 6;
+        public int MissingPingsUntilDisconnect { get; set; } = 6;
+
+        private PingBuffer active_pings = new PingBuffer(16);
+        private int keep_alive_interval = 1500;
         private volatile int pings_since_ack = 0;
 
         private Timer? keep_alive_timer;

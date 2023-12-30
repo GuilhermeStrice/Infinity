@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 namespace Infinity.Core.Udp
 {
@@ -22,20 +23,61 @@ namespace Infinity.Core.Udp
             reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
             InitializeKeepAliveTimer();
         }
-        
+
+        protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
+        {
+            Socket socket;
+
+            SocketType socket_type;
+            ProtocolType protocol_type;
+
+            if (_protocol == Protocol.Udp)
+            {
+                socket_type = SocketType.Dgram;
+                protocol_type = ProtocolType.Udp;
+            }
+            else
+            {
+                socket_type = SocketType.Stream;
+                protocol_type = ProtocolType.Tcp;
+            }
+
+            if (_ip_mode == IPMode.IPv4)
+            {
+                socket = new Socket(AddressFamily.InterNetwork, socket_type, protocol_type);
+            }
+            else
+            {
+                if (!Socket.OSSupportsIPv6)
+                {
+                    throw new InvalidOperationException("IPV6 not supported!");
+                }
+
+                socket = new Socket(AddressFamily.InterNetworkV6, socket_type, protocol_type);
+                socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+            }
+
+            if (_protocol == Protocol.Udp)
+            {
+                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    const int SIO_UDP_CONNRESET = -1744830452;
+                    socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
+                }
+            }
+            else
+            {
+                socket.NoDelay = true;
+            }
+
+            return socket;
+        }
+
         ~UdpClientConnection()
         {
             Dispose(false);
-        }
-
-        private void ManageReliablePacketsInternal(object? _state)
-        {
-            ManageReliablePackets();
-            try
-            {
-                reliable_packet_timer.Change(100, Timeout.Infinite);
-            }
-            catch { }
         }
 
         public override void WriteBytesToConnection(byte[] _bytes, int _length)
@@ -49,48 +91,6 @@ namespace Infinity.Core.Udp
 #endif
             {
                 WriteBytesToConnectionReal(_bytes, _length);
-            }
-        }
-
-        private void WriteBytesToConnectionReal(byte[] _bytes, int _length)
-        {
-            try
-            {
-                socket.BeginSendTo(
-                    _bytes,
-                    0,
-                    _length,
-                    SocketFlags.None,
-                    EndPoint,
-                    HandleSendTo,
-                    null);
-            }
-            catch (NullReferenceException) { }
-            catch (ObjectDisposedException)
-            {
-                // Already disposed and disconnected...
-            }
-            catch (SocketException ex)
-            {
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "Could not send data as a SocketException occurred: " + ex.Message);
-            }
-        }
-
-        private void HandleSendTo(IAsyncResult _result)
-        {
-            try
-            {
-                int sent = socket.EndSendTo(_result);
-                Statistics.LogPacketSent(sent);
-            }
-            catch (NullReferenceException) { }
-            catch (ObjectDisposedException)
-            {
-                // Already disposed and disconnected...
-            }
-            catch (SocketException ex)
-            {
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "Could not send data as a SocketException occurred: " + ex.Message);
             }
         }
 
@@ -156,7 +156,59 @@ namespace Infinity.Core.Udp
             });
         }
 
-        void StartListeningForData()
+        private void WriteBytesToConnectionReal(byte[] _bytes, int _length)
+        {
+            try
+            {
+                socket.BeginSendTo(
+                    _bytes,
+                    0,
+                    _length,
+                    SocketFlags.None,
+                    EndPoint,
+                    HandleSendTo,
+                    null);
+            }
+            catch (NullReferenceException) { }
+            catch (ObjectDisposedException)
+            {
+                // Already disposed and disconnected...
+            }
+            catch (SocketException ex)
+            {
+                DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "Could not send data as a SocketException occurred: " + ex.Message);
+            }
+        }
+
+        private void HandleSendTo(IAsyncResult _result)
+        {
+            try
+            {
+                int sent = socket.EndSendTo(_result);
+                Statistics.LogPacketSent(sent);
+            }
+            catch (NullReferenceException) { }
+            catch (ObjectDisposedException)
+            {
+                // Already disposed and disconnected...
+            }
+            catch (SocketException ex)
+            {
+                DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "Could not send data as a SocketException occurred: " + ex.Message);
+            }
+        }
+
+        private void ManageReliablePacketsInternal(object? _state)
+        {
+            ManageReliablePackets();
+            try
+            {
+                reliable_packet_timer.Change(100, Timeout.Infinite);
+            }
+            catch { }
+        }
+
+        private void StartListeningForData()
         {
 #if DEBUG
             if (TestLagMs > 0)
@@ -177,7 +229,7 @@ namespace Infinity.Core.Udp
             }
         }
 
-        void ReadCallback(IAsyncResult result)
+        private void ReadCallback(IAsyncResult result)
         {
             var reader = (MessageReader)result.AsyncState;
 

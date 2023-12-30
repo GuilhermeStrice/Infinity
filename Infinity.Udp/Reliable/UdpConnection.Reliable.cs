@@ -5,18 +5,60 @@ namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
-        public volatile int ResendTimeoutMs = 0;
+        public int ResendTimeoutMs
+        {
+            get
+            {
+                return resend_timeout_ms;
+            }
+            set
+            {
+                Interlocked.Exchange(ref resend_timeout_ms, value);
+            }
+        }
 
         /// <summary>
         /// Max number of times to resend. 0 == no limit
         /// </summary>
-        public volatile int ResendLimit = 0;
+        public int ResendLimit
+        {
+            get
+            {
+                return resend_limit;
+            }
+            set
+            {
+                Interlocked.Exchange(ref resend_limit, value);
+            }
+        }
 
         /// <summary>
         /// A compounding multiplier to back off resend timeout.
         /// Applied to ping before first timeout when ResendTimeout == 0.
         /// </summary>
-        public volatile float ResendPingMultiplier = 2;
+        public float ResendPingMultiplier
+        {
+            get
+            {
+                return resend_ping_multiplier;
+            }
+            set
+            {
+                Interlocked.Exchange(ref resend_ping_multiplier, value);
+            }
+        }
+
+        public int DisconnectTimeoutMs
+        {
+            get
+            {
+                return disconnect_timeout_ms;
+            }
+            set
+            {
+                Interlocked.Exchange(ref disconnect_timeout_ms, value);
+            }
+        }
 
         private int last_id_allocated = -1;
 
@@ -28,15 +70,17 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
         /// </summary>
-        private HashSet<ushort> reliable_data_packets_missing = new HashSet<ushort>();
-
-        protected volatile ushort reliable_receive_last = ushort.MaxValue;
+        internal HashSet<ushort> reliable_data_packets_missing = new HashSet<ushort>();
 
         private object ping_lock = new object();
-
         private float ping_ms = 500;
 
-        public volatile int DisconnectTimeoutMs = 5000;
+        private volatile int resend_timeout_ms = 0;
+        private volatile int resend_limit = 0;
+        private volatile float resend_ping_multiplier = 2;
+        private volatile int disconnect_timeout_ms = 5000;
+
+        protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
         internal void DisconnectInternalPacket(InfinityInternalErrors _error, string _reason)
         {
@@ -61,34 +105,6 @@ namespace Infinity.Core.Udp
             }
 
             return output;
-        }
-
-        protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
-        {
-            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
-
-            _buffer[_offset] = (byte)(id >> 8);
-            _buffer[_offset + 1] = (byte)id;
-
-            int resend_delay_ms = ResendTimeoutMs;
-            if (resend_delay_ms <= 0)
-            {
-                resend_delay_ms = Math.Clamp((int)(ping_ms * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
-            }
-
-            Packet packet = Pools.PacketPool.GetObject();
-            packet.Set(
-                this,
-                id,
-                _buffer,
-                _buffer.Length,
-                resend_delay_ms,
-                _ack_callback);
-
-            if (!reliable_data_packets_sent.TryAdd(id, packet))
-            {
-                throw new Exception("That shouldn't be possible");
-            }
         }
 
         private void ReliableSend(byte[] _buffer, Action _ack_callback = null)
@@ -290,6 +306,34 @@ namespace Infinity.Core.Udp
                 {
                     packet.Recycle();
                 }
+            }
+        }
+
+        protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
+        {
+            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
+
+            _buffer[_offset] = (byte)(id >> 8);
+            _buffer[_offset + 1] = (byte)id;
+
+            int resend_delay_ms = ResendTimeoutMs;
+            if (resend_delay_ms <= 0)
+            {
+                resend_delay_ms = Math.Clamp((int)(ping_ms * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
+            }
+
+            Packet packet = Pools.PacketPool.GetObject();
+            packet.Set(
+                this,
+                id,
+                _buffer,
+                _buffer.Length,
+                resend_delay_ms,
+                _ack_callback);
+
+            if (!reliable_data_packets_sent.TryAdd(id, packet))
+            {
+                throw new Exception("That shouldn't be possible");
             }
         }
     }

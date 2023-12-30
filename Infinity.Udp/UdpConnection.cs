@@ -1,5 +1,3 @@
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
 namespace Infinity.Core.Udp
 {
     public abstract partial class UdpConnection : NetworkConnection
@@ -14,10 +12,10 @@ namespace Infinity.Core.Udp
 
         public override float AveragePingMs => ping_ms;
 
+        public UdpConnectionStatistics Statistics { get; private set; }
+
         protected static readonly byte[] empty_disconnect_bytes = new byte[1];
         protected readonly ILogger logger;
-
-        public UdpConnectionStatistics Statistics { get; private set; }
 
         public UdpConnection(ILogger _logger) : base()
         {
@@ -104,7 +102,26 @@ namespace Infinity.Core.Udp
 
             return SendErrors.None;
         }
-        
+
+        protected void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
+        {
+            byte[] buffer = new byte[_writer.Length];
+            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+            ReliableSend(buffer, _acknowledge_callback);
+        }
+
+        protected override void Dispose(bool _disposing)
+        {
+            if (_disposing)
+            {
+                DisposeKeepAliveTimer();
+                DisposeReliablePackets();
+            }
+
+            base.Dispose(_disposing);
+        }
+
         internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
         {
             ushort id;
@@ -184,25 +201,6 @@ namespace Infinity.Core.Udp
                         break;
                     }
             }
-        }
-
-        protected void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
-        {
-            byte[] buffer = new byte[_writer.Length];
-            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-            ReliableSend(buffer, _acknowledge_callback);
-        }
-
-        protected override void Dispose(bool _disposing)
-        {
-            if (_disposing)
-            {
-                DisposeKeepAliveTimer();
-                DisposeReliablePackets();
-            }
-
-            base.Dispose(_disposing);
         }
     }
 }

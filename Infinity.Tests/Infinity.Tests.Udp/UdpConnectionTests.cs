@@ -110,26 +110,36 @@ namespace Infinity.Core.Tests
         [Fact]
         public void UdpHandshakeTest()
         {
+            var mutex = new ManualResetEvent(false);
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
                 listener.Start();
 
-                MessageReader output = null;
-                listener.NewConnection += delegate (NewConnectionEventArgs e)
-                {
-                    output = e.HandshakeData.Duplicate();
-                };
-
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 handshake.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
+
+                listener.HandshakeConnection = delegate (IPEndPoint endPoint, byte[] input, out byte[] response)
+                {
+                    for (int i = 0; i < input.Length; ++i)
+                    {
+                        Assert.Equal(input[i], handshake.Buffer[i]);
+                    }
+
+                    response = null;
+                    mutex.Set();
+                    return true;
+                };
+
+                listener.NewConnection += delegate (NewConnectionEventArgs e)
+                {
+                };
+
+                
                 connection.Connect(handshake);
 
-                Thread.Sleep(10);
-                for (int i = 0; i < handshake.Length; ++i)
-                {
-                    Assert.Equal(handshake.Buffer[i], output.Buffer[i]);
-                }
+                mutex.WaitOne();
             }
         }
 

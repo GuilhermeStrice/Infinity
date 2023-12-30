@@ -40,16 +40,6 @@ namespace Infinity.Core.Udp.Broadcast
             }
         }
 
-        private static Socket CreateSocket(IPEndPoint _endpoint)
-        {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            socket.EnableBroadcast = true;
-            socket.MulticastLoopback = false;
-            socket.Bind(_endpoint);
-
-            return socket;
-        }
-
         public void Broadcast(byte[] _buffer)
         {
             if (_buffer == null || _buffer.Length == 0)
@@ -80,6 +70,27 @@ namespace Infinity.Core.Udp.Broadcast
             }
         }
 
+        public void Dispose()
+        {
+            foreach (var available_addr in available_addresses)
+            {
+                Socket socket = available_addr.Value;
+                CloseSocket(socket);
+            }
+
+            available_addresses.Clear();
+        }
+
+        private static Socket CreateSocket(IPEndPoint _endpoint)
+        {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.EnableBroadcast = true;
+            socket.MulticastLoopback = false;
+            socket.Bind(_endpoint);
+
+            return socket;
+        }
+
         private void FinishSendTo(IAsyncResult result)
         {
             try
@@ -101,17 +112,6 @@ namespace Infinity.Core.Udp.Broadcast
                 try { s.Close(); } catch { }
                 try { s.Dispose(); } catch { }
             }
-        }
-
-        public void Dispose()
-        {
-            foreach (var available_addr in available_addresses)
-            {
-                Socket socket = available_addr.Value;
-                CloseSocket(socket);
-            }
-
-            available_addresses.Clear();
         }
     }
 }

@@ -4,9 +4,9 @@ namespace Infinity.Core
 {
     public class MessageWriter : IRecyclable
     {
-        public byte[] Buffer;
-        public int Length;
-        public int Position;
+        public byte[] Buffer { get; set; }
+        public int Length { get; set; }
+        public int Position { get; set; }
 
         internal MessageWriter(int _buffer_size)
         {

@@ -43,13 +43,13 @@ namespace Infinity.Core.Tests
             mutex.WaitOne();
 
             var reader = data.ToReader();
-            Assert.Equal(reader.Length, result.Value.Message.Length);
+            Assert.Equal(reader.Length, result.Message.Length);
             for (int i = reader.Offset; i < reader.Length; i++)
             {
-                Assert.Equal(reader.Buffer[i], result.Value.Message.Buffer[i]);
+                Assert.Equal(reader.Buffer[i], result.Message.Buffer[i]);
             }
 
-            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
+            Assert.Equal(sendOption, result.Message.Buffer[0]);
         }
 
         /// <summary>
@@ -99,21 +99,21 @@ namespace Infinity.Core.Tests
             if (sendOption != UdpSendOption.Unreliable)
             {
                 dataReader.Position += 3;
-                result.Value.Message.Position += 3;
+                result.Message.Position += 3;
             }
             else
             {
                 dataReader.Position += 1;
-                result.Value.Message.Position += 1;
+                result.Message.Position += 1;
             }
 
-            Assert.Equal(dataReader.Length, result.Value.Message.Length);
+            Assert.Equal(dataReader.Length, result.Message.Length);
             for (int i = 0; i < dataReader.Length; i++)
             {
-                Assert.Equal(dataReader.ReadByte(), result.Value.Message.ReadByte());
+                Assert.Equal(dataReader.ReadByte(), result.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
+            Assert.Equal(sendOption, result.Message.Buffer[0]);
         }
 
         /// <summary>

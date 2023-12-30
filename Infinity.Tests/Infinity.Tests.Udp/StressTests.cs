@@ -22,6 +22,8 @@ namespace Infinity.Core.Tests
             var ep = new IPEndPoint(IPAddress.Loopback, 22023);
             using (var listener = new UdpConnectionListener(ep))
             {
+                int con_count = 0;
+
                 listener.NewConnection += delegate (NewConnectionEventArgs obj)
                 {
                     obj.Connection.DataReceived += delegate (DataReceivedEventArgs data_args)
@@ -33,11 +35,25 @@ namespace Infinity.Core.Tests
                     {
                         e.Message?.Recycle();
                     };
+
+                    if (con_count == 100)
+                    {
+                        output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
+                        output.WriteLine(Udp.Pools.PacketPool.InUse.ToString());
+                        output.WriteLine(Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                        output.WriteLine(Udp.Pools.FragmentPool.InUse.ToString());
+                        output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
+                    }
                 };
                 listener.Start();
 
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < 3000; i++)
                 {
+                    /*if (con_count == 50)
+                    {
+                        Thread.Sleep(1000);
+                        con_count = 0;
+                    }*/
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEventArgs obj)
                     {
@@ -50,6 +66,8 @@ namespace Infinity.Core.Tests
                     connection.KeepAliveInterval = 50;
 
                     connection.Connect(handshake);
+                    Thread.Sleep(50);
+                    con_count++;
                 }
 
                 handshake.Recycle();
@@ -83,6 +101,9 @@ namespace Infinity.Core.Tests
                         {
                             output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
                             output.WriteLine(Udp.Pools.PacketPool.InUse.ToString());
+                            output.WriteLine(Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                            output.WriteLine(Udp.Pools.FragmentPool.InUse.ToString());
+                            output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
                             mutex.Set();
                         }
                     };
@@ -97,6 +118,7 @@ namespace Infinity.Core.Tests
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
+                handshake.Recycle();
 
                 var message = UdpMessageFactory.BuildReliableMessage();
                 message.Write(123);

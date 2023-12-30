@@ -23,11 +23,6 @@ namespace Infinity.Core.Udp
             Listener.SendData(_bytes, _length, EndPoint);
         }
 
-        private void NotClient()
-        {
-            throw new InvalidOperationException("Cannot manually connect a UdpServerConnection, did you mean to use UdpClientConnection?");
-        }
-
         public override void Connect(MessageWriter _writer, int _timeout = 5000)
         {
             NotClient();
@@ -36,6 +31,11 @@ namespace Infinity.Core.Udp
         public override void ConnectAsync(MessageWriter _writer)
         {
             NotClient();
+        }
+
+        private void NotClient()
+        {
+            throw new InvalidOperationException("Cannot manually connect a UdpServerConnection, did you mean to use UdpClientConnection?");
         }
 
         protected override void SetState(ConnectionState _state)

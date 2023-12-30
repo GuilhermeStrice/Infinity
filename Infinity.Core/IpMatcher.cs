@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Infinity.Core
 {
@@ -14,11 +9,11 @@ namespace Infinity.Core
     {
         ILogger logger = null;
 
-        private string _Header = "[IpMatcher] ";
-        private readonly object _AddressLock = new object();
-        private List<Address> _Addresses = new List<Address>();
-        private ConcurrentDictionary<string, DateTime> _Cache = new ConcurrentDictionary<string, DateTime>();
-        private static readonly byte[] _ContiguousPatterns = { 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF };
+        private string header = "[IpMatcher] ";
+        private readonly object address_lock = new object();
+        private List<Address> addresses = new List<Address>();
+        private ConcurrentDictionary<string, DateTime> cache = new ConcurrentDictionary<string, DateTime>();
+        private static readonly byte[] contiguous_patterns = { 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF };
 
         public IpMatcher()
         {
@@ -32,19 +27,19 @@ namespace Infinity.Core
                 throw new ArgumentException("One or more arguments are invalid");
             }
 
-            string baseAddress = GetBaseIpAddress(_ip, _netmask);
+            string base_address = GetBaseIpAddress(_ip, _netmask);
 
-            if (Exists(baseAddress, _netmask))
+            if (Exists(base_address, _netmask))
             {
                 return;
             }
 
-            lock (_AddressLock)
+            lock (address_lock)
             {
-                _Addresses.Add(new Address(baseAddress, _netmask));
+                addresses.Add(new Address(base_address, _netmask));
             }
 
-            Log(baseAddress + " " + _netmask + " added");
+            Log(base_address + " " + _netmask + " added");
             return;
         }
 
@@ -62,15 +57,15 @@ namespace Infinity.Core
                 throw new ArgumentException("One or more arguments are invalid");
             }
 
-            if (_Cache.ContainsKey(_ip))
+            if (cache.ContainsKey(_ip))
             {
                 Log(_ip + " " + _netmask + " exists in cache");
                 return true;
             }
 
-            lock (_AddressLock)
+            lock (address_lock)
             {
-                Address curr = _Addresses.Where(d => d.Ip.Equals(_ip) && d.Netmask.Equals(_netmask)).FirstOrDefault();
+                Address curr = addresses.Where(d => d.Ip.Equals(_ip) && d.Netmask.Equals(_netmask)).FirstOrDefault();
                 if (curr == default(Address))
                 {
                     Log(_ip + " " + _netmask + " does not exist in address list");
@@ -96,12 +91,12 @@ namespace Infinity.Core
                 throw new ArgumentException("One or more arguments are invalid");
             }
 
-            _Cache.Remove(_ip, out DateTime _);
+            cache.Remove(_ip, out DateTime _);
             Log(_ip + " removed from cache");
 
-            lock (_AddressLock)
+            lock (address_lock)
             {
-                _Addresses = _Addresses.Where(d => !d.Ip.Equals(_ip)).ToList();
+                addresses = addresses.Where(d => !d.Ip.Equals(_ip)).ToList();
                 Log(_ip + " removed from address list");
             }
 
@@ -123,7 +118,7 @@ namespace Infinity.Core
 
             IPAddress parsed = IPAddress.Parse(_ip);
 
-            if (_Cache.ContainsKey(_ip))
+            if (cache.ContainsKey(_ip))
             {
                 Log(_ip + " found in cache");
                 return true;
@@ -131,16 +126,16 @@ namespace Infinity.Core
 
             List<Address> networks = new List<Address>();
 
-            lock (_AddressLock)
+            lock (address_lock)
             {
-                Address directMatch = _Addresses.Where(d => d.Ip.Equals(_ip) && d.Netmask.Equals("255.255.255.255")).FirstOrDefault();
-                if (directMatch != default(Address))
+                Address direct_match = addresses.Where(d => d.Ip.Equals(_ip) && d.Netmask.Equals("255.255.255.255")).FirstOrDefault();
+                if (direct_match != default(Address))
                 {
                     Log(_ip + " found in address list");
                     return true;
                 }
 
-                networks = _Addresses.Where(d => !d.Netmask.Equals("255.255.255.255")).ToList();
+                networks = addresses.Where(d => !d.Netmask.Equals("255.255.255.255")).ToList();
             }
 
             if (networks.Count < 1)
@@ -150,19 +145,19 @@ namespace Infinity.Core
 
             foreach (Address curr in networks)
             {
-                IPAddress maskedAddress;
-                if (!ApplySubnetMask(parsed, curr.ParsedNetmask, out maskedAddress))
+                IPAddress masked_address;
+                if (!ApplySubnetMask(parsed, curr.ParsedNetmask, out masked_address))
                 {
                     continue;
                 }
 
-                if (curr.ParsedAddress.Equals(maskedAddress))
+                if (curr.ParsedAddress.Equals(masked_address))
                 {
                     Log(_ip + " matched from address list");
 
-                    if (!_Cache.ContainsKey(_ip))
+                    if (!cache.ContainsKey(_ip))
                     {
-                        _Cache.TryAdd(_ip, DateTime.Now);
+                        cache.TryAdd(_ip, DateTime.Now);
                     }
 
                     Log(_ip + " added to cache");
@@ -178,9 +173,9 @@ namespace Infinity.Core
         {
             List<string> ret = new List<string>();
 
-            lock (_AddressLock)
+            lock (address_lock)
             {
-                foreach (Address addr in _Addresses)
+                foreach (Address addr in addresses)
                 {
                     ret.Add(addr.Ip + "/" + addr.Netmask);
                 }
@@ -191,64 +186,64 @@ namespace Infinity.Core
 
         private void Log(string msg)
         {
-            logger?.WriteInfo(_Header + msg);
+            logger?.WriteInfo(header + msg);
         }
 
-        private bool ApplySubnetMask(IPAddress address, IPAddress mask, out IPAddress masked)
+        private bool ApplySubnetMask(IPAddress _address, IPAddress _mask, out IPAddress _masked)
         {
-            masked = null;
-            byte[] addrBytes = address.GetAddressBytes();
-            byte[] maskBytes = mask.GetAddressBytes();
+            _masked = null;
+            byte[] address_bytes = _address.GetAddressBytes();
+            byte[] mask_bytes = _mask.GetAddressBytes();
 
-            if (!ApplySubnetMask(addrBytes, maskBytes, out byte[] maskedAddressBytes))
+            if (!ApplySubnetMask(address_bytes, mask_bytes, out byte[] masked_address_bytes))
             {
                 return false;
             }
 
-            masked = new IPAddress(maskedAddressBytes);
+            _masked = new IPAddress(masked_address_bytes);
             return true;
         }
 
-        private bool ApplySubnetMask(byte[] value, byte[] mask, out byte[] masked)
+        private bool ApplySubnetMask(byte[] _value, byte[] _mask, out byte[] _masked)
         {
-            masked = new byte[value.Length];
-            for (int i = 0; i < value.Length; i++)
+            _masked = new byte[_value.Length];
+            for (int i = 0; i < _value.Length; i++)
             {
-                masked[i] = 0x00;
+                _masked[i] = 0x00;
             }
 
-            if (!VerifyContiguousMask(mask))
+            if (!VerifyContiguousMask(_mask))
             {
                 return false;
             }
 
-            for (int i = 0; i < masked.Length; ++i)
+            for (int i = 0; i < _masked.Length; ++i)
             {
-                masked[i] = (byte)(value[i] & mask[i]);
+                _masked[i] = (byte)(_value[i] & _mask[i]);
             }
 
             return true;
         }
 
-        private bool VerifyContiguousMask(byte[] mask)
+        private bool VerifyContiguousMask(byte[] _mask)
         {
             int i;
 
             // Check leading one bits 
-            for (i = 0; i < mask.Length; ++i)
+            for (i = 0; i < _mask.Length; ++i)
             {
-                byte curByte = mask[i];
-                if (curByte == 0xFF)
+                byte cur_byte = _mask[i];
+                if (cur_byte == 0xFF)
                 {
                     // Full 8-bits, check next bytes. 
                 }
-                else if (curByte == 0)
+                else if (cur_byte == 0)
                 {
                     // A full byte of 0s. 
                     // Check subsequent bytes are all zeros. 
                     break;
                 }
-                else if (Array.IndexOf<byte>(_ContiguousPatterns, curByte) != -1)
+                else if (Array.IndexOf<byte>(contiguous_patterns, cur_byte) != -1)
                 {
                     // A bit-wise contiguous ending in zeros. 
                     // Check subsequent bytes are all zeros. 
@@ -262,10 +257,10 @@ namespace Infinity.Core
             }
 
             // Now check that all the subsequent bytes are all zeros. 
-            for (i += 1/*next*/; i < mask.Length; ++i)
+            for (i += 1/*next*/; i < _mask.Length; ++i)
             {
-                byte curByte = mask[i];
-                if (curByte != 0)
+                byte cur_byte = _mask[i];
+                if (cur_byte != 0)
                 {
                     return false;
                 }
@@ -274,64 +269,64 @@ namespace Infinity.Core
             return true;
         }
 
-        private string GetBaseIpAddress(string ip, string netmask)
+        private string GetBaseIpAddress(string _ip, string _netmask)
         {
-            IPAddress ipAddr = IPAddress.Parse(ip);
-            IPAddress mask = IPAddress.Parse(netmask);
+            IPAddress ip_addr = IPAddress.Parse(_ip);
+            IPAddress mask = IPAddress.Parse(_netmask);
 
-            byte[] ipAddrBytes = ipAddr.GetAddressBytes();
-            byte[] maskBytes = mask.GetAddressBytes();
+            byte[] ip_addr_bytes = ip_addr.GetAddressBytes();
+            byte[] mask_bytes = mask.GetAddressBytes();
 
-            byte[] afterAnd = And(ipAddrBytes, maskBytes);
-            IPAddress baseAddr = new IPAddress(afterAnd);
-            return baseAddr.ToString();
+            byte[] after_and = And(ip_addr_bytes, mask_bytes);
+            IPAddress base_addr = new IPAddress(after_and);
+            return base_addr.ToString();
         }
 
-        private byte[] And(byte[] addr, byte[] mask)
+        private byte[] And(byte[] _addr, byte[] _mask)
         {
-            if (addr.Length != mask.Length)
+            if (_addr.Length != _mask.Length)
             {
                 throw new ArgumentException("Supplied arrays are not of the same length.");
             }
 
-            BitArray baAddr = new BitArray(addr);
-            BitArray baMask = new BitArray(mask);
-            BitArray baResult = baAddr.And(baMask);
-            byte[] result = new byte[addr.Length];
-            baResult.CopyTo(result, 0);
+            BitArray ba_addr = new BitArray(_addr);
+            BitArray ba_mask = new BitArray(_mask);
+            BitArray ba_result = ba_addr.And(ba_mask);
+            byte[] result = new byte[_addr.Length];
+            ba_result.CopyTo(result, 0);
 
             return result;
         }
 
-        private byte[] ExclusiveOr(byte[] addr, byte[] mask)
+        private byte[] ExclusiveOr(byte[] _addr, byte[] _mask)
         {
-            if (addr.Length != mask.Length)
+            if (_addr.Length != _mask.Length)
             {
                 throw new ArgumentException("Supplied arrays are not of the same length.");
             }
 
-            byte[] result = new byte[addr.Length];
+            byte[] result = new byte[_addr.Length];
 
-            for (int i = 0; i < addr.Length; ++i)
+            for (int i = 0; i < _addr.Length; ++i)
             {
-                result[i] = (byte)(addr[i] ^ mask[i]);
+                result[i] = (byte)(_addr[i] ^ _mask[i]);
             }
 
             return result;
         }
 
-        private string ByteArrayToHexString(byte[] Bytes)
+        private string ByteArrayToHexString(byte[] _bytes)
         {
-            StringBuilder Result = new StringBuilder(Bytes.Length * 2);
-            string HexAlphabet = "0123456789ABCDEF";
+            StringBuilder result = new StringBuilder(_bytes.Length * 2);
+            string hex_alphabet = "0123456789ABCDEF";
 
-            foreach (byte B in Bytes)
+            foreach (byte B in _bytes)
             {
-                Result.Append(HexAlphabet[B >> 4]);
-                Result.Append(HexAlphabet[B & 0xF]);
+                result.Append(hex_alphabet[B >> 4]);
+                result.Append(hex_alphabet[B & 0xF]);
             }
 
-            return Result.ToString();
+            return result.ToString();
         }
 
         internal class Address

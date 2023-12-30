@@ -8,12 +8,12 @@
         /// <summary>
         ///     The total number of fragments expected.
         /// </summary>
-        public int FragmentsCount;
+        public int FragmentsCount { get; set; }
 
         /// <summary>
         ///     The fragments received so far.
         /// </summary>
-        public HashSet<Fragment> Fragments = new HashSet<Fragment>();
+        public HashSet<Fragment> Fragments { get; set; } = new HashSet<Fragment>();
 
         public FragmentedMessage()
         {

@@ -2,31 +2,31 @@
 {
     public class UdpConnectionStatistics
     {
-        long bytes_sent = 0;
-        long bytes_received = 0;
-        long packets_sent = 0;
-        long reliable_packets_acknowledged = 0;
-        long acknowledgements_sent = 0;
-        long acknowledgements_received = 0;
-        long pings_sent = 0;
-        long pings_received = 0;
-        long messages_resent = 0;
+        private long bytes_sent = 0;
+        private long bytes_received = 0;
+        private long packets_sent = 0;
+        private long reliable_packets_acknowledged = 0;
+        private long acknowledgements_sent = 0;
+        private long acknowledgements_received = 0;
+        private long pings_sent = 0;
+        private long pings_received = 0;
+        private long messages_resent = 0;
 
-        long unreliable_messages_sent = 0;
-        long unreliable_messages_received = 0;
+        private long unreliable_messages_sent = 0;
+        private long unreliable_messages_received = 0;
 
-        long reliable_messages_sent = 0;
-        long reliable_messages_received = 0;
+        private long reliable_messages_sent = 0;
+        private long reliable_messages_received = 0;
 
-        long fragmented_messages_sent = 0;
-        long fragmented_messages_received = 0;
+        private long fragmented_messages_sent = 0;
+        private long fragmented_messages_received = 0;
 
-        long handshake_messages_sent = 0;
-        long handshake_messages_received = 0;
+        private long handshake_messages_sent = 0;
+        private long handshake_messages_received = 0;
 
-        long garbage_received = 0;
+        private long garbage_received = 0;
 
-        long dropped_packets = 0;
+        private long dropped_packets = 0;
 
         public long BytesSent => Interlocked.Increment(ref bytes_sent);
         public long BytesReceived => Interlocked.Increment(ref bytes_received);

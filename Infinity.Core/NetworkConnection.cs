@@ -42,8 +42,6 @@ namespace Infinity.Core
 
         protected ConnectionState state;
 
-        protected abstract void SetState(ConnectionState _state);
-
         protected NetworkConnection()
         {
             State = ConnectionState.NotConnected;
@@ -62,80 +60,11 @@ namespace Infinity.Core
             }
         }
 
-        protected abstract bool SendDisconnect(MessageWriter _writer);
-
         public abstract SendErrors Send(MessageWriter _writer);
-
-        protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
-        {
-            Socket socket;
-
-            SocketType socket_type;
-            ProtocolType protocol_type;
-
-            if (_protocol == Protocol.Udp)
-            {
-                socket_type = SocketType.Dgram;
-                protocol_type = ProtocolType.Udp;
-            }
-            else
-            {
-                socket_type = SocketType.Stream;
-                protocol_type = ProtocolType.Tcp;
-            }
-
-            if (_ip_mode == IPMode.IPv4)
-            {
-                socket = new Socket(AddressFamily.InterNetwork, socket_type, protocol_type);
-            }
-            else
-            {
-                if (!Socket.OSSupportsIPv6)
-                {
-                    throw new InvalidOperationException("IPV6 not supported!");
-                }
-
-                socket = new Socket(AddressFamily.InterNetworkV6, socket_type, protocol_type);
-                socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
-            }
-
-            if (_protocol == Protocol.Udp)
-            {
-                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    const int SIO_UDP_CONNRESET = -1744830452;
-                    socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
-                }
-            }
-            else
-            {
-                socket.NoDelay = true;
-            }
-
-            return socket;
-        }
 
         public abstract void Connect(MessageWriter _writer, int _timeout = 5000);
 
         public abstract void ConnectAsync(MessageWriter _writer);
-
-        protected void DisconnectRemote(string _reason, MessageReader _reader)
-        {
-            if (SendDisconnect(null))
-            {
-                InvokeDisconnected(_reason, _reader);
-            }
-
-            Dispose();
-        }
-
-        protected void DisconnectInternal(InfinityInternalErrors _error, string _reason)
-        {
-            var msg = OnInternalDisconnect?.Invoke(_error);
-            Disconnect(_reason, msg);
-        }
 
         public void Disconnect(string _reason, MessageWriter _writer = null)
         {
@@ -145,6 +74,12 @@ namespace Infinity.Core
             }
 
             Dispose();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected void InvokeDataReceived(MessageReader _reader)
@@ -186,11 +121,25 @@ namespace Infinity.Core
             BeforeReceive?.Invoke(this, _reader);
         }
 
-        public void Dispose()
+        protected void DisconnectRemote(string _reason, MessageReader _reader)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            if (SendDisconnect(null))
+            {
+                InvokeDisconnected(_reason, _reader);
+            }
+
+            Dispose();
         }
+
+        protected void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        {
+            var msg = OnInternalDisconnect?.Invoke(_error);
+            Disconnect(_reason, msg);
+        }
+
+        protected abstract bool SendDisconnect(MessageWriter _writer);
+
+        protected abstract void SetState(ConnectionState _state);
 
         protected virtual void Dispose(bool _disposing)
         {

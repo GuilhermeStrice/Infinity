@@ -20,13 +20,13 @@ namespace Infinity.Core.Udp
             }
         }
 
-        volatile int last_fragment_id_allocated = 0;
+        private volatile int last_fragment_id_allocated = 0;
 
-        ConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<ushort, FragmentedMessage>();
+        private ConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<ushort, FragmentedMessage>();
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort);
 
-        void FragmentedSend(byte[] _buffer)
+        private void FragmentedSend(byte[] _buffer)
         {
             var id = (ushort)Interlocked.Increment(ref last_fragment_id_allocated);
 
@@ -63,7 +63,7 @@ namespace Infinity.Core.Udp
             }
         }
 
-        void FragmentMessageReceive(MessageReader _reader)
+        private void FragmentMessageReceive(MessageReader _reader)
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {

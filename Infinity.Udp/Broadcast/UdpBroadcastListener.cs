@@ -8,21 +8,18 @@ namespace Infinity.Core.Udp.Broadcast
 
     public class UdpBroadcastListener : IDisposable
     {
+        public bool Running { get; private set; }
+
+        public int PollTime { get; set; } = 1000;
+
+        public event OnBroadcastReceive? OnBroadcastReceive;
+
         private Socket socket;
         private EndPoint endpoint;
         private ILogger logger;
 
         private byte[] buffer = new byte[8086];
         private byte[] identifier;
-
-        public bool Running { get; private set; }
-
-        /// <summary>
-        /// Time to wait between each Broadcast read in milliseconds. Defaults to 1000
-        /// </summary>
-        public int PollTime = 1000;
-
-        public event OnBroadcastReceive? OnBroadcastReceive;
 
         public UdpBroadcastListener(int port, byte[] identifier, ILogger logger = null)
         {
@@ -36,16 +33,6 @@ namespace Infinity.Core.Udp.Broadcast
 
             endpoint = new IPEndPoint(IPAddress.Any, port);
             socket = CreateSocket((IPEndPoint)endpoint);
-        }
-
-        private static Socket CreateSocket(IPEndPoint endPoint)
-        {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            socket.EnableBroadcast = true;
-            socket.MulticastLoopback = false;
-            socket.Bind(endPoint);
-
-            return socket;
         }
 
         public void StartListen()
@@ -71,6 +58,29 @@ namespace Infinity.Core.Udp.Broadcast
                 logger?.WriteError("BroadcastListener: " + e);
                 Dispose();
             }
+        }
+
+        public void Dispose()
+        {
+            Running = false;
+
+            if (socket != null)
+            {
+                try { socket.Shutdown(SocketShutdown.Both); } catch { }
+                try { socket.Close(); } catch { }
+                try { socket.Dispose(); } catch { }
+                socket = null;
+            }
+        }
+
+        private static Socket CreateSocket(IPEndPoint endPoint)
+        {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.EnableBroadcast = true;
+            socket.MulticastLoopback = false;
+            socket.Bind(endPoint);
+
+            return socket;
         }
 
         private void HandleData(IAsyncResult result)
@@ -118,19 +128,6 @@ namespace Infinity.Core.Udp.Broadcast
             // it's up to the user to specify a sane time frame
             Thread.Sleep(PollTime);
             StartListen();
-        }
-
-        public void Dispose()
-        {
-            Running = false;
-
-            if (socket != null)
-            {
-                try { socket.Shutdown(SocketShutdown.Both); } catch { }
-                try { socket.Close(); } catch { }
-                try { socket.Dispose(); } catch { }
-                socket = null;
-            }
         }
     }
 }

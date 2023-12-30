@@ -6,12 +6,10 @@ namespace Infinity.Core.Udp
     {
         private ConcurrentDictionary<int, MessageReader> ordered_messages_received = new ConcurrentDictionary<int, MessageReader>();
 
-        private const int ordered_header_size = sizeof(byte) + sizeof(ushort) + sizeof(byte);
+        private volatile int send_sequence = 0;
+        private volatile int receive_sequence = 1;
 
-        internal volatile int send_sequence = 0;
-        internal volatile int receive_sequence = 1;
-
-        void OrderedSend(byte[] _buffer)
+        private void OrderedSend(byte[] _buffer)
         {
             AttachReliableID(_buffer, 1);
 
@@ -22,7 +20,7 @@ namespace Infinity.Core.Udp
             WriteBytesToConnection(_buffer, _buffer.Length);
         }
 
-        void OrderedMessageReceived(MessageReader _reader)
+        private void OrderedMessageReceived(MessageReader _reader)
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
