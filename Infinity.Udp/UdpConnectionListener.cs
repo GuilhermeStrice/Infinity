@@ -221,6 +221,9 @@ namespace Infinity.Core.Udp
                 all_connections.TryAdd(remote_end_point, connection);
             }
 
+            // Inform the connection of the buffer (new connections need to send an ack back to client)
+            connection.HandleReceive(reader, bytes_received);
+
             // If it's a new connection invoke the NewConnection event.
             // This needs to happen before handling the message because in localhost scenarios, the ACK and
             // subsequent messages can happen before the NewConnection event sets up OnDataRecieved handlers
@@ -232,9 +235,6 @@ namespace Infinity.Core.Udp
                 reader.Position = 0;
                 InvokeNewConnection(connection, reader);
             }
-
-            // Inform the connection of the buffer (new connections need to send an ack back to client)
-            connection.HandleReceive(reader, bytes_received);
         }
 
         private void ManageReliablePackets(object? _state)

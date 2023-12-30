@@ -164,7 +164,6 @@ namespace Infinity.Core.Udp
                     {
                         ProcessReliableReceive(_reader.Buffer, 1, out id);
                         Statistics.LogHandshakeReceived(_bytes_received);
-                        _reader.Recycle();
                         break;
                     }
 

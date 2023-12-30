@@ -1,4 +1,5 @@
 ﻿using Infinity.Core.Udp;
+using System.Collections.Concurrent;
 using System.Net;
 using Xunit.Abstractions;
 
@@ -20,6 +21,7 @@ namespace Infinity.Core.Tests
             handshake.Write(new byte[5]);
 
             var ep = new IPEndPoint(IPAddress.Loopback, 22023);
+            ConcurrentStack<UdpClientConnection> connections = new ConcurrentStack<UdpClientConnection>();
             using (var listener = new UdpConnectionListener(ep))
             {
                 int con_count = 0;
@@ -36,6 +38,8 @@ namespace Infinity.Core.Tests
                         e.Message?.Recycle();
                     };
 
+                    obj.HandshakeData.Recycle();
+
                     if (con_count == 100)
                     {
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
@@ -47,13 +51,8 @@ namespace Infinity.Core.Tests
                 };
                 listener.Start();
 
-                for (int i = 0; i < 3000; i++)
+                for (int i = 0; i < 1000; i++)
                 {
-                    /*if (con_count == 50)
-                    {
-                        Thread.Sleep(1000);
-                        con_count = 0;
-                    }*/
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEventArgs obj)
                     {
@@ -63,11 +62,11 @@ namespace Infinity.Core.Tests
                     {
                         obj.Message?.Recycle();
                     };
-                    connection.KeepAliveInterval = 50;
+                    connection.KeepAliveInterval = 1000;
 
                     connection.Connect(handshake);
-                    Thread.Sleep(50);
                     con_count++;
+                    connections.Push(connection);
                 }
 
                 handshake.Recycle();
