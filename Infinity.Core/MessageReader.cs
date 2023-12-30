@@ -223,7 +223,7 @@ namespace Infinity.Core
 
         public static MessageReader Get(byte[] _buffer, int _offset, int _length)
         {
-            MessageReader reader = Pools.ReaderPool.GetObject();
+            MessageReader reader = Get();
 
             System.Buffer.BlockCopy(_buffer, _offset, reader.Buffer, 0, _length);
 

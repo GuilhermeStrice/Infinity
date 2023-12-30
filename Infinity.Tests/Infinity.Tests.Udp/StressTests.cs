@@ -28,6 +28,7 @@ namespace Infinity.Core.Tests
 
                 listener.NewConnection += delegate (NewConnectionEventArgs obj)
                 {
+                    con_count++;
                     obj.Connection.DataReceived += delegate (DataReceivedEventArgs data_args)
                     {
                         data_args.Message.Recycle();
@@ -38,10 +39,9 @@ namespace Infinity.Core.Tests
                         e.Message?.Recycle();
                     };
 
-                    obj.HandshakeData.Recycle();
-
-                    if (con_count == 100)
+                    if (con_count == 3500)
                     {
+                        con_count = 0;
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
                         output.WriteLine(Udp.Pools.PacketPool.InUse.ToString());
                         output.WriteLine(Udp.Pools.FragmentedMessagePool.InUse.ToString());
@@ -51,7 +51,7 @@ namespace Infinity.Core.Tests
                 };
                 listener.Start();
 
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < 3500; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEventArgs obj)
@@ -65,10 +65,11 @@ namespace Infinity.Core.Tests
                     connection.KeepAliveInterval = 1000;
 
                     connection.Connect(handshake);
-                    con_count++;
                     connections.Push(connection);
                 }
 
+                // wait for all events to process
+                Thread.Sleep(1000);
                 handshake.Recycle();
             }
         }
@@ -125,7 +126,6 @@ namespace Infinity.Core.Tests
                 for (int i = 0; i < 100; i++)
                 {
                     connection.Send(message);
-                    Thread.Sleep(50);
                 }
 
                 Thread.Sleep(100);

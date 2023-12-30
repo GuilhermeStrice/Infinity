@@ -146,6 +146,7 @@ namespace Infinity.Core.Udp
 
                 reader.Offset = 0;
                 reader.Length = bytes_received;
+                reader.Position = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -224,17 +225,16 @@ namespace Infinity.Core.Udp
             // Inform the connection of the buffer (new connections need to send an ack back to client)
             connection.HandleReceive(reader, bytes_received);
 
-            // If it's a new connection invoke the NewConnection event.
-            // This needs to happen before handling the message because in localhost scenarios, the ACK and
-            // subsequent messages can happen before the NewConnection event sets up OnDataRecieved handlers
             if (!aware)
             {
-                // Skip header and Handshake byte;
-                reader.Offset = 3;
-                reader.Length = bytes_received;
-                reader.Position = 0;
                 InvokeNewConnection(connection, reader);
             }
+
+            // recycling twice?? what am i doing wrong?
+            // i dont know why but this does the trick
+            // some problem with handshakes, ill figure it out later
+            if (reader.Buffer[0] == 8)
+                reader.Recycle();
         }
 
         private void ManageReliablePackets(object? _state)
