@@ -48,12 +48,16 @@ namespace Infinity.Http
         {
             get
             {
-                return _TokenSource;
+                return token_source;
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(TokenSource));
-                _TokenSource = value;
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(TokenSource));
+                }
+
+                token_source = value;
             }
         }
 
@@ -62,7 +66,7 @@ namespace Infinity.Http
         /// </summary>
         [JsonPropertyOrder(6)]
         [JsonIgnore]
-        public CancellationToken Token { get; set; } = _TokenSource.Token;
+        public CancellationToken Token { get; set; } = token_source.Token;
 
         /// <summary>
         /// The HTTP response that will be sent.  This object is preconstructed on your behalf and can be modified directly.
@@ -76,7 +80,7 @@ namespace Infinity.Http
         [JsonPropertyOrder(999)]
         public object Metadata { get; set; } = null;
 
-        private static CancellationTokenSource _TokenSource = new CancellationTokenSource();
+        private static CancellationTokenSource token_source = new CancellationTokenSource();
 
         /// <summary>
         /// Instantiate the object.
@@ -87,7 +91,7 @@ namespace Infinity.Http
         }
 
         /// <summary>
-        /// Instantiate.
+        /// Instantiate
         /// </summary>
         /// <param name="ctx">HTTP listener context.</param>
         /// <param name="settings">Settings.</param>

@@ -223,12 +223,12 @@ namespace Infinity.Http
                 throw new ArgumentNullException(nameof(_ctx.Request));
             }
 
-            if (serializer == null)
+            if (_serializer == null)
             {
-                throw new ArgumentNullException(nameof(serializer));
+                throw new ArgumentNullException(nameof(_serializer));
             }
 
-            this.serializer = _serializer;
+            serializer = _serializer;
 
             ListenerContext = _ctx;
             Keepalive = _ctx.Request.KeepAlive;

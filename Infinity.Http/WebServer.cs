@@ -16,17 +16,17 @@ namespace Infinity.Http
         {
             get
             {
-                return _Settings;
+                return settings;
             }
             set
             {
                 if (value == null)
                 {
-                    _Settings = new WebserverSettings();
+                    settings = new WebserverSettings();
                 }
                 else
                 {
-                    _Settings = value;
+                    settings = value;
                 }
             }
         }
@@ -38,7 +38,7 @@ namespace Infinity.Http
         {
             get
             {
-                return _Routes;
+                return routes;
             }
             set
             {
@@ -47,7 +47,7 @@ namespace Infinity.Http
                     throw new ArgumentNullException(nameof(Routes));
                 }
 
-                _Routes = value;
+                routes = value;
             }
         }
 
@@ -58,7 +58,7 @@ namespace Infinity.Http
         {
             get
             {
-                return _Statistics;
+                return statistics;
             }
             set
             {
@@ -67,7 +67,7 @@ namespace Infinity.Http
                     throw new ArgumentNullException(nameof(Statistics));
                 }
 
-                _Statistics = value;
+                statistics = value;
             }
         }
 
@@ -78,7 +78,7 @@ namespace Infinity.Http
         {
             get
             {
-                return _Events;
+                return events;
             }
             set
             {
@@ -87,7 +87,7 @@ namespace Infinity.Http
                     throw new ArgumentNullException(nameof(Events));
                 }
 
-                _Events = value;
+                events = value;
             }
         }
 
@@ -98,7 +98,7 @@ namespace Infinity.Http
         {
             get
             {
-                return _DefaultPages;
+                return default_pages;
             }
             set
             {
@@ -107,7 +107,7 @@ namespace Infinity.Http
                     throw new ArgumentNullException(nameof(DefaultPages));
                 }
 
-                _DefaultPages = value;
+                default_pages = value;
             }
         }
 
@@ -119,11 +119,11 @@ namespace Infinity.Http
         {
             get
             {
-                return _Serializer;
+                return serializer;
             }
             set
             {
-                _Serializer = value ?? throw new ArgumentNullException(nameof(Serializer));
+                serializer = value ?? throw new ArgumentNullException(nameof(Serializer));
             }
         }
 
@@ -134,7 +134,7 @@ namespace Infinity.Http
         {
             get
             {
-                return (_HttpListener != null) ? _HttpListener.IsListening : false;
+                return (http_listener != null) ? http_listener.IsListening : false;
             }
         }
 
@@ -145,66 +145,66 @@ namespace Infinity.Http
         {
             get
             {
-                return _RequestCount;
+                return request_count;
             }
         }
 
         private readonly string _Header = "[Webserver] ";
-        private HttpListener _HttpListener = new HttpListener();
-        private int _RequestCount = 0;
+        private HttpListener http_listener = new HttpListener();
+        private int request_count = 0;
 
-        private CancellationTokenSource _TokenSource = new CancellationTokenSource();
-        private CancellationToken _Token;
-        private Task _AcceptConnections = null;
+        private CancellationTokenSource token_source = new CancellationTokenSource();
+        private CancellationToken token;
+        private Task accept_connections = null;
 
-        private WebserverEvents _Events = new WebserverEvents();
-        private WebserverPages _DefaultPages = new WebserverPages();
-        private WebserverSettings _Settings = new WebserverSettings();
-        private WebserverStatistics _Statistics = new WebserverStatistics();
-        private WebserverRoutes _Routes = new WebserverRoutes();
-        private ISerializationHelper _Serializer = new DefaultSerializationHelper();
+        private WebserverEvents events = new WebserverEvents();
+        private WebserverPages default_pages = new WebserverPages();
+        private WebserverSettings settings = new WebserverSettings();
+        private WebserverStatistics statistics = new WebserverStatistics();
+        private WebserverRoutes routes = new WebserverRoutes();
+        private ISerializationHelper serializer = new DefaultSerializationHelper();
 
         /// <summary>
         /// Creates a new instance of the Watson webserver.
         /// </summary>
-        /// <param name="hostname">Hostname or IP address on which to listen.</param>
-        /// <param name="port">TCP port on which to listen.</param>
-        /// <param name="ssl">Specify whether or not SSL should be used (HTTPS).</param>
-        /// <param name="defaultRoute">Method used when a request is received and no matching routes are found.  Commonly used as the 404 handler when routes are used.</param>
-        public Webserver(string hostname, int port, bool ssl, Func<HttpContext, Task> defaultRoute)
+        /// <param name="_hostname">Hostname or IP address on which to listen.</param>
+        /// <param name="_port">TCP port on which to listen.</param>
+        /// <param name="_ssl">Specify whether or not SSL should be used (HTTPS).</param>
+        /// <param name="_default_route">Method used when a request is received and no matching routes are found.  Commonly used as the 404 handler when routes are used.</param>
+        public Webserver(string _hostname, int _port, bool _ssl, Func<HttpContext, Task> _default_route)
         {
-            if (string.IsNullOrEmpty(hostname))
+            if (string.IsNullOrEmpty(_hostname))
             {
-                hostname = "localhost";
+                _hostname = "localhost";
             }
 
-            if (port < 1)
+            if (_port < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(port));
+                throw new ArgumentOutOfRangeException(nameof(_port));
             }
 
-            _Settings = new WebserverSettings(hostname, port, ssl);
-            _Routes = new WebserverRoutes(_Settings, defaultRoute);
+            settings = new WebserverSettings(_hostname, _port, _ssl);
+            routes = new WebserverRoutes(settings, _default_route);
         }
 
         /// <summary>
         /// Creates a new instance of the webserver.
         /// If you do not provide a settings object, default settings will be used, which will cause the webserver to listen on http://localhost:8000, and send events to the console.
         /// </summary>
-        /// <param name="settings">Webserver settings.</param>
-        /// <param name="defaultRoute">Method used when a request is received and no matching routes are found.  Commonly used as the 404 handler when routes are used.</param>
-        public Webserver(WebserverSettings settings, Func<HttpContext, Task> defaultRoute)
+        /// <param name="_settings">Webserver settings.</param>
+        /// <param name="_default_route">Method used when a request is received and no matching routes are found.  Commonly used as the 404 handler when routes are used.</param>
+        public Webserver(WebserverSettings _settings, Func<HttpContext, Task> _default_route)
         {
-            if (settings == null)
+            if (_settings == null)
             {
-                settings = new WebserverSettings();
+                _settings = new WebserverSettings();
             }
 
-            _Settings = settings;
-            _Routes = new WebserverRoutes(_Settings, defaultRoute);
+            settings = _settings;
+            routes = new WebserverRoutes(settings, _default_route);
 
-            WebserverConstants.HeaderHost = settings.Hostname + ":" + settings.Port;
-            Routes.Default = defaultRoute;
+            WebserverConstants.HeaderHost = _settings.Hostname + ":" + _settings.Port;
+            Routes.Default = _default_route;
 
             _Header = "[Webserver " + Settings.Prefix + "] ";
         }
@@ -218,21 +218,24 @@ namespace Infinity.Http
         /// <summary>
         /// Start accepting new connections.
         /// </summary>
-        /// <param name="token">Cancellation token useful for canceling the server.</param>
-        public void Start(CancellationToken token = default)
+        /// <param name="_token">Cancellation token useful for canceling the server.</param>
+        public void Start(CancellationToken _token = default)
         {
-            if (_HttpListener != null && _HttpListener.IsListening) throw new InvalidOperationException("WatsonWebserver is already listening.");
+            if (http_listener != null && http_listener.IsListening)
+            {
+                throw new InvalidOperationException("WatsonWebserver is already listening.");
+            }
 
             Statistics = new WebserverStatistics();
 
-            _TokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
-            _Token = token;
+            token_source = CancellationTokenSource.CreateLinkedTokenSource(_token);
+            token = _token;
 
-            _HttpListener = new HttpListener();
-            _HttpListener.Prefixes.Add(Settings.Prefix);
-            _HttpListener.Start();
+            http_listener = new HttpListener();
+            http_listener.Prefixes.Add(Settings.Prefix);
+            http_listener.Start();
 
-            _AcceptConnections = Task.Run(() => AcceptConnections(_Token), _Token);
+            accept_connections = Task.Run(() => AcceptConnections(token), token);
 
             Events.HandleServerStarted(this, EventArgs.Empty);
         }
@@ -242,24 +245,27 @@ namespace Infinity.Http
         /// </summary>
         /// <param name="token">Cancellation token useful for canceling the server.</param>
         /// <returns>Task.</returns>
-        public Task StartAsync(CancellationToken token = default)
+        public Task StartAsync(CancellationToken _token = default)
         {
-            if (_HttpListener != null && _HttpListener.IsListening) throw new InvalidOperationException("WatsonWebserver is already listening.");
+            if (http_listener != null && http_listener.IsListening)
+            {
+                throw new InvalidOperationException("WatsonWebserver is already listening.");
+            }
 
             Statistics = new WebserverStatistics();
 
-            _TokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
-            _Token = token;
+            token_source = CancellationTokenSource.CreateLinkedTokenSource(token);
+            token = _token;
 
-            _HttpListener = new HttpListener();
-            _HttpListener.Prefixes.Add(Settings.Prefix);
-            _HttpListener.Start();
+            http_listener = new HttpListener();
+            http_listener.Prefixes.Add(Settings.Prefix);
+            http_listener.Start();
 
-            _AcceptConnections = Task.Run(() => AcceptConnections(_Token), _Token);
+            accept_connections = Task.Run(() => AcceptConnections(token), token);
 
             Events.HandleServerStarted(this, EventArgs.Empty);
 
-            return _AcceptConnections;
+            return accept_connections;
         }
 
         /// <summary>
@@ -267,16 +273,19 @@ namespace Infinity.Http
         /// </summary>
         public void Stop()
         {
-            if (!_HttpListener.IsListening) throw new InvalidOperationException("WatsonWebserver is already stopped.");
-
-            if (_HttpListener != null && _HttpListener.IsListening)
+            if (!http_listener.IsListening)
             {
-                _HttpListener.Stop();
+                throw new InvalidOperationException("WatsonWebserver is already stopped.");
             }
 
-            if (_TokenSource != null && !_TokenSource.IsCancellationRequested)
+            if (http_listener != null && http_listener.IsListening)
             {
-                _TokenSource.Cancel();
+                http_listener.Stop();
+            }
+
+            if (token_source != null && !token_source.IsCancellationRequested)
+            {
+                token_source.Cancel();
             }
         }
 
@@ -284,44 +293,44 @@ namespace Infinity.Http
         /// Tear down the server and dispose of background workers.
         /// Do not use this object after disposal.
         /// </summary>
-        protected virtual void Dispose(bool disposing)
+        protected virtual void Dispose(bool _disposing)
         {
-            if (disposing)
+            if (_disposing)
             {
-                if (_HttpListener != null && _HttpListener.IsListening)
+                if (http_listener != null && http_listener.IsListening)
                 {
                     Stop();
 
-                    _HttpListener.Close();
+                    http_listener.Close();
                 }
 
                 Events.HandleServerDisposing(this, EventArgs.Empty);
 
-                _HttpListener = null;
+                http_listener = null;
                 Settings = null;
-                _TokenSource = null;
-                _AcceptConnections = null;
+                token_source = null;
+                accept_connections = null;
             }
         }
 
-        private async Task AcceptConnections(CancellationToken token)
+        private async Task AcceptConnections(CancellationToken _token)
         {
             try
             {
                 #region Process-Requests
 
-                while (_HttpListener.IsListening)
+                while (http_listener.IsListening)
                 {
-                    if (_RequestCount >= Settings.IO.MaxRequests)
+                    if (request_count >= Settings.IO.MaxRequests)
                     {
-                        await Task.Delay(100, token).ConfigureAwait(false);
+                        await Task.Delay(100, _token).ConfigureAwait(false);
                         continue;
                     }
 
-                    HttpListenerContext listenerCtx = await _HttpListener.GetContextAsync().ConfigureAwait(false);
+                    HttpListenerContext listenerCtx = await http_listener.GetContextAsync().ConfigureAwait(false);
                     listenerCtx.Response.KeepAlive = Settings.IO.EnableKeepAlive;
 
-                    Interlocked.Increment(ref _RequestCount);
+                    Interlocked.Increment(ref request_count);
                     HttpContext ctx = null;
                     Func<HttpContext, Task> handler = null;
 
@@ -642,7 +651,7 @@ namespace Infinity.Http
                         }
                         finally
                         {
-                            Interlocked.Decrement(ref _RequestCount);
+                            Interlocked.Decrement(ref request_count);
 
                             if (ctx != null)
                             {
@@ -670,7 +679,7 @@ namespace Infinity.Http
                             }
                         }
 
-                    }, token);
+                    }, _token);
                 }
 
                 #endregion
