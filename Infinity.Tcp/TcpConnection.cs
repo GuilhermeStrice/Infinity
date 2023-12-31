@@ -51,7 +51,7 @@ namespace Infinity.Core.Tcp
             EndPoint = endPoint;
             IPMode = ipMode;
 
-            socket = CreateSocket(Protocol.Tcp, ipMode);
+            //socket = CreateSocket(Protocol.Tcp, ipMode);
         }
 
         public override void Connect(MessageWriter _writer, int timeout = 5000)

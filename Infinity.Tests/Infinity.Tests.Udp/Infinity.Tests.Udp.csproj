@@ -25,7 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Infinity.Core\Infinity.Core.csproj" />
     <ProjectReference Include="..\..\Infinity.Udp\Infinity.Udp.csproj" />
-    <ProjectReference Include="..\Infinity.Core.Tests\Infinity.Core.Tests.csproj" />
+    <ProjectReference Include="..\Infinity.Tests.Core\Infinity.Tests.Core.csproj" />
   </ItemGroup>
 
 </Project>

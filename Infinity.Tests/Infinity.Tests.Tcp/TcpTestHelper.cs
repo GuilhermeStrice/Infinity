@@ -1,4 +1,5 @@
 ﻿using Infinity.Core.Tcp;
+using Infinity.Core.Udp;
 using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
@@ -49,13 +50,13 @@ namespace Infinity.Core.Tests
             mutex.WaitOne();
 
             var reader = data.ToReader();
-            Assert.Equal(reader.Length, result.Value.Message.Length);
+            Assert.Equal(reader.Length, result.Message.Length);
             for (int i = reader.Offset; i < reader.Length; i++)
             {
-                Assert.Equal(reader.Buffer[i], result.Value.Message.ReadByte());
+                Assert.Equal(reader.Buffer[i], result.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
+            Assert.Equal(sendOption, result.Message.Buffer[0]);
         }
 
         /// <summary>
@@ -100,13 +101,13 @@ namespace Infinity.Core.Tests
             Assert.True(mutex2.WaitOne(100), "Timeout while sending data");
 
             var dataReader = data.ToReader();
-            Assert.Equal(dataReader.Length, result.Value.Message.Length);
+            Assert.Equal(dataReader.Length, result.Message.Length);
             for (int i = dataReader.Offset; i < dataReader.Length; i++)
             {
-                Assert.Equal(dataReader.ReadByte(), result.Value.Message.ReadByte());
+                Assert.Equal(dataReader.ReadByte(), result.Message.ReadByte());
             }
 
-            Assert.Equal(sendOption, result.Value.Message.Buffer[0]);
+            Assert.Equal(sendOption, result.Message.Buffer[0]);
         }
 
         /// <summary>
