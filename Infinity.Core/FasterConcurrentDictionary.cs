@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Core
 {
-    public class FasterConcurrentDictionary<K, V> : Dictionary<K, V>
+    public class FasterConcurrentDictionary<K, V> : Dictionary<K, V> where K : notnull
     {
         private readonly object @lock = new object();
 
