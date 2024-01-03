@@ -12,7 +12,7 @@ namespace Infinity.Core
         private string header = "[IpMatcher] ";
         private readonly object address_lock = new object();
         private List<Address> addresses = new List<Address>();
-        private ConcurrentDictionary<string, DateTime> cache = new ConcurrentDictionary<string, DateTime>();
+        private FasterConcurrentDictionary<string, DateTime> cache = new FasterConcurrentDictionary<string, DateTime>();
         private static readonly byte[] contiguous_patterns = { 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF };
 
         public IpMatcher()

@@ -22,7 +22,7 @@ namespace Infinity.Core.Udp
 
         private volatile int last_fragment_id_allocated = 0;
 
-        private ConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<ushort, FragmentedMessage>();
+        private FasterConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new FasterConcurrentDictionary<ushort, FragmentedMessage>();
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort);
 

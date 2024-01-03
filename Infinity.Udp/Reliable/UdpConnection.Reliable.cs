@@ -64,7 +64,7 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        internal ConcurrentDictionary<ushort, Packet> reliable_data_packets_sent = new ConcurrentDictionary<ushort, Packet>();
+        internal FasterConcurrentDictionary<ushort, Packet> reliable_data_packets_sent = new FasterConcurrentDictionary<ushort, Packet>();
 
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
@@ -91,7 +91,7 @@ namespace Infinity.Core.Udp
             int output = 0;
             if (reliable_data_packets_sent.Count > 0)
             {
-                foreach (var id_packet in reliable_data_packets_sent)
+                reliable_data_packets_sent.ForEach(id_packet =>
                 {
                     Packet packet = id_packet.Value;
 
@@ -100,7 +100,7 @@ namespace Infinity.Core.Udp
                         output += packet.Resend();
                     }
                     catch { }
-                }
+                });
             }
 
             return output;
@@ -298,14 +298,14 @@ namespace Infinity.Core.Udp
 
         private void DisposeReliablePackets()
         {
-            foreach (var id_packet in reliable_data_packets_sent)
+            reliable_data_packets_sent.ForEach(id_packet =>
             {
                 ushort id = id_packet.Key;
                 if (reliable_data_packets_sent.TryRemove(id, out var packet))
                 {
                     packet.Recycle();
                 }
-            }
+            });
         }
 
         protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)

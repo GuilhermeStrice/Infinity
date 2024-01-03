@@ -22,4 +22,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Infinity.Core\Infinity.Core.csproj" />
+  </ItemGroup>
+
 </Project>

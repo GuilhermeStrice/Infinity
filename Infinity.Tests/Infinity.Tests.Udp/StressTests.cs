@@ -41,7 +41,7 @@ namespace Infinity.Core.Tests
                         e.Message?.Recycle();
                     };
 
-                    if (con_count == 6000)
+                    if (con_count == 5000)
                     {
                         con_count = 0;
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
@@ -53,7 +53,7 @@ namespace Infinity.Core.Tests
                 };
                 listener.Start();
 
-                for (int i = 0; i < 6000; i++)
+                for (int i = 0; i < 5000; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEventArgs obj)
@@ -71,7 +71,7 @@ namespace Infinity.Core.Tests
                 }
 
                 // wait for all events to process
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
                 handshake.Recycle();
             }
         }

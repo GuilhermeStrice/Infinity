@@ -18,7 +18,7 @@ namespace Infinity.Core.Udp
         private ILogger logger;
         private Timer reliable_packet_timer;
 
-        private ConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
+        private FasterConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new FasterConcurrentDictionary<EndPoint, UdpServerConnection>();
 
         public UdpConnectionListener(IPEndPoint _endpoint, IPMode _ip_mode = IPMode.IPv4, ILogger _logger = null)
         {
@@ -240,11 +240,11 @@ namespace Infinity.Core.Udp
 
         private void ManageReliablePackets(object? _state)
         {
-            foreach (var ep_connection in all_connections)
+            all_connections.ForEach(entry =>
             {
-                var connection = ep_connection.Value;
+                var connection = entry.Value;
                 connection.ManageReliablePackets();
-            }
+            });
 
             try
             {
@@ -264,10 +264,10 @@ namespace Infinity.Core.Udp
 
         protected override void Dispose(bool _disposing)
         {
-            foreach (var entry in all_connections)
+            all_connections.ForEach(entry =>
             {
                 entry.Value.Dispose();
-            }
+            });
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }

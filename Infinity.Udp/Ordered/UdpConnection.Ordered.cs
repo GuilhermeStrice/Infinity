@@ -4,7 +4,7 @@ namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
-        private ConcurrentDictionary<int, MessageReader> ordered_messages_received = new ConcurrentDictionary<int, MessageReader>();
+        private FasterConcurrentDictionary<int, MessageReader> ordered_messages_received = new FasterConcurrentDictionary<int, MessageReader>();
 
         private volatile int send_sequence = 0;
         private volatile int receive_sequence = 1;

@@ -7,7 +7,7 @@ namespace Infinity.Core.Udp.Broadcast
 {
     public class UdpBroadcaster : IDisposable
     {
-        private ConcurrentDictionary<IPEndPoint, Socket> available_addresses = new ConcurrentDictionary<IPEndPoint, Socket>();
+        private FasterConcurrentDictionary<IPEndPoint, Socket> available_addresses = new FasterConcurrentDictionary<IPEndPoint, Socket>();
         private byte[] identifier;
         private ILogger logger;
 
@@ -55,7 +55,7 @@ namespace Infinity.Core.Udp.Broadcast
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
             Array.Copy(_buffer, 0, buffer, identifier_length, data_length);
 
-            foreach (var available_addr in available_addresses)
+            available_addresses.ForEach(available_addr =>
             {
                 try
                 {
@@ -67,16 +67,16 @@ namespace Infinity.Core.Udp.Broadcast
                 {
                     logger?.WriteError("Broadcaster: " + e);
                 }
-            }
+            });
         }
 
         public void Dispose()
         {
-            foreach (var available_addr in available_addresses)
+            available_addresses.ForEach(available_addr =>
             {
                 Socket socket = available_addr.Value;
                 CloseSocket(socket);
-            }
+            });
 
             available_addresses.Clear();
         }
