@@ -118,8 +118,7 @@ namespace Infinity.Core.Udp
 
         private void ReliableMessageReceive(MessageReader _reader)
         {
-            ushort id;
-            if (ProcessReliableReceive(_reader.Buffer, 1, out id))
+            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
                 InvokeDataReceived(_reader);
             }

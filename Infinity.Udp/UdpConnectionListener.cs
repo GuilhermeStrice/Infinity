@@ -229,13 +229,6 @@ namespace Infinity.Core.Udp
             {
                 InvokeNewConnection(connection, reader);
             }
-
-            // recycling twice?? what am i doing wrong?
-            // i dont know why but this does the trick
-            // some problem with handshakes, ill figure it out later
-            // somehow there seams to exist multiple instances of the MessageReader for the handshake
-            //if (reader.Buffer[0] == 8)
-              //  reader.Recycle();
         }
 
         private void ManageReliablePackets(object? _state)

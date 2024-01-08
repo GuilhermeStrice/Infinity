@@ -17,7 +17,7 @@ namespace Infinity.Core.Tests
             int count = 1;
             int lastId = 1;
 
-            TaskCompletionSource<bool> result = new TaskCompletionSource<bool>();
+            ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
@@ -41,7 +41,7 @@ namespace Infinity.Core.Tests
                         Interlocked.Increment(ref count);
 
                         if (count == 200)
-                            result.SetResult(true);
+                            mutex.Set();
                     };
                 };
 
@@ -65,7 +65,7 @@ namespace Infinity.Core.Tests
                 writer.Recycle();
             }
 
-            result.Task.Wait();
+            mutex.WaitOne();
         }
     }
 }

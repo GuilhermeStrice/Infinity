@@ -66,11 +66,11 @@
             }
         }
 
-        public new bool TryRemove(K key, out V value)
+        public bool TryRemove(K key, out V value)
         {
             lock (@lock)
             {
-                return base.Remove(key, out value);
+                return Remove(key, out value);
             }
         }
 
