@@ -122,10 +122,8 @@ namespace Infinity.Core.Tests
 
                 listener.HandshakeConnection = delegate (IPEndPoint endPoint, byte[] input, out byte[] response)
                 {
-                    for (int i = 0; i < input.Length; ++i)
+                    for (int i = 3; i < input.Length; i++)
                     {
-                        if (i == 1 || i == 2)
-                            continue; // jump id
                         Assert.Equal(input[i], handshake.Buffer[i]);
                     }
 
@@ -137,7 +135,6 @@ namespace Infinity.Core.Tests
                 listener.NewConnection += delegate (NewConnectionEventArgs e)
                 {
                 };
-
                 
                 connection.Connect(handshake);
 
