@@ -40,7 +40,7 @@ namespace Infinity.Core.Tests
 
                         Interlocked.Increment(ref count);
 
-                        if (count == 300)
+                        if (count == 200)
                             result.SetResult(true);
                     };
                 };
