@@ -494,7 +494,7 @@ namespace Infinity.Core.Tests
         }
 
         /// <summary>
-        ///     Tests disconnection from the server.
+        ///     Tests disconnection from the server
         /// </summary>
         [Fact]
         public void ServerExtraDataDisconnectTest()
