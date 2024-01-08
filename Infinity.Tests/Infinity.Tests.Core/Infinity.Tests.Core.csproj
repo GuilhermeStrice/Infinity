@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Infinity.Core\Infinity.Core.csproj" />
-    <ProjectReference Include="..\..\Infinity.Udp\Infinity.Udp.csproj" />
   </ItemGroup>
 
 </Project>
