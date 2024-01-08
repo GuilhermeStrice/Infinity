@@ -98,7 +98,9 @@ namespace Infinity.Core.Tests
             Assert.Equal(dataReader.Length, result.Message.Length);
             for (int i = 0; i < dataReader.Length; i++)
             {
-                Assert.Equal(dataReader.ReadByte(), result.Message.ReadByte());
+                if (i == 1 || i == 2)
+                    continue; // jump id
+                Assert.Equal(dataReader.Buffer[i], result.Message.Buffer[i]);
             }
 
             Assert.Equal(sendOption, result.Message.Buffer[0]);
