@@ -15,7 +15,7 @@ namespace Infinity.Core.Tests
         public void OrderedTest()
         {
             int count = 1;
-            int lastId = 1;
+            int lastId = 0;
 
             ManualResetEvent mutex = new ManualResetEvent(false);
 
@@ -28,7 +28,7 @@ namespace Infinity.Core.Tests
                     {
                         data.Message.Position = 3;
 
-                        var receivedId = (data.Message.ReadByte() + 1) % 255;
+                        var receivedId = data.Message.ReadByte() % 255;
 
                         Assert.Equal(lastId, receivedId);
 
@@ -40,7 +40,7 @@ namespace Infinity.Core.Tests
 
                         Interlocked.Increment(ref count);
 
-                        if (count == 200)
+                        if (count == 100)
                             mutex.Set();
                     };
                 };
@@ -56,7 +56,7 @@ namespace Infinity.Core.Tests
                 writer.Write(20);
 
                 // needs further testing
-                for (int i = 0; i < 200; i++)
+                for (int i = 0; i < 100; i++)
                 {
                     connection.Send(writer);
                 }

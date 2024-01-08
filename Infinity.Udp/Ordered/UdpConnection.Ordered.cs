@@ -7,7 +7,7 @@ namespace Infinity.Core.Udp
         private MessageReader[] ordered_messages_received = new MessageReader[byte.MaxValue];
 
         private volatile int send_sequence = 0;
-        private volatile int receive_sequence = 1;
+        private volatile int receive_sequence = 0;
 
         private void OrderedSend(byte[] _buffer)
         {
@@ -24,7 +24,7 @@ namespace Infinity.Core.Udp
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
-                int current = (_reader.Buffer[3] + 1) % 255;
+                int current = _reader.Buffer[3] % 255;
 
                 ordered_messages_received[current] = _reader;
 
