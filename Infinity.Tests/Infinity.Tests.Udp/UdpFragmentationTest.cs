@@ -13,13 +13,14 @@ namespace Infinity.Core.Tests
 
         private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
 
-        //[Fact]
+        [Fact]
         public void FragmentedSendTest()
         {
+            ManualResetEvent mutex = new ManualResetEvent(false);
+
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                TaskCompletionSource<bool> result = new TaskCompletionSource<bool>();
 
                 listener.NewConnection += e =>
                 {
@@ -34,7 +35,7 @@ namespace Infinity.Core.Tests
                         Assert.Equal(_testData, received);
                         data.Message.Recycle();
 
-                        result.SetResult(true);
+                        mutex.Set();
                     };
                 };
 
@@ -48,14 +49,14 @@ namespace Infinity.Core.Tests
 
                 connection.Send(writer);
 
-                result.Task.Wait();
+                mutex.WaitOne();
             }
         }
 
         /// <summary>
         /// Checking memory usage
         /// </summary>
-        //[Fact]
+        [Fact]
         public void FragmentedSendTest10000()
         {
             int count = 0;

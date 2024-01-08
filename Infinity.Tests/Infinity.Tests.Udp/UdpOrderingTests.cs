@@ -30,7 +30,7 @@ namespace Infinity.Core.Tests
                     {
                         data.Message.Position = 3;
 
-                        var receivedId = data.Message.ReadByte() % 255;
+                        var receivedId = data.Message.ReadByte();
 
                         Assert.Equal(lastId, receivedId);
 
