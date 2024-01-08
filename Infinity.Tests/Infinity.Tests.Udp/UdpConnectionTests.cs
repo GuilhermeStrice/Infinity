@@ -311,7 +311,7 @@ namespace Infinity.Core.Tests
         }
 
         /// <summary>
-        ///     Tests server to client unreliable communication on the UdpConnection.
+        ///     Tests server to client unreliable communication on the UdpConnection
         /// </summary>
         [Fact]
         public void UdpUnreliableServerToClientTest()
