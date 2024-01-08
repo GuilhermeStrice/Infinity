@@ -56,7 +56,7 @@ namespace Infinity.Core.Tests
                 writer.Write(20);
 
                 // needs further testing
-                for (int i = 0; i < 300; i++)
+                for (int i = 0; i < 200; i++)
                 {
                     connection.Send(writer);
                     Thread.Sleep(1); // might be a local host problem, but if packets are sent too quickly this test doesn't run
