@@ -8,7 +8,7 @@ namespace Infinity.Core.Tests
     {
         public UdpFragmentationTest(ITestOutputHelper output)
         {
-            UdpTestHelper._output = output;
+            //UdpTestHelper._output = output;
         }
 
         private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
