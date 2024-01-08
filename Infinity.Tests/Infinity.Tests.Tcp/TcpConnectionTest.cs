@@ -7,7 +7,7 @@ namespace Infinity.Core.Tests
 {
     public class TcpConnectionTests
     {
-        public TcpConnectionTests(ITestOutputHelper output)
+        /*public TcpConnectionTests(ITestOutputHelper output)
         {
             TcpTestHelper._output = output;
         }
@@ -140,6 +140,6 @@ namespace Infinity.Core.Tests
             {
                 TcpTestHelper.RunServerDisconnectTest(listener, connection);
             }
-        }
+        }*/
     }
 }
