@@ -95,18 +95,6 @@ namespace Infinity.Core.Tests
 
             var dataReader = data.ToReader();
 
-            // account for sendOption and id
-            if (sendOption != UdpSendOption.Unreliable)
-            {
-                dataReader.Position += 3;
-                result.Message.Position += 3;
-            }
-            else
-            {
-                dataReader.Position += 1;
-                result.Message.Position += 1;
-            }
-
             Assert.Equal(dataReader.Length, result.Message.Length);
             for (int i = 0; i < dataReader.Length; i++)
             {
