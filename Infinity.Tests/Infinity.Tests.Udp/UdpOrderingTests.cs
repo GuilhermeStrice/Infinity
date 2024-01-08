@@ -59,13 +59,12 @@ namespace Infinity.Core.Tests
                 for (int i = 0; i < 200; i++)
                 {
                     connection.Send(writer);
-                    Thread.Sleep(1); // might be a local host problem, but if packets are sent too quickly this test doesn't run
                 }
 
                 writer.Recycle();
-            }
 
-            mutex.WaitOne();
+                mutex.WaitOne();
+            }
         }
     }
 }
