@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-
-namespace Infinity.Core.Udp
+﻿namespace Infinity.Core.Udp
 {
     partial class UdpConnection
     {
