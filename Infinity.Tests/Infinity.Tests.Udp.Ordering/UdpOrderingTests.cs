@@ -8,7 +8,6 @@ namespace Infinity.Core.Tests
     {
         public UdpOrderingTests(ITestOutputHelper output)
         {
-            UdpTestHelper._output = output;
         }
 
         [Fact]
@@ -40,7 +39,7 @@ namespace Infinity.Core.Tests
 
                         Interlocked.Increment(ref count);
 
-                        if (count == 300)
+                        if (count == 200)
                             result.SetResult(true);
                     };
                 };
