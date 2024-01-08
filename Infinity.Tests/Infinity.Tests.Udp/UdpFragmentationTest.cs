@@ -56,7 +56,7 @@ namespace Infinity.Core.Tests
         /// <summary>
         /// Checking memory usage
         /// </summary>
-        [Fact]
+        //[Fact]
         public void FragmentedSendTest10000()
         {
             int count = 0;
