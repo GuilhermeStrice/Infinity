@@ -124,6 +124,8 @@ namespace Infinity.Core.Tests
                 {
                     for (int i = 0; i < input.Length; ++i)
                     {
+                        if (i == 1 || i == 2)
+                            continue; // jump id
                         Assert.Equal(input[i], handshake.Buffer[i]);
                     }
 
