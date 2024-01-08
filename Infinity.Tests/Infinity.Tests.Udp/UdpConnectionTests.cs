@@ -508,7 +508,7 @@ namespace Infinity.Core.Tests
 
                 connection.Disconnected += delegate (DisconnectedEventArgs args)
                 {
-                    // We don't own the message, we have to read the string now
+                    // We don't own the message, we have to read the string now 
                     received = args.Message.ReadString();
                     mutex.Set();
                 };
