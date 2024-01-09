@@ -24,15 +24,18 @@
             {
                 int current = _reader.Buffer[3] % 255;
 
-                ordered_messages_received[current] = _reader;
-
-                while (ordered_messages_received[receive_sequence] != null)
+                lock (ordered_messages_received)
                 {
-                    InvokeDataReceived(ordered_messages_received[receive_sequence]);
+                    ordered_messages_received[current] = _reader;
 
-                    ordered_messages_received[receive_sequence] = null;
+                    while (ordered_messages_received[receive_sequence] != null)
+                    {
+                        InvokeDataReceived(ordered_messages_received[receive_sequence]);
 
-                    receive_sequence = (receive_sequence + 1) % 255;
+                        ordered_messages_received[receive_sequence] = null;
+
+                        receive_sequence = (receive_sequence + 1) % 255;
+                    }
                 }
             }
         }

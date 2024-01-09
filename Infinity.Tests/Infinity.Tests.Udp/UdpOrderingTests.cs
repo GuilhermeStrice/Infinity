@@ -16,7 +16,7 @@ namespace Infinity.Core.Tests
         volatile int count = 1;
         volatile int lastId = 0;
 
-        //[Fact]
+        [Fact]
         public void OrderedTest()
         {
             ManualResetEvent mutex = new ManualResetEvent(false);
