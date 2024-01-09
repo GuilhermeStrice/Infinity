@@ -44,7 +44,7 @@ namespace Infinity.Core.Tests
 
             var reader = data.ToReader();
             Assert.Equal(reader.Length, result.Message.Length);
-            for (int i = reader.Offset; i < reader.Length; i++)
+            for (int i = reader.Position; i < reader.Length; i++)
             {
                 Assert.Equal(reader.Buffer[i], result.Message.Buffer[i]);
             }

@@ -144,7 +144,6 @@ namespace Infinity.Core.Udp
             {
                 bytes_received = socket.EndReceiveFrom(_result, ref remote_end_point);
 
-                reader.Offset = 0;
                 reader.Length = bytes_received;
                 reader.Position = 0;
             }

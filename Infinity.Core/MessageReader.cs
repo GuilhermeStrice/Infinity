@@ -9,7 +9,6 @@ namespace Infinity.Core
         public byte[]? Buffer { get; set; }
 
         public int Length { get; set; }
-        public int Offset { get; set; }
 
         public int BytesRemaining => Length - Position;
 
@@ -24,8 +23,7 @@ namespace Infinity.Core
             }
             set
             {
-                _position = value;
-                head = value + Offset;
+                _position = head = value;
             }
         }
 
@@ -227,7 +225,6 @@ namespace Infinity.Core
 
             System.Buffer.BlockCopy(_buffer, _offset, reader.Buffer, 0, _length);
 
-            reader.Offset = 0;
             reader.Position = 0;
             reader.Length = _length;
 

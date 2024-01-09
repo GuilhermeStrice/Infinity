@@ -14,7 +14,7 @@ namespace Infinity.Core.Udp
 
         public UdpConnectionStatistics Statistics { get; private set; }
 
-        protected static readonly byte[] empty_disconnect_bytes = new byte[1];
+        protected static readonly byte[] empty_disconnect_bytes = new byte[1] { UdpSendOption.Disconnect };
         protected readonly ILogger logger;
 
         public UdpConnection(ILogger _logger) : base()
@@ -177,8 +177,7 @@ namespace Infinity.Core.Udp
 
                 case UdpSendOption.Disconnect:
                     {
-                        _reader.Offset = 1;
-                        _reader.Position = 0;
+                        _reader.Position = 1;
                         DisconnectRemote("The remote sent a disconnect request", _reader);
                         Statistics.LogUnreliableMessageReceived(_bytes_received);
                         break;
