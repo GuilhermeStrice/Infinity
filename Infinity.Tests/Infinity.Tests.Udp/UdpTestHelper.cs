@@ -8,7 +8,7 @@ namespace Infinity.Core.Tests
         public static ITestOutputHelper? _output;
 
         /// <summary>
-        ///     Runs a general test on the given listener and connection.
+        ///     Runs a general test on the given listener and connection
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
