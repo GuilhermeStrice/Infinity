@@ -5,17 +5,15 @@ namespace Infinity.Core
     public sealed class ObjectPool<T> where T : IRecyclable
     {
         public int InUse => pool.Count;
-        public int MaxNumberObjects;
 
         private ConcurrentStack<T> pool;
 
         private Func<T> object_factory;
             
-        public ObjectPool(Func<T> object_factory, int maxNumberObjects = 10000)
+        public ObjectPool(Func<T> object_factory)
         {
             this.object_factory = object_factory;
 
-            MaxNumberObjects = maxNumberObjects;
             pool = new ConcurrentStack<T>();
         }
 
