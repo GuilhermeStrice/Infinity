@@ -193,7 +193,6 @@ namespace Infinity.Core.Tcp
         /// <param name="dataOffset">The offset of data in the buffer.</param>
         void InvokeDataReceived(byte sendOption, MessageReader buffer, int dataOffset, int bytesReceived)
         {
-            buffer.Offset = dataOffset;
             buffer.Length = bytesReceived - dataOffset;
             buffer.Position = 0;
 
