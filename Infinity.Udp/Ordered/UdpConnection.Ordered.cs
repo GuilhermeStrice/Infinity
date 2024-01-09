@@ -15,7 +15,7 @@
 
             WriteBytesToConnection(_buffer, _buffer.Length);
 
-            Interlocked.Exchange(ref send_sequence, (send_sequence + 1) % 255);
+            send_sequence = (send_sequence + 1) % 255;
         }
 
         private void OrderedMessageReceived(MessageReader _reader)
@@ -32,7 +32,7 @@
 
                     ordered_messages_received[receive_sequence] = null;
 
-                    Interlocked.Exchange(ref receive_sequence, (receive_sequence + 1) % 255);
+                    receive_sequence = (receive_sequence + 1) % 255;
                 }
             }
         }

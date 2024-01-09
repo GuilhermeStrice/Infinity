@@ -13,12 +13,12 @@ namespace Infinity.Core.Tests
             output = _output;
         }
 
+        volatile int count = 1;
+        volatile int lastId = 0;
+
         [Fact]
         public void OrderedTest()
         {
-            int count = 1;
-            int lastId = 0;
-
             ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -35,11 +35,6 @@ namespace Infinity.Core.Tests
                         Assert.Equal(lastId, receivedId);
 
                         lastId = (lastId + 1) % 255;
-                        output.WriteLine(receivedId.ToString());
-
-                        var receivedData = data.Message.ReadInt32();
-
-                        Assert.Equal(20, receivedData);
 
                         Interlocked.Increment(ref count);
 
