@@ -84,7 +84,7 @@ namespace Infinity.Core.Udp
                 fragment.Id = id;
                 fragment.Reader = _reader;
 
-                lock (fragmented_message.Fragments)
+                lock (fragmented_message)
                 {
                     fragmented_message.Fragments.Add(fragment);
 
