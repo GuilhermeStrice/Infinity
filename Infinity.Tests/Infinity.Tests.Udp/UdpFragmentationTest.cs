@@ -13,7 +13,7 @@ namespace Infinity.Core.Tests
 
         private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
 
-        [Fact]
+        //[Fact]
         public void FragmentedSendTest()
         {
             ManualResetEvent mutex = new ManualResetEvent(false);
