@@ -6,7 +6,7 @@
     public class FragmentedMessage : IRecyclable
     {
         /// <summary>
-        ///     The total number of fragments expected.
+        ///     The total number of fragments expected
         /// </summary>
         public int FragmentsCount { get; set; }
 
