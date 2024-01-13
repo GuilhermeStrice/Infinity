@@ -13,7 +13,7 @@ namespace Infinity.Core.Tests
 
         private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
 
-        //[Fact]
+        [Fact]
         public void FragmentedSendTest()
         {
             ManualResetEvent mutex = new ManualResetEvent(false);
@@ -21,7 +21,6 @@ namespace Infinity.Core.Tests
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-
                 listener.NewConnection += e =>
                 {
                     e.Connection.DataReceived += data =>

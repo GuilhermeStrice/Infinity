@@ -8,7 +8,7 @@ namespace Infinity.Core.Udp
         {
             get
             {
-                return 576 - fragment_header_size - 68; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791 - 60 is maximum possible ipv4 header size + 8 bytes for udp header
+                return 576 - fragment_header_size; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791 - 60 is maximum possible ipv4 header size + 8 bytes for udp header
             }
         }
 
@@ -16,7 +16,7 @@ namespace Infinity.Core.Udp
         {
             get
             {
-                return 1280 - fragment_header_size - 48; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
+                return 1280 - fragment_header_size; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
             }
         }
 
