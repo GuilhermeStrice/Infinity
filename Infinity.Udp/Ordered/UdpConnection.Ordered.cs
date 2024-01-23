@@ -15,14 +15,19 @@
 
             WriteBytesToConnection(_buffer, _buffer.Length);
 
-            send_sequence = (send_sequence + 1) % 255;
+            send_sequence++;
+
+            if (send_sequence >= 256)
+            {
+                send_sequence = 0;
+            }
         }
 
         private void OrderedMessageReceived(MessageReader _reader)
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
-                int current = _reader.Buffer[3] % 255;
+                int current = _reader.Buffer[3];
 
                 lock (ordered_messages_received)
                 {
@@ -34,7 +39,12 @@
 
                         ordered_messages_received[receive_sequence] = null;
 
-                        receive_sequence = (receive_sequence + 1) % 255;
+                        receive_sequence++;
+
+                        if (receive_sequence >= 256)
+                        {
+                            receive_sequence = 0;
+                        }
                     }
                 }
             }
