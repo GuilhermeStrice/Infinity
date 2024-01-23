@@ -8,7 +8,7 @@ namespace Infinity.Core.Udp
         {
             get
             {
-                return 576 - fragment_header_size; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791 - 60 is maximum possible ipv4 header size + 8 bytes for udp header
+                return 576 - fragment_header_size - 68; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791 - 60 is maximum possible ipv4 header size + 8 bytes for udp header
             }
         }
 
@@ -16,7 +16,7 @@ namespace Infinity.Core.Udp
         {
             get
             {
-                return 1280 - fragment_header_size; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
+                return 1280 - fragment_header_size - 40; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
             }
         }
 
@@ -24,40 +24,39 @@ namespace Infinity.Core.Udp
 
         private FasterConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new FasterConcurrentDictionary<ushort, FragmentedMessage>();
 
-        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(ushort);
+        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
 
         private void FragmentedSend(byte[] _buffer)
         {
-            var id = (ushort)Interlocked.Increment(ref last_fragment_id_allocated);
+            var fragment_size = BufferSize - fragment_header_size;
 
-            var fragments_count = (int)Math.Ceiling(_buffer.Length / (double)BufferSize);
+            var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
+            
+            var fragments_count = (int)Math.Ceiling(_buffer.Length / (double)fragment_size);
 
-            if (fragments_count >= ushort.MaxValue)
+            if (fragments_count >= byte.MaxValue)
             {
                 throw new InfinityException("Too many fragments");
             }
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(BufferSize, _buffer.Length - BufferSize * i);
-                var buffer = new byte[data_length + fragment_header_size];
+                var data_length = Math.Min(fragment_size, _buffer.Length - fragment_size * i);
+                var fragment_buffer = new byte[data_length + fragment_header_size];
 
-                buffer[0] = UdpSendOptionInternal.Fragment;
+                fragment_buffer[0] = UdpSendOptionInternal.Fragment;
 
-                AttachReliableID(buffer, 1);
+                AttachReliableID(fragment_buffer, 1);
 
-                buffer[3] = (byte)fragments_count;
-                buffer[4] = (byte)(fragments_count >> 8);
+                fragment_buffer[3] = (byte)fragments_count;
+                fragment_buffer[4] = fragment_id;
 
-                buffer[5] = (byte)id;
-                buffer[6] = (byte)(id >> 8);
-
-                Buffer.BlockCopy(_buffer, BufferSize * i, buffer, fragment_header_size, data_length);
+                Buffer.BlockCopy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
                 
-                WriteBytesToConnection(buffer, buffer.Length);
+                WriteBytesToConnection(fragment_buffer, fragment_buffer.Length);
             }
 
-            if (last_fragment_id_allocated > ushort.MaxValue)
+            if (last_fragment_id_allocated >= byte.MaxValue)
             {
                 Interlocked.Exchange(ref last_fragment_id_allocated, 0);
             }
@@ -69,8 +68,8 @@ namespace Infinity.Core.Udp
             {
                 _reader.Position += 3;
 
-                var fragments_count = _reader.ReadUInt16();
-                var fragmented_message_id = _reader.ReadUInt16();
+                var fragments_count = _reader.ReadByte();
+                var fragmented_message_id = _reader.ReadByte();
 
                 if (!fragmented_messages_received.TryGetValue(fragmented_message_id, out var fragmented_message))
                 {

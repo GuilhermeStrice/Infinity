@@ -27,11 +27,11 @@
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
-                int current = _reader.Buffer[3];
+                int ordered_id = _reader.Buffer[3];
 
                 lock (ordered_messages_received)
                 {
-                    ordered_messages_received[current] = _reader;
+                    ordered_messages_received[ordered_id] = _reader;
 
                     while (ordered_messages_received[receive_sequence] != null)
                     {
