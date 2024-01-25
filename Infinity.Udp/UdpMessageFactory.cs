@@ -51,5 +51,14 @@
             
             return writer;
         }
+
+        public static MessageWriter BuildDisconnectMessage()
+        {
+            MessageWriter writer = MessageWriter.Get();
+
+            writer.Write(UdpSendOption.Disconnect);
+
+            return writer;
+        }
     }
 }

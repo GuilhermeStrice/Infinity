@@ -66,7 +66,7 @@ namespace Infinity.Core
 
         public abstract void ConnectAsync(MessageWriter _writer);
 
-        public void Disconnect(string _reason, MessageWriter _writer = null)
+        public void Disconnect(string _reason, MessageWriter _writer)
         {
             if (SendDisconnect(_writer))
             {

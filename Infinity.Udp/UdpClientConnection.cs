@@ -306,36 +306,19 @@ namespace Infinity.Core.Udp
             }
         }
 
-        protected override bool SendDisconnect(MessageWriter _writer = null)
+        protected override bool SendDisconnect(MessageWriter _writer)
         {
+            Send(_writer);
+
             lock (this)
             {
-                if (State == ConnectionState.NotConnected) 
+                if (State == ConnectionState.NotConnected)
                 {
                     return false;
                 }
 
                 State = ConnectionState.NotConnected;
             }
-
-            var bytes = empty_disconnect_bytes;
-            if (_writer != null && _writer.Length > 0)
-            {
-                bytes = _writer.ToByteArray(3);
-            }
-
-            bytes[0] = UdpSendOption.Disconnect;
-
-            try
-            {
-                socket.SendTo(
-                    bytes,
-                    0,
-                    bytes.Length,
-                    SocketFlags.None,
-                    EndPoint);
-            }
-            catch { }
 
             return true;
         }
@@ -344,7 +327,8 @@ namespace Infinity.Core.Udp
         {
             if (disposing)
             {
-                SendDisconnect();
+                var writer = UdpMessageFactory.BuildDisconnectMessage();
+                SendDisconnect(writer);
             }
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }

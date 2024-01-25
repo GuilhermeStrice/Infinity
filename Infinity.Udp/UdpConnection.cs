@@ -14,7 +14,6 @@ namespace Infinity.Core.Udp
 
         public UdpConnectionStatistics Statistics { get; private set; }
 
-        protected static readonly byte[] empty_disconnect_bytes = new byte[1] { UdpSendOption.Disconnect };
         protected readonly ILogger logger;
 
         public UdpConnection(ILogger _logger) : base()
@@ -82,7 +81,7 @@ namespace Infinity.Core.Udp
 
                             break;
                         }
-                    default:
+                    default: // applies to disconnect and unreliable
                         {
                             byte[] buffer = new byte[_writer.Length];
                             Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);

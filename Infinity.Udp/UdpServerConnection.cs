@@ -44,28 +44,17 @@ namespace Infinity.Core.Udp
 
         protected override bool SendDisconnect(MessageWriter _writer = null)
         {
+            Send(_writer);
+
             lock (this)
             {
-                if (state != ConnectionState.Connected)
+                if (State == ConnectionState.NotConnected)
                 {
                     return false;
                 }
 
-                state = ConnectionState.NotConnected;
+                State = ConnectionState.NotConnected;
             }
-            
-            var bytes = empty_disconnect_bytes;
-            if (_writer != null && _writer.Length > 0)
-            {
-                bytes = _writer.ToByteArray(0);
-                bytes[0] = UdpSendOption.Disconnect;
-            }
-
-            try
-            {
-                Listener.SendDataSync(bytes, bytes.Length, EndPoint);
-            }
-            catch { }
 
             return true;
         }
