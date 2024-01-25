@@ -2,18 +2,19 @@
 {
     internal class UdpSendOptionInternal
     {
-        public const byte Handshake = 8;
-        public const byte Ping = 12;
-        public const byte Acknowledgement = 10;
-        public const byte Fragment = 11;
+        public const byte Handshake = 1;
+        public const byte Ping = 2;
+        public const byte Acknowledgement = 3;
+        public const byte Fragment = 4;
     }
 
     public class UdpSendOption
     {
-        public const byte Unreliable = 0;
-        public const byte Reliable = 1;
-        public const byte ReliableOrdered = 20;
-        public const byte Fragmented = 21;
-        public const byte Disconnect = 9;
+        public const byte Unreliable = 10;
+        public const byte Reliable = 11;
+        public const byte ReliableOrdered = 12;
+        public const byte Fragmented = 13;
+        public const byte Disconnecting = 14;
+        public const byte Disconnect = 15;
     }
 }
