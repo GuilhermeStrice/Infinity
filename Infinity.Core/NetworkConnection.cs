@@ -121,15 +121,7 @@ namespace Infinity.Core
             BeforeReceive?.Invoke(this, _reader);
         }
 
-        protected void DisconnectRemote(string _reason, MessageReader _reader)
-        {
-            if (SendDisconnect(null))
-            {
-                InvokeDisconnected(_reason, _reader);
-            }
-
-            Dispose();
-        }
+        protected abstract void DisconnectRemote(string _reason, MessageReader _reader);
 
         protected void DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {

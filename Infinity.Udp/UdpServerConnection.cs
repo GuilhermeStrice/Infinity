@@ -67,5 +67,16 @@ namespace Infinity.Core.Udp
 
             base.Dispose(_disposing);
         }
+
+        protected override void DisconnectRemote(string _reason, MessageReader _reader)
+        {
+            var _writer = UdpMessageFactory.BuildDisconnectMessage();
+            if (SendDisconnect(_writer))
+            {
+                InvokeDisconnected(_reason, _reader);
+            }
+
+            Dispose();
+        }
     }
 }
