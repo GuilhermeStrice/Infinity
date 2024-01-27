@@ -43,7 +43,7 @@ namespace Infinity.Tests.Udp
             handshake.Recycle();
 
             //Wait until data is received
-            mutex.WaitOne();
+            mutex.WaitOne(2500);
 
             var reader = data.ToReader();
             Assert.Equal(reader.Length, result.Message.Length);
@@ -147,7 +147,7 @@ namespace Infinity.Tests.Udp
             connection.Connect(handshake);
             handshake.Recycle();
 
-            mutex.WaitOne();
+            mutex.WaitOne(2500);
 
             connection.Dispose();
             listener.Dispose();
@@ -181,13 +181,13 @@ namespace Infinity.Tests.Udp
             connection.Connect(handshake);
             handshake.Recycle();
 
-            mutex.WaitOne();
+            mutex.WaitOne(2500);
 
             var writer = UdpMessageFactory.BuildDisconnectMessage();
             connection.Disconnect("Testing", writer);
             writer.Recycle();
 
-            mutex2.WaitOne();
+            mutex2.WaitOne(2500);
 
             connection.Dispose();
             listener.Dispose();

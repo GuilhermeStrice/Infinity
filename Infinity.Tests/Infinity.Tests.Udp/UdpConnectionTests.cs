@@ -165,7 +165,7 @@ namespace Infinity.Tests.Udp
                 
                 connection.Connect(handshake);
 
-                mutex.WaitOne();
+                mutex.WaitOne(2500);
 
                 handshake.Recycle();
             }
@@ -485,16 +485,16 @@ namespace Infinity.Tests.Udp
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
-                mutex.WaitOne();
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
+                mutex.WaitOne(500);
 
                 Assert.Equal(ConnectionState.Connected, client.State);
             }
@@ -579,7 +579,7 @@ namespace Infinity.Tests.Udp
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                mutex.WaitOne();
+                mutex.WaitOne(2500);
 
                 Assert.NotNull(received);
                 Assert.Equal("Goodbye", received);
