@@ -333,7 +333,6 @@ namespace Infinity.Udp
                 this,
                 id,
                 _buffer,
-                _buffer.Length,
                 resend_delay_ms,
                 _ack_callback);
 

@@ -21,14 +21,12 @@ namespace Infinity.Udp
 
         private byte[]? buffer;
         private UdpConnection? connection;
-        private int length;
 
-        public void Set(UdpConnection _connection, ushort _id, byte[] _buffer, int _length, int _timeout, Action _ack_callback)
+        public void Set(UdpConnection _connection, ushort _id, byte[] _buffer, int _timeout, Action _ack_callback)
         {
             connection = _connection;
             Id = _id;
             buffer = _buffer;
-            length = _length;
 
             Acknowledged = false;
             NextTimeoutMs = _timeout;
@@ -47,7 +45,7 @@ namespace Infinity.Udp
                 {
                     if (connection.reliable_data_packets_sent.TryRemove(Id, out Packet self))
                     {
-                        connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
+                        connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={buffer.Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
                         self.Recycle();
                     }
 
@@ -68,7 +66,7 @@ namespace Infinity.Udp
                     {
                         if (connection.reliable_data_packets_sent.TryRemove(Id, out Packet self))
                         {
-                            connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
+                            connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {self.Id} (size={buffer.Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
                             self.Recycle();
                         }
 
@@ -79,8 +77,8 @@ namespace Infinity.Udp
 
                     try
                     {
-                        connection.WriteBytesToConnection(buffer, length);
-                        connection.Statistics.LogMessageResent(length);
+                        connection.WriteBytesToConnection(buffer, buffer.Length);
+                        connection.Statistics.LogMessageResent(buffer.Length);
 
                         return 1;
                     }
