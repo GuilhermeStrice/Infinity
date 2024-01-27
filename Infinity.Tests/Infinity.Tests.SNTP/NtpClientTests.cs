@@ -20,14 +20,19 @@ namespace Infinity.Tests.SNTP
         {
             var mutex = new ManualResetEvent(false);
 
-            var timeout = TimeSpan.FromMilliseconds(500);
+            var timeout = TimeSpan.FromMilliseconds(1000);
 
             // Note: pick a host that *drops* packets. The test will fail if the host merely *rejects* packets.
-            var client = new NtpClient(IPAddress.Parse("8.8.8.8"), timeout);
+            var client = new NtpClient(IPAddress.Parse("192.168.0.0"), timeout);
 
             var timer = Stopwatch.StartNew();
 
             client.OnNtpReceived += (NtpClock obj) =>
+            {
+                throw new Exception("shouldn't happen");
+            };
+
+            client.OnInternalError += (Exception ex) =>
             {
                 mutex.Set();
             };
@@ -49,6 +54,11 @@ namespace Infinity.Tests.SNTP
             client.OnNtpReceived += (NtpClock obj) =>
             {
                 mutex.Set();
+            };
+
+            client.OnInternalError += (Exception ex) =>
+            {
+                output.WriteLine(ex.Message);
             };
 
             client.Query();

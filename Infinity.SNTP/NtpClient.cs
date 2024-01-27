@@ -22,6 +22,7 @@ namespace Infinity.SNTP
         public TimeSpan Timeout { get; init; }
 
         public event Action<NtpClock> OnNtpReceived;
+        public event Action<Exception> OnInternalError;
 
         private EndPoint endpoint;
 
@@ -61,7 +62,8 @@ namespace Infinity.SNTP
             var response = NtpResponse.FromPacket(NtpPacket.FromBytes(_buffer, _length));
             if (!response.Matches(_request))
             {
-                throw new NtpException("Response does not match the request.");
+                OnInternalError?.Invoke(new NtpException("Response does not match the request."));
+                return null;
             }
 
             var time = new NtpClock(response);
@@ -88,7 +90,8 @@ namespace Infinity.SNTP
             catch (Exception ex)
             {
                 var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                throw new NtpException($"Something happened while trying to begin the send operation : {message}");
+                OnInternalError?.Invoke(new NtpException($"Something happened while trying to begin the send operation : {message}"));
+                return;
             }
         }
 
@@ -101,7 +104,8 @@ namespace Infinity.SNTP
             catch (Exception ex)
             {
                 var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                throw new NtpException($"Something happened while trying to end the send operation : {message}");
+                OnInternalError?.Invoke(new NtpException($"Something happened while trying to end the send operation : {message}"));
+                return;
             }
 
             var state_sync = (StateSync)result.AsyncState;
@@ -116,7 +120,8 @@ namespace Infinity.SNTP
             catch (Exception ex)
             {
                 var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                throw new NtpException($"Something happened while trying to begin the receive operation : {message}");
+                OnInternalError?.Invoke(new NtpException($"Something happened while trying to begin the receive operation : {message}"));
+                return;
             }
         }
 
@@ -130,19 +135,29 @@ namespace Infinity.SNTP
             catch (Exception ex)
             {
                 var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                throw new NtpException($"Something happened while trying to end the receive operation : {message}");
-            }
-
-            if (received != 160)
-            {
-                throw new NtpException($"Received buffer size doesn't match the required size : {received}");
+                OnInternalError?.Invoke(new NtpException($"Something happened while trying to end the receive operation : {message}"));
+                return;
             }
 
             var state_sync = (StateSync)result.AsyncState;
 
-            var ntp_clock = Update(state_sync.Request, state_sync.Buffer, received);
+            try
+            {
+                var ntp_clock = Update(state_sync.Request, state_sync.Buffer, received);
 
-            OnNtpReceived?.Invoke(ntp_clock);
+                if (ntp_clock != null)
+                {
+                    OnNtpReceived?.Invoke(ntp_clock);
+                }
+                else
+                {
+                    OnInternalError?.Invoke(new NtpException($"Error : {received}"));
+                }
+            }
+            catch
+            {
+                OnInternalError?.Invoke(new NtpException($"Error : {received}"));
+            }
         }
     }
 }
