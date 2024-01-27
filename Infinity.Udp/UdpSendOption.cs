@@ -14,7 +14,6 @@
         public const byte Reliable = 11;
         public const byte ReliableOrdered = 12;
         public const byte Fragmented = 13;
-        public const byte Disconnecting = 14;
         public const byte Disconnect = 15;
     }
 }
