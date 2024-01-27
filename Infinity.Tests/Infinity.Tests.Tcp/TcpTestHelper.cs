@@ -1,5 +1,5 @@
 ﻿using Infinity.Core.Tcp;
-using Infinity.Core.Udp;
+using Infinity.Udp;
 using Xunit.Abstractions;
 
 namespace Infinity.Core.Tests
@@ -20,16 +20,16 @@ namespace Infinity.Core.Tests
             var mutex = new ManualResetEvent(false);
 
             //Setup listener
-            listener.NewConnection += delegate (NewConnectionEventArgs ncArgs)
+            listener.NewConnection += delegate (NewConnectionEvent ncArgs)
             {
                 ncArgs.Connection.Send(data);
             };
 
             listener.Start();
 
-            DataReceivedEventArgs? result = null;
+            DataReceivedEvent? result = null;
             //Setup conneciton
-            connection.DataReceived += delegate (DataReceivedEventArgs a)
+            connection.DataReceived += delegate (DataReceivedEvent a)
             {
                 _output.WriteLine("Data was received correctly.");
 
@@ -72,10 +72,10 @@ namespace Infinity.Core.Tests
             var mutex2 = new ManualResetEvent(false);
 
             //Setup listener
-            DataReceivedEventArgs? result = null;
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            DataReceivedEvent? result = null;
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.DataReceived += delegate (DataReceivedEventArgs innerArgs)
+                args.Connection.DataReceived += delegate (DataReceivedEvent innerArgs)
                 {
                     _output.WriteLine("Data was received correctly.");
 
@@ -119,14 +119,15 @@ namespace Infinity.Core.Tests
         {
             var mutex = new ManualResetEvent(false);
 
-            connection.Disconnected += delegate (DisconnectedEventArgs args)
+            connection.Disconnected += delegate (DisconnectedEvent args)
             {
                 mutex.Set();
             };
 
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnect("Testing");
+                var writer = UdpMessageFactory.BuildDisconnectMessage();
+                args.Connection.Disconnect("Testing", writer);
             };
 
             listener.Start();
@@ -147,9 +148,9 @@ namespace Infinity.Core.Tests
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
 
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnected += delegate (DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
                     mutex2.Set();
                 };
@@ -164,7 +165,8 @@ namespace Infinity.Core.Tests
 
             mutex.WaitOne();
 
-            connection.Disconnect("Testing");
+            var writer = UdpMessageFactory.BuildDisconnectMessage();
+            connection.Disconnect("Testing", writer);
 
             mutex2.WaitOne();
         }
@@ -179,9 +181,9 @@ namespace Infinity.Core.Tests
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
 
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnected += delegate (DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
                     mutex2.Set();
                 };
