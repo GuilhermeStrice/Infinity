@@ -1,9 +1,8 @@
 ﻿using System.Net.Sockets;
 using System.Net;
-using System.Text;
-using System.Collections.Concurrent;
+using Infinity.Core;
 
-namespace Infinity.Core.Udp.Broadcast
+namespace Infinity.Udp.Broadcast
 {
     public class UdpBroadcaster : IDisposable
     {

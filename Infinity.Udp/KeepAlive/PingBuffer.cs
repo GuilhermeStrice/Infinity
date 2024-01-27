@@ -1,14 +1,8 @@
-﻿namespace Infinity.Core.Udp
+﻿namespace Infinity.Udp
 {
     internal class PingBuffer
     {
         private const ushort InvalidatingFactor = ushort.MaxValue / 2;
-
-        private struct PingInfo
-        {
-            public ushort Id;
-            public DateTime SentAt;
-        }
 
         private PingInfo[] active_pings;
         private int head; // The location of the next usable activePing

@@ -1,8 +1,8 @@
 ﻿using System.Net.Sockets;
 using System.Net;
-using System.Text;
+using Infinity.Core;
 
-namespace Infinity.Core.Udp.Broadcast
+namespace Infinity.Udp.Broadcast
 {
     public delegate void OnBroadcastReceive(byte[] data, IPEndPoint sender);
 

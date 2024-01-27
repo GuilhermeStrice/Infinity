@@ -1,25 +1,25 @@
 ﻿namespace Infinity.Core
 {
-    public class DataReceivedEventArgs
+    public class DataReceivedEvent
     {
         public NetworkConnection Connection;
         public MessageReader Message;
 
-        public DataReceivedEventArgs(NetworkConnection _connection, MessageReader _reader)
+        public DataReceivedEvent(NetworkConnection _connection, MessageReader _reader)
         {
             Connection = _connection;
             Message = _reader;
         }
     }
 
-    public class DisconnectedEventArgs
+    public class DisconnectedEvent
     {
         public NetworkConnection Connection;
         public string Reason;
 
         public MessageReader Message;
 
-        public DisconnectedEventArgs(NetworkConnection _connection, string _reason, MessageReader _reader)
+        public DisconnectedEvent(NetworkConnection _connection, string _reason, MessageReader _reader)
         {
             Connection = _connection;
             Reason = _reason;
@@ -27,12 +27,12 @@
         }
     }
 
-    public class NewConnectionEventArgs
+    public class NewConnectionEvent
     {
         public NetworkConnection Connection;
         public MessageReader HandshakeData;
 
-        public NewConnectionEventArgs(NetworkConnection _connection, MessageReader _reader)
+        public NewConnectionEvent(NetworkConnection _connection, MessageReader _reader)
         {
             Connection = _connection;
             HandshakeData = _reader;

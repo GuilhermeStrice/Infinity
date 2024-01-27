@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Net;
 
-namespace Infinity.Core.Udp.Broadcast
+namespace Infinity.Udp.Broadcast
 {
     internal static class Util
     {

@@ -1,9 +1,11 @@
-﻿using Infinity.Core.Udp;
+﻿using Infinity.Core;
+using Infinity.Core.Tests;
+using Infinity.Core.Udp;
 using System.Collections.Concurrent;
 using System.Net;
 using Xunit.Abstractions;
 
-namespace Infinity.Core.Tests
+namespace Infinity.Tests.Udp
 {
     public class StressTests
     {
@@ -26,17 +28,17 @@ namespace Infinity.Core.Tests
             {
                 int con_count = 0;
 
-                listener.NewConnection += delegate (NewConnectionEventArgs obj)
+                listener.NewConnection += delegate (NewConnectionEvent obj)
                 {
                     obj.HandshakeData.Recycle();
 
                     con_count++;
-                    obj.Connection.DataReceived += delegate (DataReceivedEventArgs data_args)
+                    obj.Connection.DataReceived += delegate (DataReceivedEvent data_args)
                     {
                         data_args.Message.Recycle();
                     };
 
-                    obj.Connection.Disconnected += delegate (DisconnectedEventArgs e)
+                    obj.Connection.Disconnected += delegate (DisconnectedEvent e)
                     {
                         e.Message?.Recycle();
                     };
@@ -45,9 +47,9 @@ namespace Infinity.Core.Tests
                     {
                         con_count = 0;
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                        output.WriteLine(Udp.Pools.PacketPool.InUse.ToString());
-                        output.WriteLine(Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                        output.WriteLine(Udp.Pools.FragmentPool.InUse.ToString());
+                        output.WriteLine(Core.Udp.Pools.PacketPool.InUse.ToString());
+                        output.WriteLine(Core.Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                        output.WriteLine(Core.Udp.Pools.FragmentPool.InUse.ToString());
                         output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
                     }
                 };
@@ -56,11 +58,11 @@ namespace Infinity.Core.Tests
                 for (int i = 0; i < 1000; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
-                    connection.DataReceived += delegate (DataReceivedEventArgs obj)
+                    connection.DataReceived += delegate (DataReceivedEvent obj)
                     {
                         obj.Message.Recycle();
                     };
-                    connection.Disconnected += delegate (DisconnectedEventArgs obj)
+                    connection.Disconnected += delegate (DisconnectedEvent obj)
                     {
                         obj.Message?.Recycle();
                     };
@@ -90,28 +92,28 @@ namespace Infinity.Core.Tests
             {
                 listener.NewConnection += (evt) =>
                 {
-                    evt.Connection.Disconnected += delegate (DisconnectedEventArgs obj)
+                    evt.Connection.Disconnected += delegate (DisconnectedEvent obj)
                     {
                         obj.Message.Recycle();
                     };
 
-                    evt.Connection.DataReceived += delegate (DataReceivedEventArgs obj)
+                    evt.Connection.DataReceived += delegate (DataReceivedEvent obj)
                     {
                         count++;
                         obj.Message.Recycle();
                         if (count == 100)
                         {
                             output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                            output.WriteLine(Udp.Pools.PacketPool.InUse.ToString());
-                            output.WriteLine(Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                            output.WriteLine(Udp.Pools.FragmentPool.InUse.ToString());
+                            output.WriteLine(Core.Udp.Pools.PacketPool.InUse.ToString());
+                            output.WriteLine(Core.Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                            output.WriteLine(Core.Udp.Pools.FragmentPool.InUse.ToString());
                             output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
                             mutex.Set();
                         }
                     };
                 };
 
-                connection.Disconnected += delegate (DisconnectedEventArgs obj)
+                connection.Disconnected += delegate (DisconnectedEvent obj)
                 {
                     obj.Message.Recycle();
                 };

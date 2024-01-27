@@ -1,4 +1,6 @@
-﻿namespace Infinity.Core.Udp
+﻿using Infinity.Core;
+
+namespace Infinity.Udp
 {
     public static class UdpMessageFactory
     {

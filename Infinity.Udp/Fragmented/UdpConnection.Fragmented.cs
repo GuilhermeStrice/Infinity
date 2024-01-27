@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using Infinity.Core;
 
-namespace Infinity.Core.Udp
+namespace Infinity.Udp
 {
     partial class UdpConnection
     {
@@ -69,14 +69,14 @@ namespace Infinity.Core.Udp
                 _reader.Position += 3;
 
                 var fragments_count = _reader.ReadByte();
-                var fragmented_message_id = _reader.ReadByte();
+                var fragmented_id = _reader.ReadByte();
 
-                if (!fragmented_messages_received.TryGetValue(fragmented_message_id, out var fragmented_message))
+                if (!fragmented_messages_received.TryGetValue(fragmented_id, out var fragmented_message))
                 {
                     fragmented_message = FragmentedMessage.Get();
                     fragmented_message.FragmentsCount = fragments_count;
 
-                    fragmented_messages_received.TryAdd(fragmented_message_id, fragmented_message);
+                    fragmented_messages_received.TryAdd(fragmented_id, fragmented_message);
                 }
 
                 var fragment = Fragment.Get();
@@ -103,7 +103,7 @@ namespace Infinity.Core.Udp
                         InvokeDataReceived(reader);
 
                         FragmentedMessage reference;
-                        fragmented_messages_received.Remove(fragmented_message_id, out reference);
+                        fragmented_messages_received.Remove(fragmented_id, out reference);
 
                         reference.Recycle();
                     }

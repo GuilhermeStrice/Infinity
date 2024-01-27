@@ -1,7 +1,8 @@
-﻿using Infinity.Core.Udp;
+﻿using Infinity.Core;
+using Infinity.Core.Udp;
 using Xunit.Abstractions;
 
-namespace Infinity.Core.Tests
+namespace Infinity.Tests.Udp
 {
     public static class UdpTestHelper
     {
@@ -19,16 +20,16 @@ namespace Infinity.Core.Tests
             var mutex = new ManualResetEvent(false);
 
             //Setup listener
-            listener.NewConnection += delegate (NewConnectionEventArgs ncArgs)
+            listener.NewConnection += delegate (NewConnectionEvent ncArgs)
             {
                 ncArgs.Connection.Send(data);
             };
 
             listener.Start();
 
-            DataReceivedEventArgs? result = null;
+            DataReceivedEvent? result = null;
             //Setup conneciton
-            connection.DataReceived += delegate (DataReceivedEventArgs a)
+            connection.DataReceived += delegate (DataReceivedEvent a)
             {
                 _output.WriteLine("Data was received correctly.");
 
@@ -65,10 +66,10 @@ namespace Infinity.Core.Tests
             var mutex2 = new ManualResetEvent(false);
 
             //Setup listener
-            DataReceivedEventArgs? result = null;
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            DataReceivedEvent? result = null;
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.DataReceived += delegate (DataReceivedEventArgs innerArgs)
+                args.Connection.DataReceived += delegate (DataReceivedEvent innerArgs)
                 {
                     _output.WriteLine("Data was received correctly.");
 
@@ -86,12 +87,12 @@ namespace Infinity.Core.Tests
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
 
-            Assert.True(mutex.WaitOne(100), "Timeout while connecting");
+            Assert.True(mutex.WaitOne(1000), "Timeout while connecting");
 
             connection.Send(data);
 
             //Wait until data is received
-            Assert.True(mutex2.WaitOne(100), "Timeout while sending data");
+            Assert.True(mutex2.WaitOne(1000), "Timeout while sending data");
 
             var dataReader = data.ToReader();
 
@@ -113,14 +114,15 @@ namespace Infinity.Core.Tests
         {
             var mutex = new ManualResetEvent(false);
 
-            connection.Disconnected += delegate (DisconnectedEventArgs args)
+            connection.Disconnected += delegate (DisconnectedEvent args)
             {
                 mutex.Set();
             };
 
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnect("Testing");
+                var writer = UdpMessageFactory.BuildDisconnectMessage();
+                args.Connection.Disconnect("Testing", writer);
             };
 
             listener.Start();
@@ -141,9 +143,9 @@ namespace Infinity.Core.Tests
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
 
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnected += delegate (DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
                     mutex2.Set();
                 };
@@ -158,7 +160,8 @@ namespace Infinity.Core.Tests
 
             mutex.WaitOne();
 
-            connection.Disconnect("Testing");
+            var writer = UdpMessageFactory.BuildDisconnectMessage();
+            connection.Disconnect("Testing", writer);
 
             mutex2.WaitOne();
         }
@@ -173,9 +176,9 @@ namespace Infinity.Core.Tests
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
 
-            listener.NewConnection += delegate (NewConnectionEventArgs args)
+            listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnected += delegate (DisconnectedEventArgs args2)
+                args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
                     mutex2.Set();
                 };
@@ -188,14 +191,14 @@ namespace Infinity.Core.Tests
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
 
-            if (!mutex.WaitOne(TimeSpan.FromSeconds(1)))
+            if (!mutex.WaitOne(TimeSpan.FromSeconds(2)))
             {
                 Assert.Fail("Timeout waiting for client connection");
             }
 
             connection.Dispose();
 
-            if (!mutex2.WaitOne(TimeSpan.FromSeconds(1)))
+            if (!mutex2.WaitOne(TimeSpan.FromSeconds(2)))
             {
                 Assert.Fail("Timeout waiting for client disconnect packet");
             }

@@ -2,8 +2,10 @@
 using System.Net.Sockets;
 using System.Net;
 using Xunit.Abstractions;
+using Infinity.Core;
+using Infinity.Core.Tests;
 
-namespace Infinity.Core.Tests
+namespace Infinity.Tests.Udp
 {
     public class UdpConnectionTests
     {
@@ -132,7 +134,7 @@ namespace Infinity.Core.Tests
                     return true;
                 };
 
-                listener.NewConnection += delegate (NewConnectionEventArgs e)
+                listener.NewConnection += delegate (NewConnectionEvent e)
                 {
                 };
                 
@@ -149,9 +151,9 @@ namespace Infinity.Core.Tests
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
                 MessageReader output = null;
-                listener.NewConnection += delegate (NewConnectionEventArgs e)
+                listener.NewConnection += delegate (NewConnectionEvent e)
                 {
-                    e.Connection.DataReceived += delegate (DataReceivedEventArgs evt)
+                    e.Connection.DataReceived += delegate (DataReceivedEvent evt)
                     {
                         output = evt.Message;
                     };
@@ -279,7 +281,7 @@ namespace Infinity.Core.Tests
 
                 socket.Bind(new IPEndPoint(IPAddress.Any, 0));
                 var bytes = new byte[2];
-                bytes[0] = 8;
+                bytes[0] = 1;
                 for (int i = 0; i < 10; ++i)
                 {
                     socket.SendTo(bytes, new IPEndPoint(IPAddress.Loopback, 4296));
@@ -424,7 +426,7 @@ namespace Infinity.Core.Tests
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
                 UdpConnection client = null;
-                listener.NewConnection += delegate (NewConnectionEventArgs args)
+                listener.NewConnection += delegate (NewConnectionEvent args)
                 {
                     client = (UdpConnection)args.Connection;
                     client.KeepAliveInterval = 100;
@@ -505,21 +507,21 @@ namespace Infinity.Core.Tests
                 string received = null;
                 ManualResetEvent mutex = new ManualResetEvent(false);
 
-                connection.Disconnected += delegate (DisconnectedEventArgs args)
+                connection.Disconnected += delegate (DisconnectedEvent args)
                 {
                     // We don't own the message, we have to read the string now 
                     received = args.Message.ReadString();
                     mutex.Set();
                 };
 
-                listener.NewConnection += delegate (NewConnectionEventArgs args)
+                listener.NewConnection += delegate (NewConnectionEvent args)
                 {
                     // As it turns out, the UdpConnectionListener can have an issue on loopback where the disconnect can happen before the Handshake confirm
                     // Tossing it on a different thread makes this test more reliable. Perhaps something to think about elsewhere though.
                     Task.Run(async () =>
                     {
                         await Task.Delay(100);
-                        MessageWriter writer = UdpMessageFactory.BuildUnreliableMessage();
+                        MessageWriter writer = UdpMessageFactory.BuildDisconnectMessage();
                         writer.Write("Goodbye");
                         args.Connection.Disconnect("Testing", writer);
                     });

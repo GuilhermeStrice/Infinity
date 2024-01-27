@@ -19,7 +19,7 @@ namespace Infinity.Core
 
         public HandshakeCheck? HandshakeConnection;
 
-        public event Action<NewConnectionEventArgs>? NewConnection;
+        public event Action<NewConnectionEvent>? NewConnection;
         public event Action<InfinityInternalErrors>? OnInternalError;
 
         public abstract void Start();
@@ -31,7 +31,7 @@ namespace Infinity.Core
 
         protected void InvokeNewConnection(NetworkConnection _connection, MessageReader _reader)
         {
-            var args = new NewConnectionEventArgs(_connection, _reader);
+            var args = new NewConnectionEvent(_connection, _reader);
             NewConnection?.Invoke(args);
         }
 

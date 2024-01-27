@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using Infinity.Core;
 
-namespace Infinity.Core.Udp
+namespace Infinity.Udp
 {
     partial class UdpConnection
     {
@@ -69,7 +69,7 @@ namespace Infinity.Core.Udp
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
         /// </summary>
-        internal HashSet<ushort> reliable_data_packets_missing = new HashSet<ushort>();
+        internal bool[] reliable_data_packets_missing = new bool[ushort.MaxValue + 1];
 
         private object ping_lock = new object();
         private float ping_ms = 500;
@@ -162,7 +162,7 @@ namespace Infinity.Core.Udp
              */
 
             bool result = true;
-            
+
             lock (reliable_data_packets_missing)
             {
                 //Calculate overwritePointer
@@ -178,7 +178,7 @@ namespace Infinity.Core.Udp
                 {
                     is_new = _id > reliable_receive_last && _id <= overwrite_pointer;     //Figure (3)
                 }
-                
+
                 //If it's new or we've not received anything yet
                 if (is_new)
                 {
@@ -187,7 +187,7 @@ namespace Infinity.Core.Udp
                     {
                         for (ushort i = (ushort)(reliable_receive_last + 1); i < _id; i++)
                         {
-                            reliable_data_packets_missing.Add(i);
+                            reliable_data_packets_missing[i] = true;
                         }
                     }
                     else
@@ -195,21 +195,25 @@ namespace Infinity.Core.Udp
                         int cnt = (ushort.MaxValue - reliable_receive_last) + _id;
                         for (ushort i = 1; i <= cnt; ++i)
                         {
-                            reliable_data_packets_missing.Add((ushort)(i + reliable_receive_last));
+                            reliable_data_packets_missing[(ushort)(i + reliable_receive_last)] = true;
                         }
                     }
 
                     //Update the most recently received
                     reliable_receive_last = _id;
                 }
-                
+
                 //Else it could be a missing packet
                 else
                 {
                     //See if we're missing it, else this packet is a duplicate as so we return false
-                    if (!reliable_data_packets_missing.Remove(_id))
+                    if (reliable_data_packets_missing[_id] == false)
                     {
                         result = false;
+                    }
+                    else
+                    {
+                        reliable_data_packets_missing[_id] = false;
                     }
                 }
             }
@@ -277,9 +281,13 @@ namespace Infinity.Core.Udp
             {
                 for (int i = 1; i <= 8; ++i)
                 {
-                    if (!reliable_data_packets_missing.Contains((ushort)(_id - i)))
+                    var index = (ushort)(_id - i);
+                    if (index >= 0)
                     {
-                        recent_packets |= (byte)(1 << (i - 1));
+                        if (!reliable_data_packets_missing[index])
+                        {
+                            recent_packets |= (byte)(1 << (i - 1));
+                        }
                     }
                 }
             }

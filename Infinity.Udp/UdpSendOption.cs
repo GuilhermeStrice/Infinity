@@ -1,4 +1,4 @@
-﻿namespace Infinity.Core.Udp
+﻿namespace Infinity.Udp
 {
     internal class UdpSendOptionInternal
     {

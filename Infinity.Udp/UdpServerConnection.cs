@@ -1,6 +1,7 @@
+using Infinity.Core;
 using System.Net;
 
-namespace Infinity.Core.Udp
+namespace Infinity.Udp
 {
     public sealed class UdpServerConnection : UdpConnection
     {

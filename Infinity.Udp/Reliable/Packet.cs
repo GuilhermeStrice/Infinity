@@ -1,6 +1,7 @@
-﻿using System.Diagnostics;
+﻿using Infinity.Core;
+using System.Diagnostics;
 
-namespace Infinity.Core.Udp
+namespace Infinity.Udp
 {
     public class Packet : IRecyclable
     {

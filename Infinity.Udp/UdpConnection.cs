@@ -1,4 +1,6 @@
-namespace Infinity.Core.Udp
+using Infinity.Core;
+
+namespace Infinity.Udp
 {
     public abstract partial class UdpConnection : NetworkConnection
     {
@@ -121,7 +123,7 @@ namespace Infinity.Core.Udp
             base.Dispose(_disposing);
         }
 
-        internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
+        protected internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
         {
             ushort id;
             switch (_reader.Buffer[0])

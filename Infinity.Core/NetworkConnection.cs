@@ -6,8 +6,8 @@ namespace Infinity.Core
 {
     public abstract class NetworkConnection : IDisposable
     {
-        public event Action<DataReceivedEventArgs>? DataReceived;
-        public event Action<DisconnectedEventArgs>? Disconnected;
+        public event Action<DataReceivedEvent>? DataReceived;
+        public event Action<DisconnectedEvent>? Disconnected;
 
         public event EventHandler<MessageWriter>? BeforeSend;
         public event EventHandler<MessageReader>? BeforeReceive;
@@ -86,7 +86,7 @@ namespace Infinity.Core
         {
             if (DataReceived != null)
             {
-                var args = new DataReceivedEventArgs(this, _reader);
+                var args = new DataReceivedEvent(this, _reader);
                 DataReceived.Invoke(args);
             }
             else
@@ -99,7 +99,7 @@ namespace Infinity.Core
         {
             if (Disconnected != null)
             {
-                var args = new DisconnectedEventArgs(this, _reason, _reader);
+                var args = new DisconnectedEvent(this, _reason, _reader);
                 Disconnected.Invoke(args);
             }
             else
