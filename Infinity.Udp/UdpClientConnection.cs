@@ -144,7 +144,6 @@ namespace Infinity.Udp
             }
             catch (SocketException e)
             {
-                Dispose();
                 throw new InfinityException("A SocketException occurred while initiating a receive operation.", e);
             }
 

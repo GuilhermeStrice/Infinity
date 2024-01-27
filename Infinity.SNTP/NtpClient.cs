@@ -85,7 +85,7 @@ namespace Infinity.SNTP
             {
                 socket.BeginSendTo(buffer, 0, buffer.Length, SocketFlags.None, endpoint, HandleSendTo, state_sync);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
                 throw new NtpException($"Something happened while trying to begin the send operation : {message}");
