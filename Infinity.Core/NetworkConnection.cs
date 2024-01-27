@@ -91,7 +91,10 @@ namespace Infinity.Core
             }
             else
             {
-                _reader.Recycle();
+                if (_reader != null)
+                {
+                    _reader.Recycle();
+                }
             }
         }
 
@@ -123,11 +126,7 @@ namespace Infinity.Core
 
         protected abstract void DisconnectRemote(string _reason, MessageReader _reader);
 
-        protected void DisconnectInternal(InfinityInternalErrors _error, string _reason)
-        {
-            var msg = OnInternalDisconnect?.Invoke(_error);
-            Disconnect(_reason, msg);
-        }
+        protected abstract void DisconnectInternal(InfinityInternalErrors _error, string _reason);
 
         protected abstract bool SendDisconnect(MessageWriter _writer);
 

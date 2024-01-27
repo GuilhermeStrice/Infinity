@@ -497,5 +497,12 @@ namespace Infinity.Core.Tcp
 
             Dispose();
         }
+
+        protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        {
+            var msg = OnInternalDisconnect?.Invoke(_error);
+
+            Disconnect(_reason, msg);
+        }
     }
 }

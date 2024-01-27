@@ -28,12 +28,21 @@ namespace Infinity.Tests.Udp
             SetReliableId(data, 9);
             conn.Test_Receive(data);
 
+            data.Recycle();
+
             // Both messages should be received.
             Assert.Equal(2, messagesReceived.Count);
             messagesReceived.Clear();
 
             Assert.Equal(2, conn.BytesSent.Count);
             conn.BytesSent.Clear();
+
+            foreach (var msg in messagesReceived)
+            {
+                msg.Recycle();
+            }
+
+            conn.Dispose();
         }
 
         [Fact]
@@ -72,6 +81,15 @@ namespace Infinity.Tests.Udp
                 Assert.Equal(1, conn.BytesSent.Count);
                 conn.BytesSent.Clear();
             }
+
+            foreach (var msg in messagesReceived)
+            {
+                msg.Recycle();
+            }
+
+            conn.Dispose();
+
+            data.Recycle();
         }
 
         [Fact]
@@ -103,6 +121,15 @@ namespace Infinity.Tests.Udp
             Assert.Equal(0, test);
             // The packet before that was.
             Assert.Equal(1, (recentPackets >> 1) & 1);
+
+            foreach (var msg in messagesReceived)
+            {
+                msg.Recycle();
+            }
+
+            conn.Dispose();
+
+            data.Recycle();
         }
 
         private static void SetReliableId(MessageWriter data, int i)

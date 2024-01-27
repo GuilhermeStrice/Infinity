@@ -92,7 +92,7 @@ namespace Infinity.Core.Tcp
         {
             if (HandshakeConnection != null)
             {
-                if (!HandshakeConnection(connection.EndPoint, handshakeData.Buffer, out var response))
+                if (!HandshakeConnection(connection.EndPoint, handshakeData, out var response))
                 {
                     handshakeData.Recycle();
                     if (response != null)

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Infinity.Core
 {
-    public delegate bool HandshakeCheck(IPEndPoint endPoint, byte[] input, out byte[] response);
+    public delegate bool HandshakeCheck(IPEndPoint _endPoint, MessageReader _reader, out byte[] _response);
 
     public abstract class NetworkConnectionListener : IDisposable
     {

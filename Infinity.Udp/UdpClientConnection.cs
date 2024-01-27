@@ -330,6 +330,7 @@ namespace Infinity.Udp
             {
                 var writer = UdpMessageFactory.BuildDisconnectMessage();
                 SendDisconnect(writer);
+                writer.Recycle();
             }
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
@@ -344,13 +345,27 @@ namespace Infinity.Udp
 
         protected override void DisconnectRemote(string _reason, MessageReader _reader)
         {
-            var _writer = UdpMessageFactory.BuildDisconnectMessage();
-            if (SendDisconnect(_writer))
+            var writer = UdpMessageFactory.BuildDisconnectMessage();
+            if (SendDisconnect(writer))
             {
                 InvokeDisconnected(_reason, _reader);
             }
 
+            writer.Recycle();
+
             Dispose();
+        }
+
+        protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        {
+            var msg = OnInternalDisconnect?.Invoke(_error);
+
+            if (msg == null)
+            {
+                msg = UdpMessageFactory.BuildDisconnectMessage();
+            }
+
+            Disconnect(_reason, msg);
         }
     }
 }

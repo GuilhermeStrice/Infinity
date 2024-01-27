@@ -205,7 +205,7 @@ namespace Infinity.Udp
                 }
 
                 if (HandshakeConnection != null && 
-                    !HandshakeConnection((IPEndPoint)remote_end_point, reader.Buffer, out var response))
+                    !HandshakeConnection((IPEndPoint)remote_end_point, reader, out var response))
                 {
                     reader.Recycle();
                     if (response != null)

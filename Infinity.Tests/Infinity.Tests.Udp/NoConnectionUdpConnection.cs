@@ -11,18 +11,18 @@ namespace Infinity.Tests.Udp
         {
         }
 
-        public ushort ReliableReceiveLast => this.reliable_receive_last;
+        public ushort ReliableReceiveLast => reliable_receive_last;
 
         protected override bool SendDisconnect(MessageWriter writer)
         {
             lock (this)
             {
-                if (this.State != ConnectionState.Connected)
+                if (State != ConnectionState.Connected)
                 {
                     return false;
                 }
 
-                this.State = ConnectionState.NotConnected;
+                State = ConnectionState.NotConnected;
             }
 
             return true;
@@ -39,17 +39,17 @@ namespace Infinity.Tests.Udp
 
         public override void WriteBytesToConnection(byte[] _bytes, int _length)
         {
-            this.BytesSent.Add(MessageReader.Get(_bytes));
+            BytesSent.Add(MessageReader.Get(_bytes));
         }
 
         public override void Connect(MessageWriter _writer, int _timeout = 5000)
         {
-            this.State = ConnectionState.Connected;
+            State = ConnectionState.Connected;
         }
 
         public override void ConnectAsync(MessageWriter _writer)
         {
-            this.State = ConnectionState.Connected;
+            State = ConnectionState.Connected;
         }
 
         protected override void DisconnectRemote(string _reason, MessageReader _reader)
@@ -58,6 +58,10 @@ namespace Infinity.Tests.Udp
         }
 
         protected override void SetState(ConnectionState _state)
+        {
+        }
+
+        protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {
         }
     }

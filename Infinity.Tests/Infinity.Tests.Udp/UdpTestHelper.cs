@@ -22,6 +22,7 @@ namespace Infinity.Tests.Udp
             //Setup listener
             listener.NewConnection += delegate (NewConnectionEvent ncArgs)
             {
+                ncArgs.HandshakeData.Recycle();
                 ncArgs.Connection.Send(data);
             };
 
@@ -39,6 +40,7 @@ namespace Infinity.Tests.Udp
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
+            handshake.Recycle();
 
             //Wait until data is received
             mutex.WaitOne();
@@ -51,6 +53,8 @@ namespace Infinity.Tests.Udp
             }
 
             Assert.Equal(sendOption, result.Message.Buffer[0]);
+
+            result.Message.Recycle();
         }
 
         /// <summary>
@@ -69,6 +73,7 @@ namespace Infinity.Tests.Udp
             DataReceivedEvent? result = null;
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
+                args.HandshakeData.Recycle();
                 args.Connection.DataReceived += delegate (DataReceivedEvent innerArgs)
                 {
                     _output.WriteLine("Data was received correctly.");
@@ -86,6 +91,7 @@ namespace Infinity.Tests.Udp
             //Connect
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
+            handshake.Recycle();
 
             Assert.True(mutex.WaitOne(1000), "Timeout while connecting");
 
@@ -103,6 +109,8 @@ namespace Infinity.Tests.Udp
             }
 
             Assert.Equal(sendOption, result.Message.Buffer[0]);
+
+            result.Message.Recycle();
         }
 
         /// <summary>
@@ -116,11 +124,13 @@ namespace Infinity.Tests.Udp
 
             connection.Disconnected += delegate (DisconnectedEvent args)
             {
+                args.Message.Recycle();
                 mutex.Set();
             };
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
+                args.HandshakeData.Recycle();
                 var writer = UdpMessageFactory.BuildDisconnectMessage();
                 args.Connection.Disconnect("Testing", writer);
             };
@@ -129,6 +139,7 @@ namespace Infinity.Tests.Udp
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
+            handshake.Recycle();
 
             mutex.WaitOne();
         }
@@ -145,8 +156,10 @@ namespace Infinity.Tests.Udp
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
+                args.HandshakeData.Recycle();
                 args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
+                    args2.Message.Recycle();
                     mutex2.Set();
                 };
 
@@ -157,11 +170,13 @@ namespace Infinity.Tests.Udp
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
+            handshake.Recycle();
 
             mutex.WaitOne();
 
             var writer = UdpMessageFactory.BuildDisconnectMessage();
             connection.Disconnect("Testing", writer);
+            writer.Recycle();
 
             mutex2.WaitOne();
         }
@@ -178,8 +193,10 @@ namespace Infinity.Tests.Udp
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
+                args.HandshakeData.Recycle();
                 args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
+                    args2.Message.Recycle();
                     mutex2.Set();
                 };
 
@@ -190,6 +207,7 @@ namespace Infinity.Tests.Udp
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             connection.Connect(handshake);
+            handshake.Recycle();
 
             if (!mutex.WaitOne(TimeSpan.FromSeconds(2)))
             {

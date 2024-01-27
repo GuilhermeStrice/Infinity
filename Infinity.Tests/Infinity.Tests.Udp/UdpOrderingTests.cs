@@ -27,6 +27,7 @@ namespace Infinity.Tests.Udp
             {
                 listener.NewConnection += e =>
                 {
+                    e.HandshakeData.Recycle();
                     e.Connection.DataReceived += data =>
                     {
                         data.Message.Position = 3;
@@ -39,6 +40,8 @@ namespace Infinity.Tests.Udp
 
                         Interlocked.Increment(ref count);
 
+                        data.Message.Recycle();
+
                         if (count == 100)
                             mutex.Set();
                     };
@@ -48,6 +51,7 @@ namespace Infinity.Tests.Udp
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
+                handshake.Recycle();
 
                 Thread.Sleep(100);
 
