@@ -4,31 +4,31 @@ namespace Infinity.SNTP
 {
     public class NtpPacket
     {
-        public NtpLeapIndicator LeapIndicator { get; init; } = NtpLeapIndicator.NoWarning;
+        public NtpLeapIndicator LeapIndicator { get; set; } = NtpLeapIndicator.NoWarning;
 
-        public int VersionNumber { get; init; } = 4;
+        public int VersionNumber { get; set; } = 4;
 
-        public NtpMode Mode { get; init; } = NtpMode.Client;
+        public NtpMode Mode { get; set; } = NtpMode.Client;
 
-        public int Stratum { get; init; } = 0;
+        public int Stratum { get; set; } = 0;
 
-        public int PollInterval { get; init; } = 0;
+        public int PollInterval { get; set; } = 0;
 
-        public int Precision { get; init; } = 0;
+        public int Precision { get; set; } = 0;
 
-        public TimeSpan RootDelay { get; init; } = TimeSpan.Zero;
+        public TimeSpan RootDelay { get; set; } = TimeSpan.Zero;
 
-        public TimeSpan RootDispersion { get; init; } = TimeSpan.Zero;
+        public TimeSpan RootDispersion { get; set; } = TimeSpan.Zero;
 
-        public uint ReferenceId { get; init; } = 0;
+        public uint ReferenceId { get; set; } = 0;
 
-        public DateTime? ReferenceTimestamp { get; init; } = null;
+        public DateTime? ReferenceTimestamp { get; set; } = null;
 
-        public DateTime? OriginTimestamp { get; init; } = null;
+        public DateTime? OriginTimestamp { get; set; } = null;
 
-        public DateTime? ReceiveTimestamp { get; init; } = null;
+        public DateTime? ReceiveTimestamp { get; set; } = null;
 
-        public DateTime? TransmitTimestamp { get; init; } = DateTime.UtcNow;
+        public DateTime? TransmitTimestamp { get; set; } = DateTime.UtcNow;
 
         public void Validate()
         {

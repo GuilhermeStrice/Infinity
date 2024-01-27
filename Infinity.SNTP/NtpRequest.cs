@@ -2,7 +2,7 @@
 {
     public class NtpRequest
     {
-        public DateTime TransmitTimestamp { get; init; } = DateTime.UtcNow;
+        public DateTime TransmitTimestamp { get; set; } = DateTime.UtcNow;
 
         public static NtpRequest FromPacket(NtpPacket _packet)
         {

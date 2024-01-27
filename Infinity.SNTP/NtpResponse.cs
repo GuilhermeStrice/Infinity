@@ -2,29 +2,29 @@
 {
     public class NtpResponse
     {
-        public NtpLeapIndicator LeapIndicator { get; init; } = NtpLeapIndicator.NoWarning;
+        public NtpLeapIndicator LeapIndicator { get; set; } = NtpLeapIndicator.NoWarning;
 
-        public int Stratum { get; init; } = 0;
+        public int Stratum { get; set; } = 0;
 
-        public int PollInterval { get; init; } = 0;
+        public int PollInterval { get; set; } = 0;
 
-        public int Precision { get; init; } = 0;
+        public int Precision { get; set; } = 0;
 
-        public TimeSpan RootDelay { get; init; } = TimeSpan.Zero;
+        public TimeSpan RootDelay { get; set; } = TimeSpan.Zero;
 
-        public TimeSpan RootDispersion { get; init; } = TimeSpan.Zero;
+        public TimeSpan RootDispersion { get; set; } = TimeSpan.Zero;
 
-        public uint ReferenceId { get; init; } = 0;
+        public uint ReferenceId { get; set; } = 0;
 
-        public DateTime? ReferenceTimestamp { get; init; } = null;
+        public DateTime? ReferenceTimestamp { get; set; } = null;
 
-        public DateTime OriginTimestamp { get; init; }
+        public DateTime OriginTimestamp { get; set; }
 
-        public DateTime ReceiveTimestamp { get; init; }
+        public DateTime ReceiveTimestamp { get; set; }
 
-        public DateTime TransmitTimestamp { get; init; }
+        public DateTime TransmitTimestamp { get; set; }
 
-        public DateTime DestinationTimestamp { get; init; }
+        public DateTime DestinationTimestamp { get; set; }
 
         public static NtpResponse FromPacket(NtpPacket _packet, DateTime _time)
         {

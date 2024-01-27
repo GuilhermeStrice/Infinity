@@ -33,10 +33,7 @@ namespace Infinity.SNTP
             endpoint = _endpoint;
             Timeout = _timeout ?? DefaultTimeout;
 
-            socket = new Socket(SocketType.Dgram, ProtocolType.Udp)
-            {
-                ReceiveTimeout = Convert.ToInt32(Timeout.TotalMilliseconds),
-            };
+            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
         }
 
         public NtpClient() : this(DefaultEndpoint)
