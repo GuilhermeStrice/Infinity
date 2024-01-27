@@ -331,7 +331,6 @@ namespace Infinity.Udp
             Packet packet = Pools.PacketPool.GetObject();
             packet.Set(
                 this,
-                id,
                 _buffer,
                 resend_delay_ms,
                 _ack_callback);
