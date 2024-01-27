@@ -99,18 +99,6 @@ namespace Infinity.Udp
             Pools.PacketPool.PutObject(this);
         }
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = -1047578147;
-
-                hash = (int)(hash * -1521134295 + connection.AveragePingMs);
-                hash = hash * -1521134295 + GetId();
-                return hash;
-            }
-        }
-
         internal ushort GetId()
         {
             ushort id = (ushort)((buffer[1] << 8) + buffer[2]);
