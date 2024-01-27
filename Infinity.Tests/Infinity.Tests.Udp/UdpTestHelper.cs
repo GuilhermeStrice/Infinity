@@ -55,6 +55,9 @@ namespace Infinity.Tests.Udp
             Assert.Equal(sendOption, result.Message.Buffer[0]);
 
             result.Message.Recycle();
+
+            connection.Dispose();
+            listener.Dispose();
         }
 
         /// <summary>
@@ -111,6 +114,9 @@ namespace Infinity.Tests.Udp
             Assert.Equal(sendOption, result.Message.Buffer[0]);
 
             result.Message.Recycle();
+
+            connection.Dispose();
+            listener.Dispose();
         }
 
         /// <summary>
@@ -142,6 +148,9 @@ namespace Infinity.Tests.Udp
             handshake.Recycle();
 
             mutex.WaitOne();
+
+            connection.Dispose();
+            listener.Dispose();
         }
 
         /// <summary>
@@ -179,6 +188,9 @@ namespace Infinity.Tests.Udp
             writer.Recycle();
 
             mutex2.WaitOne();
+
+            connection.Dispose();
+            listener.Dispose();
         }
 
         /// <summary>
@@ -220,6 +232,9 @@ namespace Infinity.Tests.Udp
             {
                 Assert.Fail("Timeout waiting for client disconnect packet");
             }
+
+            connection.Dispose();
+            listener.Dispose();
         }
 
         /// <summary>
