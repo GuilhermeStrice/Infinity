@@ -170,14 +170,9 @@ namespace Infinity.Udp
                     HandleSendTo,
                     null);
             }
-            catch (NullReferenceException) { }
-            catch (ObjectDisposedException)
+            catch
             {
-                // Already disposed and disconnected...
-            }
-            catch (SocketException ex)
-            {
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "Could not send data as a SocketException occurred: " + ex.Message);
+                // this is handles by keep alive and packet resends
             }
         }
 
@@ -188,14 +183,9 @@ namespace Infinity.Udp
                 int sent = socket.EndSendTo(_result);
                 Statistics.LogPacketSent(sent);
             }
-            catch (NullReferenceException) { }
-            catch (ObjectDisposedException)
+            catch
             {
-                // Already disposed and disconnected...
-            }
-            catch (SocketException ex)
-            {
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionSend, "Could not send data as a SocketException occurred: " + ex.Message);
+                // this is handles by keep alive and packet resends
             }
         }
 
@@ -225,8 +215,8 @@ namespace Infinity.Udp
             }
             catch
             {
+                // this is handles by keep alive and packet resends
                 reader.Recycle();
-                Dispose();
             }
         }
 
@@ -234,45 +224,28 @@ namespace Infinity.Udp
         {
             var reader = (MessageReader)result.AsyncState;
 
+            bool process = true;
+
             try
             {
                 reader.Length = socket.EndReceive(result);
             }
-            catch (SocketException e)
+            catch
             {
+                // this is handles by keep alive and packet resends
                 reader.Recycle();
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "Socket exception while reading data: " + e.Message);
-                return;
-            }
-            catch (Exception e)
-            {
-                reader.Recycle();
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "No idea what happened here: " + e.Message);
-                return;
+                process = false;
             }
 
             //Exit if no bytes read, we've failed.
             if (reader.Length == 0)
             {
                 reader.Recycle();
-                DisconnectInternal(InfinityInternalErrors.ReceivedZeroBytes, "Received 0 bytes");
                 return;
             }
 
             //Begin receiving again
-            try
-            {
-                StartListeningForData();
-            }
-            catch (SocketException e)
-            {
-                DisconnectInternal(InfinityInternalErrors.SocketExceptionReceive, "Socket exception during receive: " + e.Message);
-            }
-            catch (ObjectDisposedException)
-            {
-                //If the socket's been disposed then we can just end there.
-                return;
-            }
+            StartListeningForData();
 
 #if DEBUG
             if (TestDropRate > 0)
@@ -283,7 +256,10 @@ namespace Infinity.Udp
                 }
             }
 #endif
-            HandleReceive(reader, reader.Length);
+            if (process)
+            {
+                HandleReceive(reader, reader.Length);
+            }
         }
 
         protected override void SetState(ConnectionState _state)
@@ -292,8 +268,7 @@ namespace Infinity.Udp
             {
                 // If the server disconnects you during the Handshake
                 // you can go straight from Connecting to NotConnected.
-                if (_state == ConnectionState.Connected
-                    || _state == ConnectionState.NotConnected)
+                if (_state == ConnectionState.Connected || _state == ConnectionState.NotConnected)
                 {
                     connect_wait_lock.Set();
                 }

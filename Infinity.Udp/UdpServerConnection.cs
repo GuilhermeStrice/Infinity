@@ -62,7 +62,7 @@ namespace Infinity.Udp
 
         protected override void Dispose(bool _disposing)
         {
-            Listener.RemoveConnectionTo(EndPoint);
+            Listener.RemoveConnection(EndPoint);
 
             var writer = UdpMessageFactory.BuildDisconnectMessage();
 

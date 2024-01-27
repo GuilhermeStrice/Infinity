@@ -155,11 +155,6 @@ namespace Infinity.Udp
             catch (SocketException sx)
             {
                 reader.Recycle();
-                if (sx.SocketErrorCode == SocketError.NotConnected)
-                {
-                    InvokeInternalError(InfinityInternalErrors.ConnectionDisconnected);
-                    return;
-                }
 
                 logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
 
@@ -270,24 +265,7 @@ namespace Infinity.Udp
             base.Dispose(_disposing);
         }
 
-        internal void SendDataSync(byte[] _bytes, int _length, EndPoint _endpoint)
-        {
-            try
-            {
-                socket.SendTo(
-                    _bytes,
-                    0,
-                    _length,
-                    SocketFlags.None,
-                    _endpoint
-                );
-
-                Statistics.AddBytesSent(_length);
-            }
-            catch { }
-        }
-
-        internal void RemoveConnectionTo(EndPoint _endpoint)
+        internal void RemoveConnection(EndPoint _endpoint)
         {
             all_connections.TryRemove(_endpoint, out var conn);
         }
