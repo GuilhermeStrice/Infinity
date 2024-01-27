@@ -1,6 +1,6 @@
 ﻿using Infinity.Core;
 using Infinity.Core.Tests;
-using Infinity.Core.Udp;
+using Infinity.Udp;
 using System.Collections.Concurrent;
 using System.Net;
 using Xunit.Abstractions;

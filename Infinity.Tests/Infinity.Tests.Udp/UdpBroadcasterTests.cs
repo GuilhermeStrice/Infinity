@@ -1,4 +1,4 @@
-﻿using Infinity.Core.Udp.Broadcast;
+﻿using Infinity.Udp.Broadcast;
 using System.Net;
 using System.Text;
 using Xunit.Abstractions;

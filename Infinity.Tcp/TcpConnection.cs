@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Reflection.PortableExecutable;
 
 namespace Infinity.Core.Tcp
 {
@@ -242,23 +243,6 @@ namespace Infinity.Core.Tcp
         }
 
         /// <summary>
-        ///     Called when the socket has been disconnected at the remote host.
-        /// </summary>
-        protected void DisconnectRemote(string reason, MessageReader reader)
-        {
-            if (SendDisconnect(null))
-            {
-                try
-                {
-                    InvokeDisconnected(reason, reader);
-                }
-                catch { }
-            }
-
-            Dispose();
-        }
-
-        /// <summary>
         ///     Starts this connections waiting for the header.
         /// </summary>
         /// <param name="callback">The callback to invoke when the body has been read.</param>
@@ -498,6 +482,20 @@ namespace Infinity.Core.Tcp
         protected override void SetState(ConnectionState _state)
         {
             throw new NotImplementedException();
+        }
+
+        protected override void DisconnectRemote(string _reason, MessageReader _reader)
+        {
+            if (SendDisconnect(null))
+            {
+                try
+                {
+                    InvokeDisconnected(_reason, _reader);
+                }
+                catch { }
+            }
+
+            Dispose();
         }
     }
 }

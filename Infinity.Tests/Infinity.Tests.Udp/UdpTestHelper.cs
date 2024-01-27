@@ -1,5 +1,5 @@
 ﻿using Infinity.Core;
-using Infinity.Core.Udp;
+using Infinity.Udp;
 using Xunit.Abstractions;
 
 namespace Infinity.Tests.Udp

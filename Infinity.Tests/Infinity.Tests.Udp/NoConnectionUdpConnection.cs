@@ -1,4 +1,4 @@
-﻿using Infinity.Core.Udp;
+﻿using Infinity.Udp;
 using Infinity.Core;
 
 namespace Infinity.Tests.Udp

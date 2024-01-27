@@ -1,6 +1,6 @@
 ﻿using Infinity.Core;
 using Infinity.Core.Tests;
-using Infinity.Core.Udp;
+using Infinity.Udp;
 
 namespace Infinity.Tests.Udp
 {

@@ -1,5 +1,5 @@
 ﻿using Infinity.Core.Tests;
-using Infinity.Core.Udp;
+using Infinity.Udp;
 using System.Net;
 using Xunit.Abstractions;
 
