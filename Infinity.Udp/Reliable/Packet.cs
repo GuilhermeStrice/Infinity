@@ -1,5 +1,6 @@
 ﻿using Infinity.Core;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Infinity.Udp
 {
@@ -37,7 +38,7 @@ namespace Infinity.Udp
         {
             if (!Acknowledged && connection != null)
             {
-                ushort id = (ushort)((buffer[1] << 8) + buffer[2]);
+                ushort id = GetId();
 
                 long lifetimeMs = Stopwatch.ElapsedMilliseconds;
                 if (lifetimeMs >= connection.DisconnectTimeoutMs)
@@ -96,6 +97,24 @@ namespace Infinity.Udp
             Acknowledged = true;
 
             Pools.PacketPool.PutObject(this);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = -1047578147;
+
+                hash = (int)(hash * -1521134295 + connection.AveragePingMs);
+                hash = hash * -1521134295 + GetId();
+                return hash;
+            }
+        }
+
+        internal ushort GetId()
+        {
+            ushort id = (ushort)((buffer[1] << 8) + buffer[2]);
+            return id;
         }
     }
 }

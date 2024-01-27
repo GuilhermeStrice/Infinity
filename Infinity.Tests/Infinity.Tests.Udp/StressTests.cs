@@ -47,9 +47,9 @@ namespace Infinity.Tests.Udp
                     {
                         con_count = 0;
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                        output.WriteLine(Core.Udp.Pools.PacketPool.InUse.ToString());
-                        output.WriteLine(Core.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                        output.WriteLine(Core.Udp.Pools.FragmentPool.InUse.ToString());
+                        output.WriteLine(Infinity.Udp.Pools.PacketPool.InUse.ToString());
+                        output.WriteLine(Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                        output.WriteLine(Infinity.Udp.Pools.FragmentPool.InUse.ToString());
                         output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
                     }
                 };
@@ -104,9 +104,9 @@ namespace Infinity.Tests.Udp
                         if (count == 100)
                         {
                             output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                            output.WriteLine(Core.Udp.Pools.PacketPool.InUse.ToString());
-                            output.WriteLine(Core.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                            output.WriteLine(Core.Udp.Pools.FragmentPool.InUse.ToString());
+                            output.WriteLine(Infinity.Udp.Pools.PacketPool.InUse.ToString());
+                            output.WriteLine(Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                            output.WriteLine(Infinity.Udp.Pools.FragmentPool.InUse.ToString());
                             output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
                             mutex.Set();
                         }
