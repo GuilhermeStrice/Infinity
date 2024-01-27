@@ -86,7 +86,7 @@ namespace Infinity.Tests.Udp
         }
 
         /// <summary>
-        ///     Tests the fields on UdpConnection.
+        ///     Tests the fields on UdpConnection
         /// </summary>
         [Fact]
         public void UdpFieldTest()
