@@ -14,14 +14,12 @@ namespace Infinity.Udp
 
         public override float AveragePingMs => ping_ms;
 
-        public UdpConnectionStatistics Statistics { get; private set; }
+        public UdpConnectionStatistics Statistics { get; private set; } = new UdpConnectionStatistics();
 
         protected readonly ILogger logger;
 
         public UdpConnection(ILogger _logger) : base()
         {
-            Statistics = new UdpConnectionStatistics();
-
             logger = _logger;
         }
 

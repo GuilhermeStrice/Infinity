@@ -22,7 +22,7 @@ namespace Infinity.Udp
 
         private volatile int last_fragment_id_allocated = 0;
 
-        private FasterConcurrentDictionary<ushort, FragmentedMessage> fragmented_messages_received = new FasterConcurrentDictionary<ushort, FragmentedMessage>();
+        private FragmentedMessage[] fragmented_messages_received = new FragmentedMessage[byte.MaxValue];
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
 
@@ -32,7 +32,7 @@ namespace Infinity.Udp
 
             var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
             
-            var fragments_count = (int)Math.Ceiling(_buffer.Length / (double)fragment_size);
+            var fragments_count = (int)((_buffer.Length / (double)fragment_size) + 1);
 
             if (fragments_count >= byte.MaxValue)
             {
@@ -69,14 +69,20 @@ namespace Infinity.Udp
                 _reader.Position += 3;
 
                 var fragments_count = _reader.ReadByte();
-                var fragmented_id = _reader.ReadByte();
+                var fragmented_message_id = _reader.ReadByte();
 
-                if (!fragmented_messages_received.TryGetValue(fragmented_id, out var fragmented_message))
+                FragmentedMessage fragmented_message;
+
+                if (fragmented_messages_received[fragmented_message_id] != null)
+                {
+                    fragmented_message = fragmented_messages_received[fragmented_message_id];
+                }
+                else
                 {
                     fragmented_message = FragmentedMessage.Get();
                     fragmented_message.FragmentsCount = fragments_count;
 
-                    fragmented_messages_received.TryAdd(fragmented_id, fragmented_message);
+                    fragmented_messages_received[fragmented_message_id] = fragmented_message;
                 }
 
                 var fragment = Fragment.Get();
@@ -96,16 +102,15 @@ namespace Infinity.Udp
                             writer.Write(f.Reader.Buffer, f.Reader.Position, f.Reader.Length - f.Reader.Position);
                         }
 
+                        fragmented_message.Recycle();
+
                         var reader = writer.ToReader();
                         writer.Recycle();
 
                         InvokeBeforeReceive(reader);
                         InvokeDataReceived(reader);
 
-                        FragmentedMessage reference;
-                        fragmented_messages_received.Remove(fragmented_id, out reference);
-
-                        reference.Recycle();
+                        fragmented_messages_received[fragmented_message_id] = null;
                     }
                 }
             }
