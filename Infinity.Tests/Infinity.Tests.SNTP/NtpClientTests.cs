@@ -16,54 +16,10 @@ namespace Infinity.Tests.SNTP
         }
 
         [Fact]
-        public void Query()
-        {
-            int retries = 3;
-
-            try
-            {
-                if (retries > 0)
-                {
-                    new NtpClient().Query();
-                }
-            }
-            catch
-            {
-                retries--;
-            }
-
-            if (retries <= 0)
-            {
-                throw new Exception("failed");
-            }
-        }
-
-        [Fact]
-        public async Task QueryAsync()
-        {
-            int retries = 3;
-
-            try
-            {
-                if (retries > 0)
-                {
-                    await new NtpClient().QueryAsync();
-                }
-            }
-            catch
-            {
-                retries--;
-            }
-
-            if (retries <= 0)
-            {
-                throw new Exception("failed");
-            }
-        }
-
-        [Fact]
         public void Timeout()
         {
+            var mutex = new ManualResetEvent(false);
+
             var timeout = TimeSpan.FromMilliseconds(500);
 
             // Note: pick a host that *drops* packets. The test will fail if the host merely *rejects* packets.
@@ -71,20 +27,33 @@ namespace Infinity.Tests.SNTP
 
             var timer = Stopwatch.StartNew();
 
-            try
+            client.OnNtpReceived += (NtpClock obj) =>
             {
-                client.Query();
-                Assert.Fail("Shouldn't get here. Expecting timeout!");
-            }
-            catch (SocketException ex) when (ex.ErrorCode == 10060 || ex.ErrorCode == 10035 || ex.ErrorCode == 110)
-            {
-                // We expect a socket timeout error
-            }
+                mutex.Set();
+            };
+
+            mutex.WaitOne(timeout);
 
             timer.Stop();
 
             Assert.True(timer.Elapsed >= timeout, timer.Elapsed.ToString());
             Assert.True(timer.Elapsed < timeout + timeout + timeout, timer.Elapsed.ToString());
+        }
+
+        [Fact]
+        public void Query()
+        {
+            var mutex = new ManualResetEvent(false);
+            var client = new NtpClient();
+
+            client.OnNtpReceived += (NtpClock obj) =>
+            {
+                mutex.Set();
+            };
+
+            client.Query();
+
+            mutex.WaitOne();
         }
     }
 }

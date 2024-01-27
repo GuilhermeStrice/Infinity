@@ -3,34 +3,39 @@ using System.Net.Sockets;
 
 namespace Infinity.SNTP
 {
+    internal class StateSync
+    {
+        public NtpRequest Request;
+        public byte[] Buffer;
+    }
+
     public class NtpClient
     {
-        public static readonly string DefaultHost = "pool.ntp.org";
+        public static readonly IPAddress DefaultHost = Dns.GetHostAddresses("pool.ntp.org")[0];
 
         public const int DefaultPort = 123;
 
-        public static readonly EndPoint DefaultEndpoint = new DnsEndPoint(DefaultHost, DefaultPort);
+        public static readonly EndPoint DefaultEndpoint = new IPEndPoint(DefaultHost, DefaultPort);
 
         public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(1);
 
         public TimeSpan Timeout { get; init; }
 
-        private readonly EndPoint endpoint;
+        public event Action<NtpClock> OnNtpReceived;
 
-        private Socket CreateSocket()
-        {
-            var socket = new Socket(SocketType.Dgram, ProtocolType.Udp)
-            {
-                ReceiveTimeout = Convert.ToInt32(Timeout.TotalMilliseconds),
-            };
+        private EndPoint endpoint;
 
-            return socket;
-        }
+        private Socket socket;
 
         public NtpClient(EndPoint _endpoint, TimeSpan? _timeout = default)
         {
             endpoint = _endpoint;
             Timeout = _timeout ?? DefaultTimeout;
+
+            socket = new Socket(SocketType.Dgram, ProtocolType.Udp)
+            {
+                ReceiveTimeout = Convert.ToInt32(Timeout.TotalMilliseconds),
+            };
         }
 
         public NtpClient() : this(DefaultEndpoint)
@@ -68,57 +73,76 @@ namespace Infinity.SNTP
             return time;
         }
 
-        private Socket Connect()
+        public void Query()
         {
-            var socket = CreateSocket();
+            var request = new NtpRequest();
+            var buffer = request.ToPacket().ToBytes();
+
+            var state_sync = new StateSync();
+            state_sync.Request = request;
+
             try
             {
-                socket.Connect(endpoint);
+                socket.BeginSendTo(buffer, 0, buffer.Length, SocketFlags.None, endpoint, HandleSendTo, state_sync);
             }
-            catch
+            catch (Exception e)
             {
-                socket.Dispose();
-                throw;
+                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                throw new NtpException($"Something happened while trying to begin the send operation : {message}");
             }
-            return socket;
         }
 
-        public NtpClock Query()
+        private void HandleSendTo(IAsyncResult result)
         {
-            using var socket = Connect();
-            var request = new NtpRequest();
-            socket.Send(request.ToPacket().ToBytes());
+            try
+            {
+                socket.EndSendTo(result);
+            }
+            catch (Exception ex)
+            {
+                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                throw new NtpException($"Something happened while trying to end the send operation : {message}");
+            }
+
+            var state_sync = (StateSync)result.AsyncState;
+
             var buffer = new byte[160];
-            var length = socket.Receive(buffer);
-            return Update(request, buffer, length);
-        }
+            state_sync.Buffer = buffer;
 
-        private async Task<Socket> ConnectAsync(CancellationToken _token)
-        {
-            var socket = CreateSocket();
             try
             {
-                await socket.ConnectAsync(endpoint, _token).ConfigureAwait(false);
+                socket.BeginReceiveFrom(state_sync.Buffer, 0, 160, SocketFlags.None, ref endpoint, HandleReceiveFrom, state_sync);
             }
-            catch
+            catch (Exception ex)
             {
-                socket.Dispose();
-                throw;
+                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                throw new NtpException($"Something happened while trying to begin the receive operation : {message}");
             }
-            return socket;
         }
 
-        public async Task<NtpClock> QueryAsync(CancellationToken _token = default)
+        private void HandleReceiveFrom(IAsyncResult result)
         {
-            using var socket = await ConnectAsync(_token).ConfigureAwait(false);
-            var request = new NtpRequest();
-            var flags = SocketFlags.None;
-            var rcvbuff = new byte[160];
+            int received = 0;
+            try
+            {
+                received = socket.EndReceiveFrom(result, ref endpoint);
+            }
+            catch (Exception ex)
+            {
+                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                throw new NtpException($"Something happened while trying to end the receive operation : {message}");
+            }
 
-            await socket.SendAsync(request.ToPacket().ToBytes(), flags, _token).ConfigureAwait(false);
-            int length = await socket.ReceiveAsync(rcvbuff, flags, _token).ConfigureAwait(false);
+            if (received != 160)
+            {
+                throw new NtpException($"Received buffer size doesn't match the required size : {received}");
+            }
 
-            return Update(request, rcvbuff, length);
+            var state_sync = (StateSync)result.AsyncState;
+
+            var ntp_clock = Update(state_sync.Request, state_sync.Buffer, received);
+
+            OnNtpReceived?.Invoke(ntp_clock);
         }
     }
 }
