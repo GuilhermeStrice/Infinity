@@ -30,6 +30,10 @@ namespace Infinity.Core.Threading
             }
         }
 
+        /// <summary>
+        /// For each worker thread there's a callback thread
+        /// </summary>
+        /// <param name="_thread_count"></param>
         public static void AdjustThreadCount(int _thread_count)
         {
             lock (threads_list_lock)
@@ -92,7 +96,7 @@ namespace Infinity.Core.Threading
             {
                 lock (job_queue)
                 {
-                    if (job_queue.TryTake(out var work_item, 100))
+                    if (job_queue.TryTake(out var work_item, 50))
                     {
                         work_item.MethodToExecute.Invoke(work_item.State);
                         if (work_item.Callback != null)
@@ -110,7 +114,7 @@ namespace Infinity.Core.Threading
             {
                 lock (callback_queue)
                 {
-                    if (callback_queue.TryTake(out var work_item, 100))
+                    if (callback_queue.TryTake(out var work_item, 50))
                     {
                         work_item.Callback.Invoke(work_item.State);
                     }
