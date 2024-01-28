@@ -17,14 +17,14 @@ namespace Infinity.Core.Tests
         [Fact]
         public void ThreadPoolTest()
         {
-            OptimizedThreadPool.AdjustThreadCount(1);
+            OptimizedThreadPool.AdjustThreadCount(2);
 
-            for (int i = 0; i < 10; i++)
+            Parallel.For(0, 100, (a) =>
             {
                 OptimizedThreadPool.EnqueueJob(Testt, null, null);
-            }
+            });
 
-            mutex.WaitOne(5000);
+            mutex.WaitOne(2500);
 
             output.WriteLine(count.ToString());
         }
@@ -32,11 +32,27 @@ namespace Infinity.Core.Tests
         public void Testt(object? state)
         {
             count++;
-            
-            if (count == 9)
+
+            if (count == 100)
             {
                 mutex.Set();
             }
+        }
+
+        [Fact]
+        public void NetThreadPoolTest()
+        {
+            ThreadPool.SetMinThreads(2, 2);
+            ThreadPool.SetMaxThreads(2, 2);
+
+            Parallel.For(0, 100, (a) =>
+            {
+                OptimizedThreadPool.EnqueueJob(Testt, null, null);
+            });
+
+            mutex.WaitOne(2500);
+
+            output.WriteLine(count.ToString());
         }
     }
 }

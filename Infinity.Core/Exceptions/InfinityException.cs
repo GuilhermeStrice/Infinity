@@ -1,4 +1,4 @@
-﻿namespace Infinity.Core
+﻿namespace Infinity.Core.Exceptions
 {
     public class InfinityException : Exception
     {
