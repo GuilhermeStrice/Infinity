@@ -1,4 +1,5 @@
 ﻿using Infinity.Core;
+using Infinity.Core.Exceptions;
 
 namespace Infinity.Udp
 {

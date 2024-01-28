@@ -1,4 +1,5 @@
 using Infinity.Core;
+using Infinity.Core.Exceptions;
 
 namespace Infinity.Udp
 {
@@ -48,7 +49,6 @@ namespace Infinity.Udp
                             Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
                             ReliableSend(buffer);
-
                             break;
                         }
                     case UdpSendOption.ReliableOrdered:

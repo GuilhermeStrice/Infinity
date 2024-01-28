@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Reflection.PortableExecutable;
+using Infinity.Core.Exceptions;
 
 namespace Infinity.Core.Tcp
 {

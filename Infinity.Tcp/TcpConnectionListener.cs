@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Infinity.Core.Exceptions;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Infinity.Core.Tcp
