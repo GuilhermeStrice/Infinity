@@ -1,11 +1,10 @@
 ﻿using Infinity.Core;
-using Infinity.Core.Tests;
-using Infinity.Udp;
+using Infinity.Tests.Core;
 using System.Collections.Concurrent;
 using System.Net;
 using Xunit.Abstractions;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     public class StressTests
     {
@@ -47,9 +46,9 @@ namespace Infinity.Tests.Udp
                     {
                         con_count = 0;
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                        output.WriteLine(Infinity.Udp.Pools.PacketPool.InUse.ToString());
-                        output.WriteLine(Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                        output.WriteLine(Infinity.Udp.Pools.FragmentPool.InUse.ToString());
+                        output.WriteLine(Pools.PacketPool.InUse.ToString());
+                        output.WriteLine(Pools.FragmentedMessagePool.InUse.ToString());
+                        output.WriteLine(Pools.FragmentPool.InUse.ToString());
                         output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
                     }
                 };

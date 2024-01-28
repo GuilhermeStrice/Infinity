@@ -1,4 +1,6 @@
-﻿namespace Infinity.Core.Tests
+﻿using Infinity.Core;
+
+namespace Infinity.Tests.Core
 {
     public class TestLogger : ILogger
     {

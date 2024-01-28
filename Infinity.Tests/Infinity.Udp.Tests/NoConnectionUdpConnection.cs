@@ -1,7 +1,6 @@
-﻿using Infinity.Udp;
-using Infinity.Core;
+﻿using Infinity.Core;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     internal class NoConnectionUdpConnection : UdpConnection
     {

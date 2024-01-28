@@ -1,8 +1,7 @@
 ﻿using Infinity.Core;
-using Infinity.Udp;
 using Xunit.Abstractions;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     public static class UdpTestHelper
     {

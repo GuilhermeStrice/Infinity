@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Xunit.Abstractions;
 
-namespace Infinity.Tests.Performance
+namespace Infinity.Performance.Tests
 {
     public class DictionaryTest
     {

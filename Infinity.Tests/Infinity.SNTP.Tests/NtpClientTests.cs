@@ -1,10 +1,8 @@
-using Infinity.SNTP;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Sockets;
 using Xunit.Abstractions;
 
-namespace Infinity.Tests.SNTP
+namespace Infinity.SNTP.Tests
 {
     public class NtpClientTests
     {

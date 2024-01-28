@@ -1,11 +1,10 @@
-﻿using Infinity.Udp;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using System.Net;
 using Xunit.Abstractions;
 using Infinity.Core;
-using Infinity.Core.Tests;
+using Infinity.Tests.Core;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     public class UdpConnectionTests
     {

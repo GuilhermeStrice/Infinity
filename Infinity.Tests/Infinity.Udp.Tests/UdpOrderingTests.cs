@@ -1,9 +1,8 @@
-﻿using Infinity.Core.Tests;
-using Infinity.Udp;
+﻿using Infinity.Tests.Core;
 using System.Net;
 using Xunit.Abstractions;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     public class UdpOrderingTests
     {

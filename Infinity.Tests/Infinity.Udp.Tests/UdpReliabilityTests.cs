@@ -1,8 +1,7 @@
 ﻿using Infinity.Core;
-using Infinity.Core.Tests;
-using Infinity.Udp;
+using Infinity.Tests.Core;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     public class UdpReliabilityTests
     {

@@ -3,7 +3,7 @@ using System.Net;
 using System.Text;
 using Xunit.Abstractions;
 
-namespace Infinity.Tests.Udp
+namespace Infinity.Udp.Tests
 {
     public class BroadcastTests
     {

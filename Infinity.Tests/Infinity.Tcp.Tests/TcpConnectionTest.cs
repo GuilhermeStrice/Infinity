@@ -1,4 +1,4 @@
-﻿namespace Infinity.Core.Tests
+﻿namespace Infinity.Tcp.Tests
 {
     public class TcpConnectionTests
     {

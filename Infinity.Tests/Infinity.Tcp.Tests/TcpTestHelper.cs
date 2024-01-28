@@ -1,8 +1,9 @@
-﻿using Infinity.Core.Tcp;
+﻿using Infinity.Core;
+using Infinity.Core.Tcp;
 using Infinity.Udp;
 using Xunit.Abstractions;
 
-namespace Infinity.Core.Tests
+namespace Infinity.Tcp.Tests
 {
     public class TcpTestHelper
     {

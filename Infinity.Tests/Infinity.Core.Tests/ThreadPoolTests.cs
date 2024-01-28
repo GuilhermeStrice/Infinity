@@ -1,3 +1,5 @@
+using Infinity.Core.Threading;
+
 namespace Infinity.Core.Tests
 {
     public class ThreadPoolTests
@@ -5,7 +7,12 @@ namespace Infinity.Core.Tests
         [Fact]
         public void ThreadPoolTest()
         {
-            
+            //DedicatedThreadPool.EnqueueJob(Testt, null);
+        }
+
+        public void Testt(int? state)
+        {
+
         }
     }
 }
