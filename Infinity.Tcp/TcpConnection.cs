@@ -7,7 +7,7 @@ namespace Infinity.Core.Tcp
     internal delegate void OnHandshake(MessageReader handshakeData, TcpConnection connection);
 
     /// <summary>
-    ///     Represents a connection that uses the TCP protocol.
+    ///     Represents a connection that uses the TCP protocol
     /// </summary>
     public class TcpConnection : NetworkConnection
     {
