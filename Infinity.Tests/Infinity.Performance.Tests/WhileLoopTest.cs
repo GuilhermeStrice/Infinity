@@ -33,22 +33,5 @@ namespace Infinity.Performance.Tests
                 j += i / 5;
             }
         }
-
-        // doesn't use cpu
-        [Fact]
-        public void ThreadWorkerTest()
-        {
-            WorkerThread workerThread = new WorkerThread();
-
-            ManualResetEvent mutex = new ManualResetEvent(false);
-
-            mutex.WaitOne(10000);
-
-            //workerThread.Work(DoSomething);
-
-            mutex.WaitOne(10000);
-            
-            //workerThread.Work(DoSomething);
-        }
     }
 }
