@@ -125,6 +125,7 @@ namespace Infinity.Udp.Tests
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
                 connection.EnableFragmentation = true;
+                connection.MaximumAllowedMTU = 1500;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
