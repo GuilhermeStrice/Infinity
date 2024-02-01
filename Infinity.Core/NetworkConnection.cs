@@ -91,10 +91,7 @@ namespace Infinity.Core
             }
             else
             {
-                if (_reader != null)
-                {
-                    _reader.Recycle();
-                }
+                _reader?.Recycle();
             }
         }
 
@@ -110,10 +107,7 @@ namespace Infinity.Core
             }
             else
             {
-                if (_reader != null)
-                {
-                    _reader.Recycle();
-                }
+                _reader?.Recycle();
             }
         }
 
