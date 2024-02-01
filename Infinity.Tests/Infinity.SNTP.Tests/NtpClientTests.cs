@@ -63,5 +63,32 @@ namespace Infinity.SNTP.Tests
 
             mutex.WaitOne();
         }
+
+        [Fact]
+        public void QueryStressed()
+        {
+            int count = 0;
+
+            var mutex = new ManualResetEvent(false);
+            var client = new NtpClient();
+
+            client.OnNtpReceived += (NtpClock obj) =>
+            {
+                count++;
+                if (count == 50)
+                    mutex.Set();
+                else
+                    client.Query();
+            };
+
+            client.OnInternalError += (Exception ex) =>
+            {
+                output.WriteLine(ex.Message);
+            };
+
+            client.Query();
+
+            mutex.WaitOne();
+        }
     }
 }
