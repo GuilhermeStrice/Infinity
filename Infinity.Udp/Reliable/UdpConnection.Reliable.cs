@@ -19,8 +19,6 @@ namespace Infinity.Udp
 
         public int DisconnectTimeoutMs { get; set; } = 5000;
 
-        public float AveragePingMs { get; private set; } = -1;
-
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>

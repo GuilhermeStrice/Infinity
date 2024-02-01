@@ -22,7 +22,7 @@ namespace Infinity.Core
 
         public Func<InfinityInternalErrors, MessageWriter>? OnInternalDisconnect;
 
-        public virtual float AveragePingMs { get; }
+        public virtual float AveragePingMs { get; protected set; }
 
         public ConnectionState State
         {

@@ -210,5 +210,30 @@
         {
             Interlocked.Increment(ref dropped_packets);
         }
+
+        public void Reset()
+        {
+            Interlocked.Exchange(ref bytes_sent, 0);
+            Interlocked.Exchange(ref bytes_received, 0);
+            Interlocked.Exchange(ref packets_sent, 0);
+            Interlocked.Exchange(ref reliable_packets_acknowledged, 0);
+            Interlocked.Exchange(ref acknowledgements_sent, 0);
+            Interlocked.Exchange(ref acknowledgements_received, 0);
+            Interlocked.Exchange(ref pings_sent, 0);
+            Interlocked.Exchange(ref pings_received, 0);
+            Interlocked.Exchange(ref messages_resent, 0);
+            Interlocked.Exchange(ref unreliable_messages_sent, 0);
+            Interlocked.Exchange(ref unreliable_messages_received, 0);
+            Interlocked.Exchange(ref reliable_messages_sent, 0);
+            Interlocked.Exchange(ref reliable_messages_received, 0);
+            Interlocked.Exchange(ref fragmented_messages_sent, 0);
+            Interlocked.Exchange(ref fragmented_messages_received, 0);
+            Interlocked.Exchange(ref mtu_test_messages_sent, 0);
+            Interlocked.Exchange(ref mtu_test_messages_received, 0);
+            Interlocked.Exchange(ref handshake_messages_sent, 0);
+            Interlocked.Exchange(ref handshake_messages_received, 0);
+            Interlocked.Exchange(ref garbage_received, 0);
+            Interlocked.Exchange(ref dropped_packets, 0);
+        }
     }
 }
