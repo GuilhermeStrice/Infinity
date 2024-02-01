@@ -22,11 +22,6 @@ namespace Infinity.Udp
             VerifyMTU();
         }
 
-        ~UdpServerConnection()
-        {
-            Dispose(false);
-        }
-
         public override void WriteBytesToConnection(byte[] _bytes, int _length)
         {
             Statistics.LogPacketSent(_length);
@@ -70,14 +65,11 @@ namespace Infinity.Udp
         {
             Listener.RemoveConnection(EndPoint);
 
-            if (_disposing)
-            {
-                var writer = UdpMessageFactory.BuildDisconnectMessage();
+            var writer = UdpMessageFactory.BuildDisconnectMessage();
 
-                SendDisconnect(writer);
+            SendDisconnect(writer);
 
-                writer.Recycle();
-            }
+            writer.Recycle();
 
             base.Dispose(_disposing);
         }
