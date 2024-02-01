@@ -2,7 +2,7 @@
 
 namespace Infinity.Udp
 {
-    partial class UdpConnection
+    public partial class UdpConnection
     {
         public int ResendTimeoutMs
         {

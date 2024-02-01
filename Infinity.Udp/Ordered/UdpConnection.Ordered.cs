@@ -2,7 +2,7 @@
 
 namespace Infinity.Udp
 {
-    partial class UdpConnection
+    public partial class UdpConnection
     {
         private MessageReader[] ordered_messages_received = new MessageReader[byte.MaxValue];
 
