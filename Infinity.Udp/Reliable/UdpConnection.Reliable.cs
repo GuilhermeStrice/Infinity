@@ -4,62 +4,22 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        public int ResendTimeoutMs
-        {
-            get
-            {
-                return resend_timeout_ms;
-            }
-            set
-            {
-                Interlocked.Exchange(ref resend_timeout_ms, value);
-            }
-        }
+        public int ResendTimeoutMs { get; set; } = 0;
 
         /// <summary>
         /// Max number of times to resend. 0 == no limit
         /// </summary>
-        public int ResendLimit
-        {
-            get
-            {
-                return resend_limit;
-            }
-            set
-            {
-                Interlocked.Exchange(ref resend_limit, value);
-            }
-        }
+        public int ResendLimit { get; set; } = 0;
 
         /// <summary>
         /// A compounding multiplier to back off resend timeout.
         /// Applied to ping before first timeout when ResendTimeout == 0.
         /// </summary>
-        public float ResendPingMultiplier
-        {
-            get
-            {
-                return resend_ping_multiplier;
-            }
-            set
-            {
-                Interlocked.Exchange(ref resend_ping_multiplier, value);
-            }
-        }
+        public float ResendPingMultiplier { get; set; } = 2;
 
-        public int DisconnectTimeoutMs
-        {
-            get
-            {
-                return disconnect_timeout_ms;
-            }
-            set
-            {
-                Interlocked.Exchange(ref disconnect_timeout_ms, value);
-            }
-        }
+        public int DisconnectTimeoutMs { get; set; } = 5000;
 
-        private int last_id_allocated = -1;
+        public float AveragePingMs { get; private set; } = -1;
 
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
@@ -71,13 +31,7 @@ namespace Infinity.Udp
         /// </summary>
         internal bool[] reliable_data_packets_missing = new bool[ushort.MaxValue + 1];
 
-        private object ping_lock = new object();
-        private float ping_ms = 500;
-
-        private volatile int resend_timeout_ms = 0;
-        private volatile int resend_limit = 0;
-        private volatile float resend_ping_multiplier = 2;
-        private volatile int disconnect_timeout_ms = 5000;
+        private int last_id_allocated = -1;
 
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
@@ -257,20 +211,14 @@ namespace Infinity.Udp
                 packet.AckCallback?.Invoke();
                 packet.Recycle();
 
-                lock (ping_lock)
-                {
-                    ping_ms = ping_ms * .7f + rt * .3f;
-                }
+                AveragePingMs = AveragePingMs * .7f + rt * .3f;
             }
             else if (active_pings.TryFindPing(_id, out DateTime pingPkt))
             {
                 Statistics.LogReliablePacketAcknowledged();
                 float rt = (float)(DateTime.UtcNow - pingPkt).TotalMilliseconds;
 
-                lock (ping_lock)
-                {
-                    ping_ms = ping_ms * .7f + rt * .3f;
-                }
+                AveragePingMs = AveragePingMs * .7f + rt * .3f;
             }
         }
 
@@ -317,7 +265,7 @@ namespace Infinity.Udp
 
         protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
         {
-            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
+            ushort id = (ushort)++last_id_allocated;
 
             _buffer[_offset] = (byte)(id >> 8);
             _buffer[_offset + 1] = (byte)id;
@@ -325,7 +273,7 @@ namespace Infinity.Udp
             int resend_delay_ms = ResendTimeoutMs;
             if (resend_delay_ms <= 0)
             {
-                resend_delay_ms = Math.Clamp((int)(ping_ms * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
+                resend_delay_ms = Math.Clamp((int)(AveragePingMs * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
             }
 
             Packet packet = Pools.PacketPool.GetObject();

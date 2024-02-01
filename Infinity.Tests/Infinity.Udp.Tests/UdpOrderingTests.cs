@@ -37,7 +37,7 @@ namespace Infinity.Udp.Tests
 
                         lastId = (lastId + 1) % 255;
 
-                        Interlocked.Increment(ref count);
+                        count++;
 
                         data.Message.Recycle();
 

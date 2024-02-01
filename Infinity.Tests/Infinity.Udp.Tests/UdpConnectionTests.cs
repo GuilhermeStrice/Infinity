@@ -280,7 +280,7 @@ namespace Infinity.Udp.Tests
                 listener.NewConnection += (obj) =>
                 {
                     obj.HandshakeData.Recycle();
-                    Interlocked.Increment(ref connects);
+                    connects++;
                 };
 
                 listener.Start();

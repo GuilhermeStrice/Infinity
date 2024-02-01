@@ -286,7 +286,7 @@ namespace Infinity.Udp
 #if DEBUG
             if (TestDropRate > 0)
             {
-                if (Interlocked.Increment(ref drop_counter) % TestDropRate == 0)
+                if (++drop_counter % TestDropRate == 0)
                 {
                     return;
                 }

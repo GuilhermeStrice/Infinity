@@ -66,7 +66,7 @@ namespace Infinity.Udp.Tests
                 {
                     e.Connection.DataReceived += data =>
                     {
-                        Interlocked.Increment(ref count);
+                        count++;
 
                         var messageReader = data.Message;
                         Assert.NotNull(data.Message);

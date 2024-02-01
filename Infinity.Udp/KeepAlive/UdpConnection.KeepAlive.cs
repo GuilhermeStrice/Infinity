@@ -68,7 +68,7 @@ namespace Infinity.Udp
         // pings should cause a disconnect.
         private void SendPing()
         {
-            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
+            ushort id = (ushort)++last_id_allocated;
 
             byte[] bytes = new byte[3];
             bytes[0] = UdpSendOptionInternal.Ping;

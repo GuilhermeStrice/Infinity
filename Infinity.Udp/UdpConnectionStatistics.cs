@@ -31,9 +31,9 @@
 
         private ulong dropped_packets = 0;
 
-        public ulong BytesSent => Interlocked.Increment(ref bytes_sent);
-        public ulong BytesReceived => Interlocked.Increment(ref bytes_received);
-        public ulong PacksSent => Interlocked.Increment(ref packets_sent);
+        public ulong BytesSent => Interlocked.Read(ref bytes_sent);
+        public ulong BytesReceived => Interlocked.Read(ref bytes_received);
+        public ulong PacksSent => Interlocked.Read(ref packets_sent);
         public ulong ReliablePacketsAcknowledged => Interlocked.Read(ref reliable_packets_acknowledged);
         public ulong AcknowledgementsSent => Interlocked.Read(ref acknowledgements_sent);
         public ulong AcknowledgementsReceived => Interlocked.Read(ref acknowledgements_received);
