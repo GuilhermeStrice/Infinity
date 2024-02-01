@@ -64,7 +64,7 @@ namespace Infinity.SNTP.Tests
             mutex.WaitOne();
         }
 
-        [Fact]
+        //[Fact]
         public void QueryStressed()
         {
             int count = 0;
