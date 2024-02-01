@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Infinity.Core\Infinity.Core.csproj" />
     <ProjectReference Include="..\..\Infinity.SNTP\Infinity.SNTP.csproj" />
   </ItemGroup>
 

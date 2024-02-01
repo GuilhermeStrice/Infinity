@@ -1,6 +1,8 @@
-﻿namespace Infinity.SNTP
+﻿using Infinity.Core;
+
+namespace Infinity.SNTP
 {
-    public class NtpResponse
+    public class NtpResponse : IRecyclable
     {
         public NtpLeapIndicator LeapIndicator { get; set; } = NtpLeapIndicator.NoWarning;
 
@@ -54,21 +56,22 @@
                 throw new NtpException("Destination timestamp must have UTC timezone.");
             }
 
-            return new NtpResponse
-            {
-                LeapIndicator = _packet.LeapIndicator,
-                Stratum = _packet.Stratum,
-                PollInterval = _packet.PollInterval,
-                Precision = _packet.Precision,
-                RootDelay = _packet.RootDelay,
-                RootDispersion = _packet.RootDispersion,
-                ReferenceId = _packet.ReferenceId,
-                ReferenceTimestamp = _packet.ReferenceTimestamp,
-                OriginTimestamp = _packet.OriginTimestamp.Value,
-                ReceiveTimestamp = _packet.ReceiveTimestamp.Value,
-                TransmitTimestamp = _packet.TransmitTimestamp.Value,
-                DestinationTimestamp = _time,
-            };
+            var ntp_response = Get();
+
+            ntp_response.LeapIndicator = _packet.LeapIndicator;
+            ntp_response.Stratum = _packet.Stratum;
+            ntp_response.PollInterval = _packet.PollInterval;
+            ntp_response.Precision = _packet.Precision;
+            ntp_response.RootDelay = _packet.RootDelay;
+            ntp_response.RootDispersion = _packet.RootDispersion;
+            ntp_response.ReferenceId = _packet.ReferenceId;
+            ntp_response.ReferenceTimestamp = _packet.ReferenceTimestamp;
+            ntp_response.OriginTimestamp = _packet.OriginTimestamp.Value;
+            ntp_response.ReceiveTimestamp = _packet.ReceiveTimestamp.Value;
+            ntp_response.TransmitTimestamp = _packet.TransmitTimestamp.Value;
+            ntp_response.DestinationTimestamp = _time;
+
+            return ntp_response
         }
 
         public static NtpResponse FromPacket(NtpPacket _packet)
@@ -112,6 +115,31 @@
         {
             // Tolerate rounding errors on both sides.
             return Math.Abs((OriginTimestamp - _request.TransmitTimestamp).TotalSeconds) < 0.000_001;
+        }
+
+        public static NtpResponse Get()
+        {
+            var ntp_response = Pools.NtpResponsePool.GetObject();
+
+            ntp_response.LeapIndicator = NtpLeapIndicator.NoWarning;
+            ntp_response.Stratum = 0;
+            ntp_response.PollInterval = 0;
+            ntp_response.Precision = 0;
+            ntp_response.RootDelay = TimeSpan.Zero;
+            ntp_response.RootDispersion = TimeSpan.Zero;
+            ntp_response.ReferenceId = 0;
+            ntp_response.ReferenceTimestamp = null;
+            ntp_response.OriginTimestamp = default;
+            ntp_response.ReceiveTimestamp = default;
+            ntp_response.TransmitTimestamp = default;
+            ntp_response.DestinationTimestamp = default;
+
+            return ntp_response;
+        }
+
+        public void Recycle()
+        {
+            Pools.NtpResponsePool.PutObject(this);
         }
     }
 }

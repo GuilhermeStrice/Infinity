@@ -53,7 +53,7 @@ namespace Infinity.SNTP
 
         public void Query()
         {
-            var request = new NtpRequest();
+            var request = NtpRequest.Get();
             var buffer = request.ToPacket().ToBytes();
 
             var state_sync = new StateSync();
@@ -103,6 +103,8 @@ namespace Infinity.SNTP
 
         private void HandleReceiveFrom(IAsyncResult result)
         {
+            var state_sync = (StateSync)result.AsyncState;
+
             int received = 0;
             try
             {
@@ -110,16 +112,17 @@ namespace Infinity.SNTP
             }
             catch (Exception ex)
             {
+                state_sync.Request.Recycle();
+
                 var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
                 OnInternalError?.Invoke(new NtpException($"Something happened while trying to end the receive operation : {message}"));
                 return;
             }
 
-            var state_sync = (StateSync)result.AsyncState;
-
             try
             {
                 var ntp_clock = Update(state_sync.Request, state_sync.Buffer, received);
+                state_sync.Request.Recycle();
 
                 if (ntp_clock != null)
                 {
@@ -127,16 +130,20 @@ namespace Infinity.SNTP
                 }
                 else
                 {
+                    state_sync.Request.Recycle();
+
                     OnInternalError?.Invoke(new NtpException($"Error : {received}"));
                 }
             }
             catch
             {
+                state_sync.Request.Recycle();
+
                 OnInternalError?.Invoke(new NtpException($"Error : {received}"));
             }
         }
 
-        private NtpClock Update(NtpRequest _request, byte[] _buffer, int _length)
+        private NtpClock? Update(NtpRequest _request, byte[] _buffer, int _length)
         {
             var response = NtpResponse.FromPacket(NtpPacket.FromBytes(_buffer, _length));
             if (!response.Matches(_request))

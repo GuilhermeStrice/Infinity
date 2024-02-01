@@ -1,6 +1,8 @@
-﻿namespace Infinity.SNTP
+﻿using Infinity.Core;
+
+namespace Infinity.SNTP
 {
-    public class NtpRequest
+    public class NtpRequest : IRecyclable
     {
         public DateTime TransmitTimestamp { get; set; } = DateTime.UtcNow;
 
@@ -16,7 +18,11 @@
                 throw new NtpException("Request packet must have transit timestamp.");
             }
 
-            return new NtpRequest { TransmitTimestamp = _packet.TransmitTimestamp.Value };
+            var ntp_request = Get();
+
+            ntp_request.TransmitTimestamp = _packet.TransmitTimestamp.Value;
+
+            return ntp_request;
         }
 
         public NtpPacket ToPacket()
@@ -35,6 +41,19 @@
         public void Validate()
         {
             ToPacket();
+        }
+
+        public static NtpRequest Get()
+        {
+            var ntp_request = Pools.NtpRequestPool.GetObject();
+            ntp_request.TransmitTimestamp = DateTime.UtcNow;
+
+            return ntp_request;
+        }
+
+        public void Recycle()
+        {
+            Pools.NtpRequestPool.PutObject(this);
         }
     }
 }
