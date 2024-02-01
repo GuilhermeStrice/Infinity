@@ -35,11 +35,6 @@ namespace Infinity.Udp
             
             var fragments_count = (int)((_buffer.Length / (double)fragment_size) + 1);
 
-            if (fragments_count >= byte.MaxValue)
-            {
-                throw new InfinityException("Too many fragments");
-            }
-
             for (ushort i = 0; i < fragments_count; i++)
             {
                 var data_length = Math.Min(fragment_size, _buffer.Length - fragment_size * i);
