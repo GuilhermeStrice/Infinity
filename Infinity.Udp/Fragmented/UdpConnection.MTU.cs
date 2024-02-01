@@ -28,29 +28,34 @@ namespace Infinity.Udp
 
         private int last_mtu = 0;
 
-        private Action on_mtu_expansion_finished;
-
-        internal void DiscoverMTU(Action _on_mtu_expansion_finished)
+        internal void VerifyMTU()
         {
-            on_mtu_expansion_finished = _on_mtu_expansion_finished;
+            if (MTU == -1)
+            {
+                MTU = MinimumMTU;
+            }
 
             if (ForcedMTU != null)
             {
                 MTU = ForcedMTU.Value;
             }
+        }
 
-            if (MTU == -1)
-            {
-                MTU = MinimumMTU;
-            }
+        internal void DiscoverMTU()
+        {
+            VerifyMTU();
 
             ExpandMTU();
         }
 
         internal void FinishMTUExpansion()
         {
+            if (MTU == MaximumAllowedMTU)
+            {
+                return;
+            }
+
             MTU = last_mtu;
-            on_mtu_expansion_finished.Invoke();
         }
 
         private void ExpandMTU()

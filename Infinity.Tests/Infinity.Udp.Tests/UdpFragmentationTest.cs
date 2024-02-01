@@ -117,10 +117,10 @@ namespace Infinity.Udp.Tests
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
 
+                mutex.WaitOne(5000);
+
                 Assert.True(connection.MTU > 0);
                 output.WriteLine(connection.MTU.ToString());
-
-                mutex.WaitOne(1000);
             }
         }
     }

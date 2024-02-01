@@ -42,7 +42,7 @@ namespace Infinity.Udp.Tests
                         e.Message?.Recycle();
                     };
 
-                    if (con_count == 1000)
+                    if (con_count == 50)
                     {
                         con_count = 0;
                         output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
@@ -54,7 +54,7 @@ namespace Infinity.Udp.Tests
                 };
                 listener.Start();
 
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < 50; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEvent obj)

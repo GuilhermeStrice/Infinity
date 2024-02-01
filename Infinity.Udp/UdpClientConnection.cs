@@ -24,6 +24,8 @@ namespace Infinity.Udp
 
             reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
             InitializeKeepAliveTimer();
+
+            VerifyMTU();
         }
 
         protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
@@ -152,11 +154,10 @@ namespace Infinity.Udp
             // When acknowledged set the state to connected
             SendHandshake(_writer, () =>
             {
-                DiscoverMTU(() =>
-                {
-                    State = ConnectionState.Connected;
-                    ResetKeepAliveTimer();
-                });
+                DiscoverMTU();
+
+                State = ConnectionState.Connected;
+                ResetKeepAliveTimer();
             });
         }
 

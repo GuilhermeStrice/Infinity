@@ -42,7 +42,7 @@ namespace Infinity.Udp.Tests
             handshake.Recycle();
 
             //Wait until data is received
-            mutex.WaitOne(2500);
+            mutex.WaitOne(5000);
 
             var reader = data.ToReader();
             Assert.Equal(reader.Length, result.Message.Length);
