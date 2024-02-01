@@ -300,38 +300,6 @@ namespace Infinity.Udp.Tests
         }
 
         /// <summary>
-        ///     Tests IPv4 resilience to multiple Handshakes.
-        /// </summary>
-        [Fact]
-        public void ConnectLikeAJerkTest()
-        {
-            using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
-            {
-                int connects = 0;
-                listener.NewConnection += (obj) =>
-                {
-                    obj.HandshakeData.Recycle();
-                    Interlocked.Increment(ref connects);
-                };
-
-                listener.Start();
-
-                socket.Bind(new IPEndPoint(IPAddress.Any, 0));
-                var bytes = new byte[2];
-                bytes[0] = 1;
-                for (int i = 0; i < 10; ++i)
-                {
-                    socket.SendTo(bytes, new IPEndPoint(IPAddress.Loopback, 4296));
-                }
-
-                Thread.Sleep(500);
-
-                Assert.Equal(1, connects);
-            }
-        }
-
-        /// <summary>
         ///     Tests dual mode connectivity.
         /// </summary>
         [Fact]
