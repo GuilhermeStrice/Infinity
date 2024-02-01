@@ -54,7 +54,10 @@ namespace Infinity.SNTP
         public void Query()
         {
             var request = NtpRequest.Get();
-            var buffer = request.ToPacket().ToBytes();
+            var ntp_packet = request.ToPacket();
+            var buffer = ntp_packet.ToBytes();
+
+            ntp_packet.Recycle();
 
             var state_sync = new StateSync();
             state_sync.Request = request;
@@ -145,7 +148,11 @@ namespace Infinity.SNTP
 
         private NtpClock? Update(NtpRequest _request, byte[] _buffer, int _length)
         {
-            var response = NtpResponse.FromPacket(NtpPacket.FromBytes(_buffer, _length));
+            var ntp_packet = NtpPacket.FromBytes(_buffer, _length);
+            var response = NtpResponse.FromPacket(ntp_packet);
+            
+            ntp_packet.Recycle();
+            
             if (!response.Matches(_request))
             {
                 OnInternalError?.Invoke(new NtpException("Response does not match the request."));

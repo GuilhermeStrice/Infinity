@@ -40,7 +40,8 @@ namespace Infinity.SNTP
 
         public void Validate()
         {
-            ToPacket();
+            var tmp = ToPacket();
+            tmp.Recycle();
         }
 
         public static NtpRequest Get()

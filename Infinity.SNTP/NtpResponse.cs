@@ -71,7 +71,7 @@ namespace Infinity.SNTP
             ntp_response.TransmitTimestamp = _packet.TransmitTimestamp.Value;
             ntp_response.DestinationTimestamp = _time;
 
-            return ntp_response
+            return ntp_response;
         }
 
         public static NtpResponse FromPacket(NtpPacket _packet)
@@ -81,30 +81,30 @@ namespace Infinity.SNTP
 
         public NtpPacket ToPacket()
         {
-            var packet = new NtpPacket
-            {
-                Mode = NtpMode.Server,
-                LeapIndicator = LeapIndicator,
-                Stratum = Stratum,
-                PollInterval = PollInterval,
-                Precision = Precision,
-                RootDelay = RootDelay,
-                RootDispersion = RootDispersion,
-                ReferenceId = ReferenceId,
-                ReferenceTimestamp = ReferenceTimestamp,
-                OriginTimestamp = OriginTimestamp,
-                ReceiveTimestamp = ReceiveTimestamp,
-                TransmitTimestamp = TransmitTimestamp,
-            };
+            var ntp_packet = NtpPacket.Get();
 
-            packet.Validate();
+            ntp_packet.Mode = NtpMode.Server;
+            ntp_packet.LeapIndicator = LeapIndicator;
+            ntp_packet.Stratum = Stratum;
+            ntp_packet.PollInterval = PollInterval;
+            ntp_packet.Precision = Precision;
+            ntp_packet.RootDelay = RootDelay;
+            ntp_packet.RootDispersion = RootDispersion;
+            ntp_packet.ReferenceId = ReferenceId;
+            ntp_packet.ReferenceTimestamp = ReferenceTimestamp;
+            ntp_packet.OriginTimestamp = OriginTimestamp;
+            ntp_packet.ReceiveTimestamp = ReceiveTimestamp;
+            ntp_packet.TransmitTimestamp = TransmitTimestamp;
 
-            return packet;
+            ntp_packet.Validate();
+
+            return ntp_packet;
         }
 
         public void Validate()
         {
-            ToPacket();
+            var tmp = ToPacket();
+            tmp.Recycle();
             if (DestinationTimestamp.Kind != DateTimeKind.Utc)
             {
                 throw new NtpException("Destination timestamp must have UTC timezone.");

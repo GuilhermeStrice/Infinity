@@ -39,14 +39,15 @@ namespace Infinity.SNTP
             EndPoint remote_end_point = new IPEndPoint(endPoint.Address, endPoint.Port);
             int received = socket.EndReceiveFrom(result, ref remote_end_point);
 
-            var arrival = DateTime.Now.ToUniversalTime();
+            var arrival = DateTime.UtcNow;
             var reference = arrival.AddSeconds(-60);
 
             StartListeningForData();
 
             NtpPacket request = NtpPacket.FromBytes(buffer, received);
 
-            NtpPacket response = new NtpPacket();
+            NtpPacket response = NtpPacket.Get();
+
             response.LeapIndicator = NtpLeapIndicator.NoWarning;
             response.VersionNumber = 4;
             response.Mode = NtpMode.Server;
@@ -63,6 +64,9 @@ namespace Infinity.SNTP
             var res_bytes = response.ToBytes();
 
             socket.BeginSendTo(res_bytes, 0, res_bytes.Length, SocketFlags.None, remote_end_point, HandleSendTo, null);
+
+            response.Recycle();
+            request.Recycle();
         }
 
         private void HandleSendTo(IAsyncResult result)

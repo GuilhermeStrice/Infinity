@@ -1,8 +1,9 @@
-﻿using System.Buffers.Binary;
+﻿using Infinity.Core;
+using System.Buffers.Binary;
 
 namespace Infinity.SNTP
 {
-    public class NtpPacket
+    public class NtpPacket : IRecyclable
     {
         public NtpLeapIndicator LeapIndicator { get; set; } = NtpLeapIndicator.NoWarning;
 
@@ -101,24 +102,24 @@ namespace Infinity.SNTP
             }
 
             var bytes = buffer.AsSpan();
-            var packet = new NtpPacket
-            {
-                LeapIndicator = (NtpLeapIndicator)((buffer[0] & 0xC0) >> 6),
-                VersionNumber = (buffer[0] & 0x38) >> 3,
-                Mode = (NtpMode)(buffer[0] & 0x07),
-                Stratum = buffer[1],
-                PollInterval = buffer[2],
-                Precision = (sbyte)buffer[3],
-                RootDelay = NtpTimeSpan.Read(bytes[4..]),
-                RootDispersion = NtpTimeSpan.Read(bytes[8..]),
-                ReferenceId = BinaryPrimitives.ReadUInt32BigEndian(bytes[12..]),
-                ReferenceTimestamp = NtpDateTime.Read(bytes[16..]),
-                OriginTimestamp = NtpDateTime.Read(bytes[24..]),
-                ReceiveTimestamp = NtpDateTime.Read(bytes[32..]),
-                TransmitTimestamp = NtpDateTime.Read(bytes[40..]),
-            };
-            packet.Validate();
-            return packet;
+            var ntp_packet = Get();
+
+            ntp_packet.LeapIndicator = (NtpLeapIndicator)((buffer[0] & 0xC0) >> 6);
+            ntp_packet.VersionNumber = (buffer[0] & 0x38) >> 3;
+            ntp_packet.Mode = (NtpMode)(buffer[0] & 0x07);
+            ntp_packet.Stratum = buffer[1];
+            ntp_packet.PollInterval = buffer[2];
+            ntp_packet.Precision = (sbyte)buffer[3];
+            ntp_packet.RootDelay = NtpTimeSpan.Read(bytes[4..]);
+            ntp_packet.RootDispersion = NtpTimeSpan.Read(bytes[8..]);
+            ntp_packet.ReferenceId = BinaryPrimitives.ReadUInt32BigEndian(bytes[12..]);
+            ntp_packet.ReferenceTimestamp = NtpDateTime.Read(bytes[16..]);
+            ntp_packet.OriginTimestamp = NtpDateTime.Read(bytes[24..]);
+            ntp_packet.ReceiveTimestamp = NtpDateTime.Read(bytes[32..]);
+            ntp_packet.TransmitTimestamp = NtpDateTime.Read(bytes[40..]);
+
+            ntp_packet.Validate();
+            return ntp_packet;
         }
 
         public byte[] ToBytes()
@@ -138,6 +139,32 @@ namespace Infinity.SNTP
             NtpDateTime.Write(bytes[32..], ReceiveTimestamp);
             NtpDateTime.Write(bytes[40..], TransmitTimestamp);
             return buffer;
+        }
+
+        public static NtpPacket Get()
+        {
+            var ntp_packet = Pools.NtpPacketPool.GetObject();
+
+            ntp_packet.LeapIndicator = NtpLeapIndicator.NoWarning;
+            ntp_packet.VersionNumber = 4;
+            ntp_packet.Mode = NtpMode.Client;
+            ntp_packet.Stratum = 0;
+            ntp_packet.PollInterval = 0;
+            ntp_packet.Precision = 0;
+            ntp_packet.RootDelay = TimeSpan.Zero;
+            ntp_packet.RootDispersion = TimeSpan.Zero;
+            ntp_packet.ReferenceId = 0;
+            ntp_packet.ReferenceTimestamp = null;
+            ntp_packet.OriginTimestamp = null;
+            ntp_packet.ReceiveTimestamp = null;
+            ntp_packet.TransmitTimestamp = DateTime.UtcNow;
+
+            return ntp_packet;
+        }
+
+        public void Recycle()
+        {
+            Pools.NtpPacketPool.PutObject(this);
         }
     }
 }

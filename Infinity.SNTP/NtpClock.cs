@@ -9,6 +9,11 @@
             response = _response;
         }
 
+        ~NtpClock()
+        {
+            response.Recycle();
+        }
+
         public bool Synchronized
         {
             get
