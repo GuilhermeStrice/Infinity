@@ -37,11 +37,6 @@ namespace Infinity.Udp
             reliable_packet_timer = new Timer(ManageReliablePackets, null, 100, Timeout.Infinite);
         }
 
-        ~UdpConnectionListener()
-        {
-            Dispose(false);
-        }
-
         protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
         {
             Socket socket;
@@ -91,6 +86,11 @@ namespace Infinity.Udp
             }
 
             return socket;
+        }
+
+        ~UdpConnectionListener()
+        {
+            Dispose(false);
         }
 
         public override void Start()
@@ -252,16 +252,10 @@ namespace Infinity.Udp
 
         protected override void Dispose(bool _disposing)
         {
-            if (_disposing)
+            all_connections.ForEach(entry =>
             {
-                all_connections.ForEach(entry =>
-                {
-                    entry.Value.DisposeInternal();
-                });
-            }
-
-            // wait for all messages to be sent
-            Thread.Sleep(1000);
+                entry.Value.Dispose();
+            });
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }

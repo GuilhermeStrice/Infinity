@@ -48,11 +48,6 @@ namespace Infinity.Udp
             throw new InvalidOperationException("Cannot manually connect a UdpServerConnection, did you mean to use UdpClientConnection?");
         }
 
-        internal void DisposeInternal()
-        {
-            Dispose(true);
-        }
-
         protected override void SetState(ConnectionState _state)
         {
         }
