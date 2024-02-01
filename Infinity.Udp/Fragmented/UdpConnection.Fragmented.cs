@@ -50,7 +50,11 @@ namespace Infinity.Udp
                 AttachReliableID(fragment_buffer, 1);
 
                 fragment_buffer[3] = (byte)fragments_count;
-                fragment_buffer[4] = fragment_id;
+                fragment_buffer[4] = (byte)(fragments_count >> 8);
+                fragment_buffer[5] = (byte)(fragments_count >> 16);
+                fragment_buffer[6] = (byte)(fragments_count >> 24);
+
+                fragment_buffer[7] = fragment_id;
 
                 Buffer.BlockCopy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
                 
@@ -69,7 +73,7 @@ namespace Infinity.Udp
             {
                 _reader.Position += 3;
 
-                var fragments_count = _reader.ReadByte();
+                var fragments_count = _reader.ReadInt32();
                 var fragmented_message_id = _reader.ReadByte();
 
                 FragmentedMessage fragmented_message;
