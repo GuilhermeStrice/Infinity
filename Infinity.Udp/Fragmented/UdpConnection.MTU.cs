@@ -19,7 +19,7 @@ namespace Infinity.Udp
             }
         }
 
-        public int MaximumAllowedMTU { get; set; } = 2500;
+        public int MaximumAllowedMTU { get; set; } = 2500; // In localhost scenarios MTU can be huge, takes too long to find out. Lets just have a ceiling
 
         public int MTU { get; private set; } = -1; // we are guaranteed to be able to send at least the minimum IP frame size
 
