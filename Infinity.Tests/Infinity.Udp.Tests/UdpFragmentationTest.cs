@@ -103,5 +103,25 @@ namespace Infinity.Udp.Tests
                 mutex.WaitOne();
             }
         }
+
+        [Fact]
+        public void MTUTest()
+        {
+            ManualResetEvent mutex = new ManualResetEvent(false);
+
+            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
+            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
+            {
+                listener.Start();
+
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
+
+                Assert.True(connection.MTU > 0);
+                output.WriteLine(connection.MTU.ToString());
+
+                mutex.WaitOne(1000);
+            }
+        }
     }
 }

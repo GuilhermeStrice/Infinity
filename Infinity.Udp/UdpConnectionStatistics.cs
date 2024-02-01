@@ -21,8 +21,8 @@
         private ulong fragmented_messages_sent = 0;
         private ulong fragmented_messages_received = 0;
 
-        private ulong mtu_messages_sent = 0;
-        private ulong mtu_messages_received = 0;
+        private ulong mtu_test_messages_sent = 0;
+        private ulong mtu_test_messages_received = 0;
 
         private ulong handshake_messages_sent = 0;
         private ulong handshake_messages_received = 0;
@@ -50,8 +50,8 @@
         public ulong FragmentedMessagesSent => Interlocked.Read(ref fragmented_messages_sent);
         public ulong FragmentedMessagesReceived => Interlocked.Read(ref fragmented_messages_received);
 
-        public ulong MTUMessagesSent => Interlocked.Read(ref mtu_messages_sent);
-        public ulong MTUMessagesReceived => Interlocked.Read(ref mtu_messages_received);
+        public ulong MTUTestMessagesSent => Interlocked.Read(ref mtu_test_messages_sent);
+        public ulong MTUTestMessagesReceived => Interlocked.Read(ref mtu_test_messages_received);
 
         public ulong HandshakeMessagesSent => Interlocked.Read(ref handshake_messages_sent);
         public ulong HandshakeMessagesReceived => Interlocked.Read(ref handshake_messages_received);
@@ -176,15 +176,15 @@
             Interlocked.Add(ref bytes_received, (ulong)_length);
         }
 
-        public void LogMTUMessageSent(int _length)
+        public void LogMTUTestMessageSent(int _length)
         {
-            Interlocked.Increment(ref mtu_messages_sent);
+            Interlocked.Increment(ref mtu_test_messages_sent);
             Interlocked.Add(ref bytes_sent, (ulong)_length);
         }
 
-        public void LogMTUMessageReceived(int _length)
+        public void LogMTUTestMessageReceived(int _length)
         {
-            Interlocked.Increment(ref mtu_messages_received);
+            Interlocked.Increment(ref mtu_test_messages_received);
             Interlocked.Add(ref bytes_received, (ulong)_length);
         }
 

@@ -4,22 +4,6 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        public static int FragmentSizeIPv4
-        {
-            get
-            {
-                return 576 - fragment_header_size - 68; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791 - 60 is maximum possible ipv4 header size + 8 bytes for udp header
-            }
-        }
-
-        public static int FragmentSizeIPv6
-        {
-            get
-            {
-                return 1280 - fragment_header_size - 40; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
-            }
-        }
-
         private volatile int last_fragment_id_allocated = 0;
 
         private FragmentedMessage[] fragmented_messages_received = new FragmentedMessage[byte.MaxValue];
@@ -28,9 +12,9 @@ namespace Infinity.Udp
 
         private void FragmentedSend(byte[] _buffer)
         {
-            var fragment_size = BufferSize - fragment_header_size;
+            var fragment_size = MTU - fragment_header_size;
 
-            var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
+            var fragment_id = (byte)++last_fragment_id_allocated;
             
             var fragments_count = (int)((_buffer.Length / (double)fragment_size) + 1);
 
@@ -57,7 +41,7 @@ namespace Infinity.Udp
 
             if (last_fragment_id_allocated >= byte.MaxValue)
             {
-                Interlocked.Exchange(ref last_fragment_id_allocated, 0);
+                last_fragment_id_allocated = 0;
             }
         }
 

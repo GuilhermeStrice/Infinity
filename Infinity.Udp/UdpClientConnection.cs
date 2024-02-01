@@ -152,8 +152,11 @@ namespace Infinity.Udp
             // When acknowledged set the state to connected
             SendHandshake(_writer, () =>
             {
-                State = ConnectionState.Connected;
-                ResetKeepAliveTimer();
+                DiscoverMTU(() =>
+                {
+                    State = ConnectionState.Connected;
+                    ResetKeepAliveTimer();
+                });
             });
         }
 
@@ -170,6 +173,10 @@ namespace Infinity.Udp
                     HandleSendTo,
                     null);
             }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
+            {
+                FinishMTUExpansion();
+            }
             catch
             {
                 // this is handles by keep alive and packet resends
@@ -182,6 +189,10 @@ namespace Infinity.Udp
             {
                 int sent = socket.EndSendTo(_result);
                 Statistics.LogPacketSent(sent);
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
+            {
+                FinishMTUExpansion();
             }
             catch
             {

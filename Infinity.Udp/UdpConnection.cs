@@ -5,16 +5,6 @@ namespace Infinity.Udp
 {
     public abstract partial class UdpConnection : NetworkConnection
     {
-        public int BufferSize
-        {
-            get
-            {
-                return IPMode == IPMode.IPv4 ? FragmentSizeIPv4 : FragmentSizeIPv6;
-            }
-        }
-
-        public override float AveragePingMs => ping_ms;
-
         public UdpConnectionStatistics Statistics { get; private set; } = new UdpConnectionStatistics();
 
         protected readonly ILogger logger;
@@ -40,7 +30,7 @@ namespace Infinity.Udp
                 {
                     case UdpSendOption.Reliable:
                         {
-                            if (_writer.Length > BufferSize)
+                            if (_writer.Length > MTU)
                             {
                                 throw new InfinityException("not allowed");
                             }
@@ -53,7 +43,7 @@ namespace Infinity.Udp
                         }
                     case UdpSendOption.ReliableOrdered:
                         {
-                            if (_writer.Length > BufferSize)
+                            if (_writer.Length > MTU)
                             {
                                 throw new InfinityException("not allowed");
                             }
@@ -68,7 +58,7 @@ namespace Infinity.Udp
                         }
                     case UdpSendOption.Fragmented:
                         {
-                            if (_writer.Length <= BufferSize)
+                            if (_writer.Length <= MTU)
                             {
                                 throw new InfinityException("Message not big enough");
                             }
@@ -170,6 +160,14 @@ namespace Infinity.Udp
                     {
                         FragmentMessageReceive(_reader);
                         Statistics.LogFragmentedMessageReceived(_bytes_received);
+                        break;
+                    }
+
+                case UdpSendOptionInternal.TestMTU:
+                    {
+                        MTUTestReceive(_reader);
+                        Statistics.LogMTUTestMessageReceived(_bytes_received);
+                        _reader.Recycle();
                         break;
                     }
 
