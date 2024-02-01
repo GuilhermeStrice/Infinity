@@ -154,7 +154,10 @@ namespace Infinity.Udp
             // When acknowledged set the state to connected
             SendHandshake(_writer, () =>
             {
-                DiscoverMTU();
+                if (EnableFragmentation)
+                {
+                    DiscoverMTU();
+                }
 
                 State = ConnectionState.Connected;
                 ResetKeepAliveTimer();

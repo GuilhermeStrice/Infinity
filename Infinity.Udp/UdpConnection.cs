@@ -58,16 +58,23 @@ namespace Infinity.Udp
                         }
                     case UdpSendOption.Fragmented:
                         {
-                            if (_writer.Length <= MTU)
+                            if (EnableFragmentation)
                             {
-                                throw new InfinityException("Message not big enough");
+                                if (_writer.Length <= MTU)
+                                {
+                                    throw new InfinityException("Message not big enough");
+                                }
+
+                                byte[] buffer = new byte[_writer.Length - 3];
+                                Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
+
+                                FragmentedSend(buffer);
+                                Statistics.LogFragmentedMessageSent(buffer.Length);
                             }
-
-                            byte[] buffer = new byte[_writer.Length - 3];
-                            Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
-
-                            FragmentedSend(buffer);
-                            Statistics.LogFragmentedMessageSent(buffer.Length);
+                            else
+                            {
+                                throw new InfinityException("Enable fragmentation to use fragmented messages");
+                            }
 
                             break;
                         }

@@ -24,6 +24,7 @@ namespace Infinity.Udp.Tests
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
+                connection.EnableFragmentation = true;
                 listener.NewConnection += e =>
                 {
                     e.Connection.DataReceived += data =>
@@ -69,6 +70,7 @@ namespace Infinity.Udp.Tests
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
+                connection.EnableFragmentation = true;
                 listener.NewConnection += e =>
                 {
                     e.Connection.DataReceived += data =>
@@ -122,6 +124,7 @@ namespace Infinity.Udp.Tests
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
+                connection.EnableFragmentation = true;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();

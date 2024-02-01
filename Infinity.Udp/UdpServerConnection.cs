@@ -10,6 +10,8 @@ namespace Infinity.Udp
         public UdpServerConnection(UdpConnectionListener _listener, IPEndPoint _endpoint, IPMode _ip_mode, ILogger _logger)
             : base(_logger)
         {
+            EnableFragmentation = true;
+
             Listener = _listener;
             EndPoint = _endpoint;
             IPMode = _ip_mode;

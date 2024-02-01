@@ -235,7 +235,6 @@ namespace Infinity.Udp.Tests
                 Assert.Fail("Timeout waiting for client disconnect packet");
             }
 
-            connection.Dispose();
             listener.Dispose();
         }
 

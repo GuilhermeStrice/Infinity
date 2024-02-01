@@ -29,18 +29,18 @@ namespace Infinity.Udp.Tests
 
                 listener.NewConnection += delegate (NewConnectionEvent obj)
                 {
-                    obj.HandshakeData.Recycle();
-
                     con_count++;
                     obj.Connection.DataReceived += delegate (DataReceivedEvent data_args)
                     {
-                        data_args.Message.Recycle();
+                        data_args.Recycle();
                     };
 
                     obj.Connection.Disconnected += delegate (DisconnectedEvent e)
                     {
-                        e.Message?.Recycle();
+                        e.Recycle();
                     };
+
+                    obj.Recycle();
 
                     if (con_count == 50)
                     {
@@ -59,11 +59,11 @@ namespace Infinity.Udp.Tests
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     connection.DataReceived += delegate (DataReceivedEvent obj)
                     {
-                        obj.Message.Recycle();
+                        obj.Recycle();
                     };
                     connection.Disconnected += delegate (DisconnectedEvent obj)
                     {
-                        obj.Message?.Recycle();
+                        obj.Recycle();
                     };
                     connection.KeepAliveInterval = 1000;
 
@@ -93,13 +93,13 @@ namespace Infinity.Udp.Tests
                 {
                     evt.Connection.Disconnected += delegate (DisconnectedEvent obj)
                     {
-                        obj.Message.Recycle();
+                        obj.Recycle();
                     };
 
                     evt.Connection.DataReceived += delegate (DataReceivedEvent obj)
                     {
                         count++;
-                        obj.Message.Recycle();
+                        obj.Recycle();
                         if (count == 100)
                         {
                             output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
@@ -114,7 +114,7 @@ namespace Infinity.Udp.Tests
 
                 connection.Disconnected += delegate (DisconnectedEvent obj)
                 {
-                    obj.Message.Recycle();
+                    obj.Recycle();
                 };
 
                 listener.Start();

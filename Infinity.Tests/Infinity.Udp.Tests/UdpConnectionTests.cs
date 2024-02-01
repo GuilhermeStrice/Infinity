@@ -52,9 +52,9 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                Thread.Sleep(1500); // Gotta wait for the server to set up the events.
+                Thread.Sleep(200); // Gotta wait for the server to set up the events.
                 listener.Dispose();
-                Thread.Sleep(1500);
+                Thread.Sleep(200);
 
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
