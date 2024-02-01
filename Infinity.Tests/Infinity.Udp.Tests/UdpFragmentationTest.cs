@@ -28,6 +28,9 @@ namespace Infinity.Udp.Tests
                 {
                     e.Connection.DataReceived += data =>
                     {
+                        var copy = new byte[10000];
+                        Array.Copy(data.Message.Buffer, 3, copy, 0, 10000);
+                        Assert.Equal(copy, _testData);
                         mutex.Set();
                     };
                 };
