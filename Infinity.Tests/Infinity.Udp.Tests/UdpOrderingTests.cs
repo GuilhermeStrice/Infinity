@@ -26,7 +26,6 @@ namespace Infinity.Udp.Tests
             {
                 listener.NewConnection += e =>
                 {
-                    e.HandshakeData.Recycle();
                     e.Connection.DataReceived += data =>
                     {
                         data.Message.Position = 3;
@@ -39,11 +38,13 @@ namespace Infinity.Udp.Tests
 
                         count++;
 
-                        data.Message.Recycle();
+                        data.Recycle();
 
                         if (count == 100)
                             mutex.Set();
                     };
+
+                    e.Recycle();
                 };
 
                 listener.Start();

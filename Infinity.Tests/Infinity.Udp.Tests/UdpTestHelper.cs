@@ -21,8 +21,8 @@ namespace Infinity.Udp.Tests
             //Setup listener
             listener.NewConnection += delegate (NewConnectionEvent ncArgs)
             {
-                ncArgs.HandshakeData.Recycle();
                 ncArgs.Connection.Send(data);
+                ncArgs.Recycle();
             };
 
             listener.Start();
@@ -75,7 +75,6 @@ namespace Infinity.Udp.Tests
             DataReceivedEvent? result = null;
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.HandshakeData.Recycle();
                 args.Connection.DataReceived += delegate (DataReceivedEvent innerArgs)
                 {
                     _output.WriteLine("Data was received correctly.");
@@ -84,6 +83,8 @@ namespace Infinity.Udp.Tests
 
                     mutex2.Set();
                 };
+
+                args.Recycle();
 
                 mutex.Set();
             };
@@ -129,15 +130,15 @@ namespace Infinity.Udp.Tests
 
             connection.Disconnected += delegate (DisconnectedEvent args)
             {
-                args.Message.Recycle();
+                args.Recycle();
                 mutex.Set();
             };
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.HandshakeData.Recycle();
                 var writer = UdpMessageFactory.BuildDisconnectMessage();
                 args.Connection.Disconnect("Testing", writer);
+                args.Recycle();
             };
 
             listener.Start();
@@ -164,12 +165,13 @@ namespace Infinity.Udp.Tests
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.HandshakeData.Recycle();
                 args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
-                    args2.Message.Recycle();
+                    args2.Recycle();
                     mutex2.Set();
                 };
+
+                args.Recycle();
 
                 mutex.Set();
             };
@@ -204,12 +206,13 @@ namespace Infinity.Udp.Tests
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.HandshakeData.Recycle();
                 args.Connection.Disconnected += delegate (DisconnectedEvent args2)
                 {
-                    args2.Message.Recycle();
+                    args2.Recycle();
                     mutex2.Set();
                 };
+
+                args.Recycle();
 
                 mutex.Set();
             };

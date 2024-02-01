@@ -3,9 +3,8 @@
     public class DisconnectedEvent : IRecyclable
     {
         public NetworkConnection Connection;
-        public string Reason;
-
         public MessageReader Message;
+        public string Reason;
 
         internal DisconnectedEvent()
         {
@@ -16,11 +15,23 @@
             return Pools.DisconnectedEventPool.GetObject();
         }
 
-        public void Recycle()
+        public void Recycle(bool _recycle_message)
         {
-            Message?.Recycle();
+            if (_recycle_message)
+            {
+                Message?.Recycle();
+            }
+
+            Connection = null;
+            Message = null;
+            Reason = string.Empty;
 
             Pools.DisconnectedEventPool.PutObject(this);
+        }
+
+        public void Recycle()
+        {
+            Recycle(true);
         }
     }
 }

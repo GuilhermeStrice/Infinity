@@ -32,18 +32,25 @@ namespace Infinity.Udp.Tests
                         Array.Copy(data.Message.Buffer, 3, copy, 0, 10000);
                         Assert.Equal(copy, _testData);
                         mutex.Set();
+
+                        data.Recycle();
                     };
+
+                    e.Recycle();
                 };
 
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
+                handshake.Recycle();
 
                 var writer = UdpMessageFactory.BuildFragmentedMessage();
                 writer.Write(_testData);
 
                 connection.Send(writer);
+
+                writer.Recycle();
 
                 mutex.WaitOne(1000);
             }
@@ -75,17 +82,20 @@ namespace Infinity.Udp.Tests
                         Array.Copy(messageReader.Buffer, 3, received, 0, messageReader.Length - 3);
 
                         Assert.Equal(_testData, received);
-                        data.Message.Recycle();
+                        data.Recycle();
 
                         if (count == 100)
                             mutex.Set();
                     };
+
+                    e.Recycle();
                 };
 
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
+                handshake.Recycle();
 
                 Thread.Sleep(100);
 
@@ -116,6 +126,7 @@ namespace Infinity.Udp.Tests
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
+                handshake.Recycle();
 
                 mutex.WaitOne(5000);
 

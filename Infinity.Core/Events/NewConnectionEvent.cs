@@ -14,11 +14,22 @@
             return Pools.NewConnectionPool.GetObject();
         }
 
-        public void Recycle()
+        public void Recycle(bool _recycle_message)
         {
-            HandshakeData.Recycle();
+            if (_recycle_message)
+            {
+                HandshakeData.Recycle();
+            }
+
+            Connection = null;
+            HandshakeData = null;
 
             Pools.NewConnectionPool.PutObject(this);
+        }
+
+        public void Recycle()
+        {
+            Recycle(true);
         }
     }
 }
