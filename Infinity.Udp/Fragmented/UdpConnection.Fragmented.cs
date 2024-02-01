@@ -1,5 +1,4 @@
 ﻿using Infinity.Core;
-using Infinity.Core.Exceptions;
 
 namespace Infinity.Udp
 {
@@ -25,7 +24,7 @@ namespace Infinity.Udp
 
         private FragmentedMessage[] fragmented_messages_received = new FragmentedMessage[byte.MaxValue];
 
-        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(byte) + sizeof(byte);
+        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte);
 
         private void FragmentedSend(byte[] _buffer)
         {
