@@ -28,6 +28,11 @@ namespace Infinity.Udp
             VerifyMTU();
         }
 
+        ~UdpClientConnection()
+        {
+            Dispose(false);
+        }
+
         protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
         {
             Socket socket;
@@ -77,11 +82,6 @@ namespace Infinity.Udp
             }
 
             return socket;
-        }
-
-        ~UdpClientConnection()
-        {
-            Dispose(false);
         }
 
         public override void WriteBytesToConnection(byte[] _bytes, int _length)
