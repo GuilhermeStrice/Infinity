@@ -59,15 +59,12 @@ namespace Infinity.Udp
         {
             Send(_writer);
 
-            lock (this)
+            if (State == ConnectionState.NotConnected)
             {
-                if (State == ConnectionState.NotConnected)
-                {
-                    return false;
-                }
-
-                State = ConnectionState.NotConnected;
+                return false;
             }
+
+            State = ConnectionState.NotConnected;
 
             return true;
         }
