@@ -84,8 +84,10 @@ namespace Infinity.Core
         {
             if (DataReceived != null)
             {
-                var args = new DataReceivedEvent(this, _reader);
-                DataReceived.Invoke(args);
+                var @event = DataReceivedEvent.Get();
+                @event.Connection = this;
+                @event.Message = _reader;
+                DataReceived.Invoke(@event);
             }
             else
             {
@@ -100,8 +102,11 @@ namespace Infinity.Core
         {
             if (Disconnected != null)
             {
-                var args = new DisconnectedEvent(this, _reason, _reader);
-                Disconnected.Invoke(args);
+                var @event = DisconnectedEvent.Get();
+                @event.Connection = this;
+                @event.Reason = _reason;
+                @event.Message = _reader;
+                Disconnected.Invoke(@event);
             }
             else
             {

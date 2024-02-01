@@ -1,14 +1,24 @@
 ﻿namespace Infinity.Core
 {
-    public class DataReceivedEvent
+    public class DataReceivedEvent : IRecyclable
     {
         public NetworkConnection Connection;
         public MessageReader Message;
 
-        public DataReceivedEvent(NetworkConnection _connection, MessageReader _reader)
+        internal DataReceivedEvent()
         {
-            Connection = _connection;
-            Message = _reader;
+        }
+
+        public static DataReceivedEvent Get()
+        {
+            return Pools.DataReceivedEventPool.GetObject();
+        }
+
+        public void Recycle()
+        {
+            Message.Recycle();
+
+            Pools.DataReceivedEventPool.PutObject(this);
         }
     }
 }

@@ -29,8 +29,10 @@ namespace Infinity.Core
 
         protected void InvokeNewConnection(NetworkConnection _connection, MessageReader _reader)
         {
-            var args = new NewConnectionEvent(_connection, _reader);
-            NewConnection?.Invoke(args);
+            var @event = NewConnectionEvent.Get();
+            @event.Connection = _connection;
+            @event.HandshakeData = _reader;
+            NewConnection?.Invoke(@event);
         }
 
         protected void InvokeInternalError(InfinityInternalErrors _error)

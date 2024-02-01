@@ -1,14 +1,24 @@
 ﻿namespace Infinity.Core
 {
-    public class NewConnectionEvent
+    public class NewConnectionEvent : IRecyclable
     {
         public NetworkConnection Connection;
         public MessageReader HandshakeData;
 
-        public NewConnectionEvent(NetworkConnection _connection, MessageReader _reader)
+        internal NewConnectionEvent()
         {
-            Connection = _connection;
-            HandshakeData = _reader;
+        }
+
+        public static NewConnectionEvent Get()
+        {
+            return Pools.NewConnectionPool.GetObject();
+        }
+
+        public void Recycle()
+        {
+            HandshakeData.Recycle();
+
+            Pools.NewConnectionPool.PutObject(this);
         }
     }
 }

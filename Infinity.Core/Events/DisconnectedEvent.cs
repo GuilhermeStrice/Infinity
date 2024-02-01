@@ -1,17 +1,26 @@
 ﻿namespace Infinity.Core
 {
-    public class DisconnectedEvent
+    public class DisconnectedEvent : IRecyclable
     {
         public NetworkConnection Connection;
         public string Reason;
 
         public MessageReader Message;
 
-        public DisconnectedEvent(NetworkConnection _connection, string _reason, MessageReader _reader)
+        internal DisconnectedEvent()
         {
-            Connection = _connection;
-            Reason = _reason;
-            Message = _reader;
+        }
+
+        public static DisconnectedEvent Get()
+        {
+            return Pools.DisconnectedEventPool.GetObject();
+        }
+
+        public void Recycle()
+        {
+            Message?.Recycle();
+
+            Pools.DisconnectedEventPool.PutObject(this);
         }
     }
 }
