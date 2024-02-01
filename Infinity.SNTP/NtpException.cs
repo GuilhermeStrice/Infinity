@@ -2,7 +2,7 @@
 {
     public class NtpException : Exception
     {
-        internal NtpException(string message) : base(message)
+        public NtpException(string message) : base(message)
         {
         }
     }

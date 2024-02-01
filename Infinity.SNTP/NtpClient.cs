@@ -21,11 +21,12 @@ namespace Infinity.SNTP
 
         public TimeSpan Timeout { get; init; }
 
-        public event Action<NtpClock> OnNtpReceived;
-        public event Action<Exception> OnInternalError;
+        public event Action<NtpClock>? OnNtpReceived;
+        public event Action<Exception>? OnInternalError;
+
+        public NtpClock Last { get; private set; }
 
         private EndPoint endpoint;
-
         private Socket socket;
 
         public NtpClient(EndPoint _endpoint, TimeSpan? _timeout = default)
@@ -48,28 +49,6 @@ namespace Infinity.SNTP
         public NtpClient(string _host, TimeSpan? _timeout = null, int? _port = null) :
             this(new DnsEndPoint(_host, _port ?? DefaultPort), _timeout)
         {
-        }
-
-        private volatile NtpClock last;
-
-        public NtpClock Last => last;
-
-        private NtpClock Update(NtpRequest _request, byte[] _buffer, int _length)
-        {
-            var response = NtpResponse.FromPacket(NtpPacket.FromBytes(_buffer, _length));
-            if (!response.Matches(_request))
-            {
-                OnInternalError?.Invoke(new NtpException("Response does not match the request."));
-                return null;
-            }
-
-            var time = new NtpClock(response);
-            if (time.Synchronized || last == null)
-            {
-                last = time;
-            }
-
-            return time;
         }
 
         public void Query()
@@ -155,6 +134,24 @@ namespace Infinity.SNTP
             {
                 OnInternalError?.Invoke(new NtpException($"Error : {received}"));
             }
+        }
+
+        private NtpClock Update(NtpRequest _request, byte[] _buffer, int _length)
+        {
+            var response = NtpResponse.FromPacket(NtpPacket.FromBytes(_buffer, _length));
+            if (!response.Matches(_request))
+            {
+                OnInternalError?.Invoke(new NtpException("Response does not match the request."));
+                return null;
+            }
+
+            var time = new NtpClock(response);
+            if (time.Synchronized || Last == null)
+            {
+                Last = time;
+            }
+
+            return time;
         }
     }
 }
