@@ -9,6 +9,8 @@ namespace Infinity.Udp
 
         private Timer? keep_alive_timer;
 
+        private ManualResetEvent keep_alive_wait_mutex = new ManualResetEvent(true);
+
         protected void InitializeKeepAliveTimer()
         {
             keep_alive_timer = new Timer(
@@ -21,6 +23,9 @@ namespace Infinity.Udp
 
         private void HandleKeepAlive(object? _state)
         {
+            keep_alive_wait_mutex.WaitOne(100); // 100ms should be enough
+            keep_alive_wait_mutex.Set();
+
             if (State != ConnectionState.Connected)
             {
                 return;
@@ -65,14 +70,11 @@ namespace Infinity.Udp
             Statistics.LogPingSent(3);
         }
 
-        protected void ResetKeepAliveTimer()
+        private void KeepAliveTimerWait()
         {
-            try
-            {
-                keep_alive_timer?.Change(configuration.KeepAliveInterval, configuration.KeepAliveInterval);
-            }
-            catch { }
+            keep_alive_wait_mutex.Reset();
         }
+
         private void DisposeKeepAliveTimer()
         {
             keep_alive_timer?.Dispose();

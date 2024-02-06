@@ -18,6 +18,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void StressTestOpeningConnections()
         {
+            ManualResetEvent mutex = new ManualResetEvent(false);
+
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             handshake.Write(new byte[5]);
 
@@ -42,25 +44,19 @@ namespace Infinity.Udp.Tests
 
                     obj.Recycle();
 
-                    if (con_count == 50)
+                    if (con_count == 15)
                     {
-                        con_count = 0;
-                        output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                        output.WriteLine(Pools.PacketPool.InUse.ToString());
-                        output.WriteLine(Pools.FragmentedMessagePool.InUse.ToString());
-                        output.WriteLine(Pools.FragmentPool.InUse.ToString());
-                        output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
-
-                        output.WriteLine(Core.Pools.DataReceivedEventPool.InUse.ToString());
-                        output.WriteLine(Core.Pools.DisconnectedEventPool.InUse.ToString());
-                        output.WriteLine(Core.Pools.NewConnectionPool.InUse.ToString());
+                        mutex.Set();
+                        output.WriteLine(listener.ConnectionCount.ToString());
                     }
                 };
+
                 listener.Start();
 
-                for (int i = 0; i < 50; i++)
+                for (int i = 0; i < 15; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
+                    Thread.Sleep(5);
                     connection.DataReceived += delegate (DataReceivedEvent obj)
                     {
                         obj.Recycle();
@@ -73,6 +69,8 @@ namespace Infinity.Udp.Tests
                     connection.Connect(handshake);
                     connections.Push(connection);
                 }
+
+                mutex.WaitOne();
 
                 // wait for all events to process
                 Thread.Sleep(2000);

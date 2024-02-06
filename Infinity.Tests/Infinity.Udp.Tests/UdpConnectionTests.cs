@@ -413,14 +413,14 @@ namespace Infinity.Udp.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                listener.Configuration.KeepAliveInterval = 100;
+                listener.Configuration.KeepAliveInterval = 200;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
+                Thread.Sleep(1050);    //Enough time for ~5 keep alive packets
 
                 Assert.Equal(ConnectionState.Connected, connection.State);
             }

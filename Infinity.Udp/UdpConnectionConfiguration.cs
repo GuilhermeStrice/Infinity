@@ -17,7 +17,7 @@
 
         public int DisconnectTimeoutMs { get; set; } = 5000;
 
-        public int KeepAliveInterval { get; set; } = 100;
+        public int KeepAliveInterval { get; set; } = 1500;
 
         public int MissingPingsUntilDisconnect { get; set; } = 6;
 

@@ -19,10 +19,11 @@ namespace Infinity.Udp
 
         protected Action<MessageReader> OnReceiveConfiguration;
 
-        internal UdpConnectionConfiguration configuration = new UdpConnectionConfiguration(); // new - Only used for bootstrapping
+        internal UdpConnectionConfiguration configuration;
 
         public UdpConnection(ILogger _logger) : base()
         {
+            configuration = new UdpConnectionConfiguration();
             logger = _logger;
         }
 

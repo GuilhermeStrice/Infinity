@@ -23,7 +23,6 @@ namespace Infinity.Udp
             socket = CreateSocket(Protocol.Udp, _ip_mode);
 
             reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
-            InitializeKeepAliveTimer();
 
             OnReceiveConfiguration = (_reader) =>
             {
@@ -44,7 +43,7 @@ namespace Infinity.Udp
                 configuration.EnableFragmentation = _reader.ReadBoolean();
 
                 DiscoverMTU();
-                ResetKeepAliveTimer();
+                InitializeKeepAliveTimer();
                 State = ConnectionState.Connected;
             };
         }
@@ -174,7 +173,7 @@ namespace Infinity.Udp
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             SendHandshake(_writer, () =>
             {
-                VerifyMTU();
+                BootstrapMTU();
 
                 AskConfiguration();
             });

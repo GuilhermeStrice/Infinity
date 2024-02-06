@@ -46,7 +46,7 @@ namespace Infinity.Udp
         protected void ReliableSend(byte[] _buffer, Action _ack_callback = null)
         {
             //Inform keepalive not to send for a while
-            ResetKeepAliveTimer();
+            KeepAliveTimerWait();
 
             AttachReliableID(_buffer, 1, _ack_callback);
             WriteBytesToConnection(_buffer, _buffer.Length);

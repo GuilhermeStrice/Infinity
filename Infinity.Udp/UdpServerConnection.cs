@@ -18,7 +18,7 @@ namespace Infinity.Udp
             State = ConnectionState.Connected;
             InitializeKeepAliveTimer();
 
-            VerifyMTU();
+            BootstrapMTU();
         }
 
         public override void WriteBytesToConnection(byte[] _bytes, int _length)

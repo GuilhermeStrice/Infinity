@@ -31,7 +31,9 @@ namespace Infinity.Core
         public void PutObject(T item)
         {
             if (!pool.Contains(item))
+            {
                 pool.Push(item);
+            }
         }
     }
 }
