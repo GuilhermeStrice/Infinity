@@ -5,12 +5,21 @@ namespace Infinity.Udp
 {
     public abstract partial class UdpConnection : NetworkConnection
     {
-        public UdpConnectionConfiguration Configuration { get; set; } = new UdpConnectionConfiguration(); // Only used for bootstrapping
+        public UdpConnectionConfiguration Configuration 
+        { 
+            get
+            {
+                return configuration.Clone();
+            }
+        }
 
         public UdpConnectionStatistics Statistics { get; private set; } = new UdpConnectionStatistics();
 
         protected readonly ILogger logger;
+
         protected Action<MessageReader> OnReceiveConfiguration;
+
+        internal UdpConnectionConfiguration configuration = new UdpConnectionConfiguration(); // new - Only used for bootstrapping
 
         public UdpConnection(ILogger _logger) : base()
         {
@@ -62,7 +71,7 @@ namespace Infinity.Udp
                         }
                     case UdpSendOption.Fragmented:
                         {
-                            if (Configuration.Fragmentation.EnableFragmentation)
+                            if (configuration.EnableFragmentation)
                             {
                                 if (_writer.Length <= MTU)
                                 {
@@ -230,18 +239,18 @@ namespace Infinity.Udp
             writer.Position += 2;
 
             // Reliability
-            writer.Write(Configuration.Reliability.ResendTimeoutMs);
-            writer.Write(Configuration.Reliability.ResendLimit);
-            writer.Write(Configuration.Reliability.ResendPingMultiplier);
-            writer.Write(Configuration.Reliability.DisconnectTimeoutMs);
+            writer.Write(configuration.ResendTimeoutMs);
+            writer.Write(configuration.ResendLimit);
+            writer.Write(configuration.ResendPingMultiplier);
+            writer.Write(configuration.DisconnectTimeoutMs);
 
             // Keep Alive
-            writer.Write(Configuration.KeepAlive.KeepAliveInterval);
-            writer.Write(Configuration.KeepAlive.MissingPingsUntilDisconnect);
+            writer.Write(configuration.KeepAliveInterval);
+            writer.Write(configuration.MissingPingsUntilDisconnect);
 
             // Fragmentation
 
-            writer.Write(Configuration.Fragmentation.EnableFragmentation);
+            writer.Write(configuration.EnableFragmentation);
 
             byte[] buffer = new byte[writer.Length];
 

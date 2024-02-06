@@ -31,17 +31,17 @@ namespace Infinity.Udp
                 _reader.Position += 3;
 
                 // Reliability
-                Configuration.Reliability.ResendTimeoutMs = _reader.ReadInt32();
-                Configuration.Reliability.ResendLimit = _reader.ReadInt32();
-                Configuration.Reliability.ResendPingMultiplier = _reader.ReadSingle();
-                Configuration.Reliability.DisconnectTimeoutMs = _reader.ReadInt32();
+                configuration.ResendTimeoutMs = _reader.ReadInt32();
+                configuration.ResendLimit = _reader.ReadInt32();
+                configuration.ResendPingMultiplier = _reader.ReadSingle();
+                configuration.DisconnectTimeoutMs = _reader.ReadInt32();
                 
                 // Keep Alive
-                Configuration.KeepAlive.KeepAliveInterval = _reader.ReadInt32();
-                Configuration.KeepAlive.MissingPingsUntilDisconnect = _reader.ReadInt32();
+                configuration.KeepAliveInterval = _reader.ReadInt32();
+                configuration.MissingPingsUntilDisconnect = _reader.ReadInt32();
 
                 // Fragmentation
-                Configuration.Fragmentation.EnableFragmentation = _reader.ReadBoolean();
+                configuration.EnableFragmentation = _reader.ReadBoolean();
 
                 DiscoverMTU();
                 ResetKeepAliveTimer();

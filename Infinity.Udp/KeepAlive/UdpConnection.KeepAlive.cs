@@ -14,8 +14,8 @@ namespace Infinity.Udp
             keep_alive_timer = new Timer(
                 HandleKeepAlive,
                 null,
-                Configuration.KeepAlive.KeepAliveInterval,
-                Configuration.KeepAlive.KeepAliveInterval
+                configuration.KeepAliveInterval,
+                configuration.KeepAliveInterval
             );
         }
 
@@ -26,7 +26,7 @@ namespace Infinity.Udp
                 return;
             }
 
-            if (pings_since_ack >= Configuration.KeepAlive.MissingPingsUntilDisconnect)
+            if (pings_since_ack >= configuration.MissingPingsUntilDisconnect)
             {
                 DisposeKeepAliveTimer();
                 DisconnectInternal(InfinityInternalErrors.PingsWithoutResponse, 
@@ -69,7 +69,7 @@ namespace Infinity.Udp
         {
             try
             {
-                keep_alive_timer?.Change(Configuration.KeepAlive.KeepAliveInterval, Configuration.KeepAlive.KeepAliveInterval);
+                keep_alive_timer?.Change(configuration.KeepAliveInterval, configuration.KeepAliveInterval);
             }
             catch { }
         }

@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Udp
 {
-    public class ReliableConfiguration
+    public class UdpConnectionConfiguration
     {
         public int ResendTimeoutMs { get; set; } = 0;
 
@@ -16,5 +16,16 @@
         public float ResendPingMultiplier { get; set; } = 2;
 
         public int DisconnectTimeoutMs { get; set; } = 5000;
+
+        public int KeepAliveInterval { get; set; } = 100;
+
+        public int MissingPingsUntilDisconnect { get; set; } = 6;
+
+        public bool EnableFragmentation { get; set; } = false;
+
+        internal UdpConnectionConfiguration Clone()
+        {
+            return (UdpConnectionConfiguration)MemberwiseClone();
+        }
     }
 }

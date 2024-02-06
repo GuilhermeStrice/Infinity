@@ -253,10 +253,10 @@ namespace Infinity.Udp
             _buffer[_offset] = (byte)(id >> 8);
             _buffer[_offset + 1] = (byte)id;
 
-            int resend_delay_ms = Configuration.Reliability.ResendTimeoutMs;
+            int resend_delay_ms = configuration.ResendTimeoutMs;
             if (resend_delay_ms <= 0)
             {
-                resend_delay_ms = Math.Clamp((int)(AveragePingMs * Configuration.Reliability.ResendPingMultiplier), 
+                resend_delay_ms = Math.Clamp((int)(AveragePingMs * configuration.ResendPingMultiplier), 
                     Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
             }
 

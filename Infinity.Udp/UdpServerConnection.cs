@@ -10,7 +10,7 @@ namespace Infinity.Udp
         public UdpServerConnection(UdpConnectionListener _listener, IPEndPoint _endpoint, IPMode _ip_mode, ILogger _logger)
             : base(_logger)
         {
-            Configuration = _listener.Configuration;
+            configuration = _listener.Configuration;
             Listener = _listener;
             EndPoint = _endpoint;
             IPMode = _ip_mode;
