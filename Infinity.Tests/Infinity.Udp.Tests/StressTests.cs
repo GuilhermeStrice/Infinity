@@ -65,7 +65,6 @@ namespace Infinity.Udp.Tests
                     {
                         obj.Recycle();
                     };
-                    connection.KeepAliveInterval = 1000;
 
                     connection.Connect(handshake);
                     connections.Push(connection);
@@ -135,6 +134,8 @@ namespace Infinity.Udp.Tests
                 message.Recycle();
 
                 mutex.WaitOne();
+
+                Thread.Sleep(1000);
             }
         }
 

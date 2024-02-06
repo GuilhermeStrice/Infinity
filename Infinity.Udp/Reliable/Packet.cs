@@ -40,7 +40,7 @@ namespace Infinity.Udp
                 ushort id = GetId();
 
                 long lifetimeMs = Stopwatch.ElapsedMilliseconds;
-                if (lifetimeMs >= connection.DisconnectTimeoutMs)
+                if (lifetimeMs >= connection.Configuration.Reliability.DisconnectTimeoutMs)
                 {
                     if (connection.reliable_data_packets_sent.TryRemove(id, out Packet self))
                     {
@@ -60,8 +60,8 @@ namespace Infinity.Udp
                     }
 
                     ++Retransmissions;
-                    if (connection.ResendLimit != 0
-                        && Retransmissions > connection.ResendLimit)
+                    if (connection.Configuration.Reliability.ResendLimit != 0
+                        && Retransmissions > connection.Configuration.Reliability.ResendLimit)
                     {
                         if (connection.reliable_data_packets_sent.TryRemove(id, out Packet self))
                         {
@@ -72,7 +72,8 @@ namespace Infinity.Udp
                         return 0;
                     }
 
-                    NextTimeoutMs += (int)Math.Min(NextTimeoutMs * connection.ResendPingMultiplier, MaxAdditionalResendDelayMs);
+                    NextTimeoutMs += (int)Math.Min(NextTimeoutMs * connection.Configuration.Reliability.ResendPingMultiplier, 
+                        MaxAdditionalResendDelayMs);
 
                     try
                     {

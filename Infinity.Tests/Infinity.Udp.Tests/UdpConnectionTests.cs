@@ -28,6 +28,8 @@ namespace Infinity.Udp.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
+                listener.Configuration.KeepAlive.KeepAliveInterval = 100;
+
                 listener.NewConnection += (evt) =>
                 {
                     serverConnected = true;
@@ -48,7 +50,6 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.KeepAliveInterval = 100;
                 connection.Connect(handshake);
                 handshake.Recycle();
 
@@ -384,6 +385,7 @@ namespace Infinity.Udp.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
+                listener.Configuration.KeepAlive.KeepAliveInterval = 100;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
@@ -393,8 +395,6 @@ namespace Infinity.Udp.Tests
                 // After connecting, quietly stop responding to all messages to fake connection loss.
                 Thread.Sleep(10);
                 listener.TestDropRate = 1;
-
-                connection.KeepAliveInterval = 100;
 
                 Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
 
@@ -414,11 +414,11 @@ namespace Infinity.Udp.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
+                listener.Configuration.KeepAlive.KeepAliveInterval = 100;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
-                connection.KeepAliveInterval = 100;
                 handshake.Recycle();
 
                 Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
@@ -442,7 +442,7 @@ namespace Infinity.Udp.Tests
                 listener.NewConnection += delegate (NewConnectionEvent args)
                 {
                     client = (UdpConnection)args.Connection;
-                    client.KeepAliveInterval = 100;
+                    client.Configuration.KeepAlive.KeepAliveInterval = 100;
 
                     Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
 

@@ -4,7 +4,7 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        public int? ForcedMTU { get; set; } = null;
+        public int? ForcedMTU { get; init; }
 
         public int MinimumMTU
         {
@@ -89,6 +89,7 @@ namespace Infinity.Udp
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
+                _reader.Position = _reader.Length - 4;
                 int received_mtu = _reader.ReadInt32();
 
                 last_mtu = MTU;

@@ -25,7 +25,28 @@ namespace Infinity.Udp
             reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
             InitializeKeepAliveTimer();
 
-            VerifyMTU();
+            OnReceiveConfiguration = (_reader) =>
+            {
+                // Read Config
+                _reader.Position += 3;
+
+                // Reliability
+                Configuration.Reliability.ResendTimeoutMs = _reader.ReadInt32();
+                Configuration.Reliability.ResendLimit = _reader.ReadInt32();
+                Configuration.Reliability.ResendPingMultiplier = _reader.ReadSingle();
+                Configuration.Reliability.DisconnectTimeoutMs = _reader.ReadInt32();
+                
+                // Keep Alive
+                Configuration.KeepAlive.KeepAliveInterval = _reader.ReadInt32();
+                Configuration.KeepAlive.MissingPingsUntilDisconnect = _reader.ReadInt32();
+
+                // Fragmentation
+                Configuration.Fragmentation.EnableFragmentation = _reader.ReadBoolean();
+
+                DiscoverMTU();
+                ResetKeepAliveTimer();
+                State = ConnectionState.Connected;
+            };
         }
 
         protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
@@ -151,17 +172,28 @@ namespace Infinity.Udp
             }
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
-            // When acknowledged set the state to connected
             SendHandshake(_writer, () =>
             {
-                if (EnableFragmentation)
-                {
-                    DiscoverMTU();
-                }
+                VerifyMTU();
 
-                State = ConnectionState.Connected;
-                ResetKeepAliveTimer();
+                AskConfiguration();
             });
+        }
+
+        private void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
+        {
+            byte[] buffer = new byte[_writer.Length];
+            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+            ReliableSend(buffer, _acknowledge_callback);
+        }
+
+        private void AskConfiguration()
+        {
+            byte[] buffer = new byte[3];
+            buffer[0] = UdpSendOptionInternal.AskConfiguration;
+
+            ReliableSend(buffer);
         }
 
         private void WriteBytesToConnectionReal(byte[] _bytes, int _length)

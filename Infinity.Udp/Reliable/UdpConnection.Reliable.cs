@@ -4,21 +4,6 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        public int ResendTimeoutMs { get; set; } = 0;
-
-        /// <summary>
-        /// Max number of times to resend. 0 == no limit
-        /// </summary>
-        public int ResendLimit { get; set; } = 0;
-
-        /// <summary>
-        /// A compounding multiplier to back off resend timeout.
-        /// Applied to ping before first timeout when ResendTimeout == 0.
-        /// </summary>
-        public float ResendPingMultiplier { get; set; } = 2;
-
-        public int DisconnectTimeoutMs { get; set; } = 5000;
-
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
@@ -58,7 +43,7 @@ namespace Infinity.Udp
             return output;
         }
 
-        private void ReliableSend(byte[] _buffer, Action _ack_callback = null)
+        protected void ReliableSend(byte[] _buffer, Action _ack_callback = null)
         {
             //Inform keepalive not to send for a while
             ResetKeepAliveTimer();
@@ -268,10 +253,11 @@ namespace Infinity.Udp
             _buffer[_offset] = (byte)(id >> 8);
             _buffer[_offset + 1] = (byte)id;
 
-            int resend_delay_ms = ResendTimeoutMs;
+            int resend_delay_ms = Configuration.Reliability.ResendTimeoutMs;
             if (resend_delay_ms <= 0)
             {
-                resend_delay_ms = Math.Clamp((int)(AveragePingMs * ResendPingMultiplier), Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
+                resend_delay_ms = Math.Clamp((int)(AveragePingMs * Configuration.Reliability.ResendPingMultiplier), 
+                    Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
             }
 
             Packet packet = Pools.PacketPool.GetObject();

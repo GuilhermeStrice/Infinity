@@ -5,9 +5,12 @@ namespace Infinity.Udp
 {
     public abstract partial class UdpConnection : NetworkConnection
     {
+        public UdpConnectionConfiguration Configuration { get; set; } = new UdpConnectionConfiguration(); // Only used for bootstrapping
+
         public UdpConnectionStatistics Statistics { get; private set; } = new UdpConnectionStatistics();
 
         protected readonly ILogger logger;
+        protected Action<MessageReader> OnReceiveConfiguration;
 
         public UdpConnection(ILogger _logger) : base()
         {
@@ -22,6 +25,7 @@ namespace Infinity.Udp
             {
                 return SendErrors.Disconnected;
             }
+
             try
             {
                 InvokeBeforeSend(_writer);
@@ -58,7 +62,7 @@ namespace Infinity.Udp
                         }
                     case UdpSendOption.Fragmented:
                         {
-                            if (EnableFragmentation)
+                            if (Configuration.Fragmentation.EnableFragmentation)
                             {
                                 if (_writer.Length <= MTU)
                                 {
@@ -90,6 +94,10 @@ namespace Infinity.Udp
                         }
                 }
             }
+            catch (InfinityException e)
+            {
+                throw e;
+            }
             catch (Exception e)
             {
                 logger?.WriteError("Unknown exception while sending: " + e);
@@ -97,14 +105,6 @@ namespace Infinity.Udp
             }
 
             return SendErrors.None;
-        }
-
-        protected void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
-        {
-            byte[] buffer = new byte[_writer.Length];
-            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-            ReliableSend(buffer, _acknowledge_callback);
         }
 
         protected override void Dispose(bool _disposing)
@@ -178,6 +178,22 @@ namespace Infinity.Udp
                         break;
                     }
 
+                case UdpSendOptionInternal.AskConfiguration:
+                    {
+                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        ShareConfiguration();
+                        _reader.Recycle();
+                        break;
+                    }
+
+                case UdpSendOptionInternal.ShareConfiguration:
+                    {
+                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        OnReceiveConfiguration?.Invoke(_reader);
+                        _reader.Recycle();
+                        break;
+                    }
+
                 case UdpSendOption.Disconnect:
                     {
                         _reader.Position = 1;
@@ -203,6 +219,37 @@ namespace Infinity.Udp
                         break;
                     }
             }
+        }
+
+        private void ShareConfiguration()
+        {
+            // Connection config
+            MessageWriter writer = MessageWriter.Get();
+            writer.Write(UdpSendOptionInternal.ShareConfiguration);
+
+            writer.Position += 2;
+
+            // Reliability
+            writer.Write(Configuration.Reliability.ResendTimeoutMs);
+            writer.Write(Configuration.Reliability.ResendLimit);
+            writer.Write(Configuration.Reliability.ResendPingMultiplier);
+            writer.Write(Configuration.Reliability.DisconnectTimeoutMs);
+
+            // Keep Alive
+            writer.Write(Configuration.KeepAlive.KeepAliveInterval);
+            writer.Write(Configuration.KeepAlive.MissingPingsUntilDisconnect);
+
+            // Fragmentation
+
+            writer.Write(Configuration.Fragmentation.EnableFragmentation);
+
+            byte[] buffer = new byte[writer.Length];
+
+            Array.Copy(writer.Buffer, 0, buffer, 0, writer.Length);
+
+            writer.Recycle();
+
+            ReliableSend(buffer);
         }
     }
 }

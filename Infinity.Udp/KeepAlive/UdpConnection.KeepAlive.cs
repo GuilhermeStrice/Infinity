@@ -4,24 +4,7 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        public int KeepAliveInterval
-        {
-            get
-            {
-                return keep_alive_interval;
-            }
-
-            set
-            {
-                keep_alive_interval = value;
-                ResetKeepAliveTimer();
-            }
-        }
-
-        public int MissingPingsUntilDisconnect { get; set; } = 6;
-
         private PingBuffer active_pings = new PingBuffer(16);
-        private int keep_alive_interval = 1500;
         private volatile int pings_since_ack = 0;
 
         private Timer? keep_alive_timer;
@@ -31,8 +14,8 @@ namespace Infinity.Udp
             keep_alive_timer = new Timer(
                 HandleKeepAlive,
                 null,
-                keep_alive_interval,
-                keep_alive_interval
+                Configuration.KeepAlive.KeepAliveInterval,
+                Configuration.KeepAlive.KeepAliveInterval
             );
         }
 
@@ -43,7 +26,7 @@ namespace Infinity.Udp
                 return;
             }
 
-            if (pings_since_ack >= MissingPingsUntilDisconnect)
+            if (pings_since_ack >= Configuration.KeepAlive.MissingPingsUntilDisconnect)
             {
                 DisposeKeepAliveTimer();
                 DisconnectInternal(InfinityInternalErrors.PingsWithoutResponse, 
@@ -86,11 +69,10 @@ namespace Infinity.Udp
         {
             try
             {
-                keep_alive_timer?.Change(keep_alive_interval, keep_alive_interval);
+                keep_alive_timer?.Change(Configuration.KeepAlive.KeepAliveInterval, Configuration.KeepAlive.KeepAliveInterval);
             }
             catch { }
         }
-
         private void DisposeKeepAliveTimer()
         {
             keep_alive_timer?.Dispose();

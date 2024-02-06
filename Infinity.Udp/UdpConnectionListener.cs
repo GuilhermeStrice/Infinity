@@ -8,6 +8,8 @@ namespace Infinity.Udp
 {
     public class UdpConnectionListener : NetworkConnectionListener
     {
+        public UdpConnectionConfiguration Configuration { get; set; } = new UdpConnectionConfiguration(); // default config
+
         public UdpListenerStatistics Statistics { get; private set; }
 
         public override double AveragePing => all_connections.Values.Sum(c => c.AveragePingMs) / all_connections.Count;

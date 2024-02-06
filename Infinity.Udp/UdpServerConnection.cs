@@ -10,8 +10,7 @@ namespace Infinity.Udp
         public UdpServerConnection(UdpConnectionListener _listener, IPEndPoint _endpoint, IPMode _ip_mode, ILogger _logger)
             : base(_logger)
         {
-            EnableFragmentation = true;
-
+            Configuration = _listener.Configuration;
             Listener = _listener;
             EndPoint = _endpoint;
             IPMode = _ip_mode;
@@ -63,13 +62,16 @@ namespace Infinity.Udp
 
         protected override void Dispose(bool _disposing)
         {
+            if (State == ConnectionState.Connected)
+            {
+                var writer = UdpMessageFactory.BuildDisconnectMessage();
+
+                SendDisconnect(writer);
+
+                writer.Recycle();
+            }
+
             Listener.RemoveConnection(EndPoint);
-
-            var writer = UdpMessageFactory.BuildDisconnectMessage();
-
-            SendDisconnect(writer);
-
-            writer.Recycle();
 
             base.Dispose(_disposing);
         }

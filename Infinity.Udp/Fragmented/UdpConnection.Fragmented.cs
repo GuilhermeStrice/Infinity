@@ -4,8 +4,6 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        public bool EnableFragmentation { get; set; } = false;
-
         private volatile int last_fragment_id_allocated = 0;
 
         private FragmentedMessage[] fragmented_messages_received = new FragmentedMessage[byte.MaxValue];

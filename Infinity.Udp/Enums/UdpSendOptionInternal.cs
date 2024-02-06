@@ -7,6 +7,7 @@
         public const byte Acknowledgement = 3;
         public const byte Fragment = 4;
         public const byte TestMTU = 5;
-        public const byte SyncConfiguration = 6;
+        public const byte AskConfiguration = 6;
+        public const byte ShareConfiguration = 7;
     }
 }
