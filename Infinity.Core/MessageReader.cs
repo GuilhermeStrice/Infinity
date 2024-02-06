@@ -242,6 +242,7 @@ namespace Infinity.Core
 
         public void Recycle()
         {
+            Position = head = Length = 0;
             Pools.ReaderPool.PutObject(this);
         }
 

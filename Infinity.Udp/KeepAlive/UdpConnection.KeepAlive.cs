@@ -9,7 +9,7 @@ namespace Infinity.Udp
 
         private Timer? keep_alive_timer;
 
-        private ManualResetEvent keep_alive_wait_mutex = new ManualResetEvent(true);
+        protected ManualResetEvent keep_alive_wait_mutex = new ManualResetEvent(true);
 
         protected void InitializeKeepAliveTimer()
         {

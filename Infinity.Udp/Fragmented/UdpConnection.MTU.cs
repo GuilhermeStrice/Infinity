@@ -34,7 +34,6 @@ namespace Infinity.Udp
         {
             lock (mtu_lock)
             {
-
                 if (MTU == -1)
                 {
                     MTU = MinimumMTU;

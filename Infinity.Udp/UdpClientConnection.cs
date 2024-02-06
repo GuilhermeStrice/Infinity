@@ -34,7 +34,7 @@ namespace Infinity.Udp
                 configuration.ResendLimit = _reader.ReadInt32();
                 configuration.ResendPingMultiplier = _reader.ReadSingle();
                 configuration.DisconnectTimeoutMs = _reader.ReadInt32();
-                
+
                 // Keep Alive
                 configuration.KeepAliveInterval = _reader.ReadInt32();
                 configuration.MissingPingsUntilDisconnect = _reader.ReadInt32();
@@ -43,6 +43,9 @@ namespace Infinity.Udp
                 configuration.EnableFragmentation = _reader.ReadBoolean();
 
                 DiscoverMTU();
+
+                keep_alive_wait_mutex.Reset();
+
                 InitializeKeepAliveTimer();
                 State = ConnectionState.Connected;
             };

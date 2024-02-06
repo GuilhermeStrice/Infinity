@@ -15,9 +15,42 @@ namespace Infinity.Udp.Tests
             this.output = output;
         }
 
+        // leaving it like this because it needs the Infinity.Udp.TestListener running
+        // [Fact]
+        public void StressTestConnections()
+        {
+            int connection_count = 50;
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            handshake.Write(new byte[5]);
+
+            ConcurrentStack<UdpClientConnection> connections = new ConcurrentStack<UdpClientConnection>();
+
+            var ep = new IPEndPoint(IPAddress.Loopback, 22023);
+
+            for (int i = 0; i < connection_count; i++)
+            {
+                var connection = new UdpClientConnection(new TestLogger(), ep);
+                Thread.Sleep(5);
+                connection.DataReceived += delegate (DataReceivedEvent obj)
+                {
+                    obj.Recycle();
+                };
+                connection.Disconnected += delegate (DisconnectedEvent obj)
+                {
+                    obj.Recycle();
+                };
+
+                connection.Connect(handshake);
+                connections.Push(connection);
+            }
+
+            Thread.Sleep(3000); // wait events
+        }
+
         [Fact]
         public void StressTestOpeningConnections()
         {
+            int connections_to_test = 100;
             ManualResetEvent mutex = new ManualResetEvent(false);
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
@@ -44,16 +77,16 @@ namespace Infinity.Udp.Tests
 
                     obj.Recycle();
 
-                    if (con_count == 15)
+                    if (con_count == connections_to_test)
                     {
                         mutex.Set();
-                        output.WriteLine(listener.ConnectionCount.ToString());
+                        Assert.Equal(con_count, listener.ConnectionCount);
                     }
                 };
 
                 listener.Start();
 
-                for (int i = 0; i < 15; i++)
+                for (int i = 0; i < connections_to_test; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
                     Thread.Sleep(5);

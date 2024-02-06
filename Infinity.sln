@@ -30,6 +30,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinity.Tcp.Tests", "Infin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinity.Core.Tests", "Infinity.Tests\Infinity.Core.Tests\Infinity.Core.Tests.csproj", "{17392A07-69D5-460A-AFD4-6BF05163E2E9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infinifty.Udp.TestListener", "Infinity.Tests\Infinifty.Udp.TestListener\Infinifty.Udp.TestListener.csproj", "{21995F5D-E476-4366-8211-2B28BA342F6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -76,6 +78,10 @@ Global
 		{17392A07-69D5-460A-AFD4-6BF05163E2E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17392A07-69D5-460A-AFD4-6BF05163E2E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17392A07-69D5-460A-AFD4-6BF05163E2E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21995F5D-E476-4366-8211-2B28BA342F6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21995F5D-E476-4366-8211-2B28BA342F6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21995F5D-E476-4366-8211-2B28BA342F6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21995F5D-E476-4366-8211-2B28BA342F6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -87,6 +93,7 @@ Global
 		{5CE59590-88CA-44E4-8DFC-A930BDD4C709} = {07300268-B919-4187-80B7-EAC9CA65EE11}
 		{B015223A-EEFF-4871-BFB5-ADE9958A5F3D} = {07300268-B919-4187-80B7-EAC9CA65EE11}
 		{17392A07-69D5-460A-AFD4-6BF05163E2E9} = {07300268-B919-4187-80B7-EAC9CA65EE11}
+		{21995F5D-E476-4366-8211-2B28BA342F6B} = {07300268-B919-4187-80B7-EAC9CA65EE11}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8AC8C0A6-FB6B-4E63-9042-EDF10C6A51B8}
