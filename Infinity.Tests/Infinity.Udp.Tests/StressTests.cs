@@ -50,6 +50,10 @@ namespace Infinity.Udp.Tests
                         output.WriteLine(Pools.FragmentedMessagePool.InUse.ToString());
                         output.WriteLine(Pools.FragmentPool.InUse.ToString());
                         output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
+
+                        output.WriteLine(Core.Pools.DataReceivedEventPool.InUse.ToString());
+                        output.WriteLine(Core.Pools.DisconnectedEventPool.InUse.ToString());
+                        output.WriteLine(Core.Pools.NewConnectionPool.InUse.ToString());
                     }
                 };
                 listener.Start();
@@ -99,16 +103,22 @@ namespace Infinity.Udp.Tests
                     {
                         count++;
                         obj.Recycle();
-                        if (count == 100)
+                        if (count == 200)
                         {
                             output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
                             output.WriteLine(Infinity.Udp.Pools.PacketPool.InUse.ToString());
                             output.WriteLine(Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
                             output.WriteLine(Infinity.Udp.Pools.FragmentPool.InUse.ToString());
                             output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
+
+                            output.WriteLine(Core.Pools.DataReceivedEventPool.InUse.ToString());
+                            output.WriteLine(Core.Pools.DisconnectedEventPool.InUse.ToString());
+                            output.WriteLine(Core.Pools.NewConnectionPool.InUse.ToString());
                             mutex.Set();
                         }
                     };
+
+                    evt.Recycle();
                 };
 
                 connection.Disconnected += delegate (DisconnectedEvent obj)
@@ -122,12 +132,15 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
+                Thread.Sleep(2000);
+
                 var message = UdpMessageFactory.BuildReliableMessage();
                 message.Write(123);
 
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 200; i++)
                 {
                     connection.Send(message);
+                    Thread.Sleep(1);
                 }
 
                 Thread.Sleep(100);
