@@ -5,8 +5,8 @@ namespace Infinity.Core.Threading
 {
     public static class OptimizedThreadPool
     {
-        private static BlockingCollection<ThreadPoolWorkItem> job_queue = new BlockingCollection<ThreadPoolWorkItem>();
-        private static BlockingCollection<ThreadPoolWorkItem> callback_queue = new BlockingCollection<ThreadPoolWorkItem>();
+        private static BlockingCollection<OptimizedThreadPoolWorkItem> job_queue = new BlockingCollection<OptimizedThreadPoolWorkItem>();
+        private static BlockingCollection<OptimizedThreadPoolWorkItem> callback_queue = new BlockingCollection<OptimizedThreadPoolWorkItem>();
 
         private static object threads_list_lock = new object();
 
@@ -82,7 +82,7 @@ namespace Infinity.Core.Threading
                 throw new InfinityThreadPoolException("Method cannot be null");
             }
             
-            var work_item = new ThreadPoolWorkItem();
+            var work_item = new OptimizedThreadPoolWorkItem();
             work_item.MethodToExecute = _method_to_execute;
             work_item.Callback = _callback;
             work_item.State = _state;

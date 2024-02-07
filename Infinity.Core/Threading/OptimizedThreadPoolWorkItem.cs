@@ -2,7 +2,7 @@
 {
     public delegate void ThreadedAction(object? state);
 
-    public class ThreadPoolWorkItem
+    public class OptimizedThreadPoolWorkItem
     {
         public ThreadedAction MethodToExecute;
         public ThreadedAction Callback;
