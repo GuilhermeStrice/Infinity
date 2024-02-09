@@ -31,7 +31,7 @@ namespace Infinity.Udp
             EndPoint = _endpoint;
             IPMode = _ip_mode;
 
-            socket = CreateSocket(Protocol.Udp, IPMode);
+            socket = CreateSocket(IPMode);
 
             socket.ReceiveBufferSize = send_receive_buffer_size;
             socket.SendBufferSize = send_receive_buffer_size;
@@ -39,23 +39,15 @@ namespace Infinity.Udp
             reliable_packet_timer = new Timer(ManageReliablePackets, null, 100, Timeout.Infinite);
         }
 
-        protected Socket CreateSocket(Protocol _protocol, IPMode _ip_mode)
+        protected Socket CreateSocket(IPMode _ip_mode)
         {
             Socket socket;
 
             SocketType socket_type;
             ProtocolType protocol_type;
 
-            if (_protocol == Protocol.Udp)
-            {
-                socket_type = SocketType.Dgram;
-                protocol_type = ProtocolType.Udp;
-            }
-            else
-            {
-                socket_type = SocketType.Stream;
-                protocol_type = ProtocolType.Tcp;
-            }
+            socket_type = SocketType.Dgram;
+            protocol_type = ProtocolType.Udp;
 
             if (_ip_mode == IPMode.IPv4)
             {
@@ -72,19 +64,12 @@ namespace Infinity.Udp
                 socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             }
 
-            if (_protocol == Protocol.Udp)
-            {
-                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
+            socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    const int SIO_UDP_CONNRESET = -1744830452;
-                    socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
-                }
-            }
-            else
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                socket.NoDelay = true;
+                const int SIO_UDP_CONNRESET = -1744830452;
+                socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
             }
 
             return socket;
