@@ -217,14 +217,6 @@ namespace Infinity.Core.Sockets.Native.Win32
             [In] IntPtr socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
-            [In] ref Linger linger,
-            [In] int optionLength);
-
-        [DllImport("Ws2_32.dll", SetLastError = true)]
-        internal static extern SocketError setsockopt(
-            [In] IntPtr socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
             [In] ref IPMulticastRequest mreq,
             [In] int optionLength);
 
