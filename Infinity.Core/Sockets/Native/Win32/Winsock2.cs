@@ -252,6 +252,6 @@ namespace Infinity.Core.Sockets.Native.Win32
                                            );
 
         [DllImport("Ws2_32.dll")]
-        public static extern int WSAGetLastError();
+        public static extern SocketError WSAGetLastError();
     }
 }

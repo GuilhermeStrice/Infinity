@@ -8,5 +8,12 @@
         {
 
         }
+
+        public static bool IPv6Support { get; internal set; }
+
+        internal static void InitializeSockets()
+        {
+
+        }
     }
 }

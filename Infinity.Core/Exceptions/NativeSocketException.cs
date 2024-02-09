@@ -1,20 +1,26 @@
-﻿namespace Infinity.Core.Exceptions
+﻿using Infinity.Core.Sockets;
+
+namespace Infinity.Core.Exceptions
 {
-    internal class NativeSocketException : Exception
+    public class NativeSocketException : Exception
     {
-        public int ErrorCode { get; private set; }
+        public SocketError ErrorCode { get; private set; }
 
-        public NativeSocketException() : base()
+        internal NativeSocketException() : base()
         {
         }
 
-        public NativeSocketException(string _message) : base(_message)
+        internal NativeSocketException(string _message) : base(_message)
         {
         }
 
-        public NativeSocketException(string _message, int _error_code) : base(_message)
+        internal NativeSocketException(string _message, SocketError _error_code) : base(_message)
         {
             ErrorCode = _error_code;
+        }
+
+        internal NativeSocketException(SocketError _error_code) : this("Socket error", _error_code)
+        {
         }
     }
 }

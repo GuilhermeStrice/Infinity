@@ -18,7 +18,7 @@ namespace Infinity.Core.Sockets.Native.Win32
             var status = Winsock2.WSAStartup(0x0202, out var wsaData);
             if (status != 0)
             {
-                throw new NativeSocketException("WSAStartup failed", (int)status);
+                throw new NativeSocketException("WSAStartup failed", status);
             }
 
             socket = Winsock2.socket(address_family, socket_type, protocol_type);
