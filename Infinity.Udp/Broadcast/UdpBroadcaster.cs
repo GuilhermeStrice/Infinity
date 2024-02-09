@@ -6,7 +6,7 @@ namespace Infinity.Udp.Broadcast
 {
     public class UdpBroadcaster : IDisposable
     {
-        private FasterConcurrentDictionary<IPEndPoint, Socket> available_addresses = new FasterConcurrentDictionary<IPEndPoint, Socket>();
+        private FastConcurrentDictionary<IPEndPoint, Socket> available_addresses = new FastConcurrentDictionary<IPEndPoint, Socket>();
         private byte[] identifier;
         private ILogger logger;
 

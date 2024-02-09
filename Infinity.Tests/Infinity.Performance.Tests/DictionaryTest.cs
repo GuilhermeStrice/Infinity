@@ -17,7 +17,7 @@ namespace Infinity.Performance.Tests
         Dictionary<int, int> first = new Dictionary<int, int>();
         readonly object first_lock = new object();
         ConcurrentDictionary<int, int> second = new ConcurrentDictionary<int, int>();
-        FasterConcurrentDictionary<int, int> third = new FasterConcurrentDictionary<int, int>();
+        FastConcurrentDictionary<int, int> third = new FastConcurrentDictionary<int, int>();
         Stopwatch sw1 = new Stopwatch();
         Stopwatch sw2 = new Stopwatch();
         Stopwatch sw3 = new Stopwatch();

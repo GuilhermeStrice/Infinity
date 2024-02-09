@@ -12,7 +12,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        internal static void RunServerToClientTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
+        public static void RunServerToClientTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
         {
             //Setup meta stuff 
             var data = BuildData(sendOption, dataSize);
@@ -64,7 +64,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        internal static void RunClientToServerTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
+        public static void RunClientToServerTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
         {
             //Setup meta stuff 
             var data = BuildData(sendOption, dataSize);
@@ -124,7 +124,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        internal static void RunServerDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
+        public static void RunServerDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
         {
             var mutex = new ManualResetEvent(false);
 
@@ -158,7 +158,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        internal static void RunClientDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
+        public static void RunClientDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
         {
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
@@ -199,7 +199,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        internal static void RunClientDisconnectOnDisposeTest(UdpConnectionListener listener, UdpConnection connection)
+        public static void RunClientDisconnectOnDisposeTest(UdpConnectionListener listener, UdpConnection connection)
         {
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
@@ -243,7 +243,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="dataSize">The number of bytes to generate.</param>
         /// <returns>The data.</returns>
-        static MessageWriter BuildData(byte sendOption, int dataSize)
+        private static MessageWriter BuildData(byte sendOption, int dataSize)
         {
             int offset = 2;
             if (sendOption == UdpSendOption.Unreliable)

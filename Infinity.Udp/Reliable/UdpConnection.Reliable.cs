@@ -7,21 +7,16 @@ namespace Infinity.Udp
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        internal FasterConcurrentDictionary<ushort, Packet> reliable_data_packets_sent = new FasterConcurrentDictionary<ushort, Packet>();
+        internal FastConcurrentDictionary<ushort, Packet> reliable_data_packets_sent = new FastConcurrentDictionary<ushort, Packet>();
 
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
         /// </summary>
-        internal bool[] reliable_data_packets_missing = new bool[ushort.MaxValue + 1];
+        protected bool[] reliable_data_packets_missing = new bool[ushort.MaxValue + 1];
 
         private int last_id_allocated = -1;
 
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
-
-        internal void DisconnectInternalPacket(InfinityInternalErrors _error, string _reason)
-        {
-            DisconnectInternal(_error, _reason);
-        }
 
         public int ManageReliablePackets()
         {
@@ -271,6 +266,11 @@ namespace Infinity.Udp
             {
                 throw new Exception("That shouldn't be possible");
             }
+        }
+
+        internal void DisconnectInternalPacket(InfinityInternalErrors _error, string _reason)
+        {
+            DisconnectInternal(_error, _reason);
         }
     }
 }

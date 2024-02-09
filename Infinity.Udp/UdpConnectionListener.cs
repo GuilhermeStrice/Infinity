@@ -21,7 +21,7 @@ namespace Infinity.Udp
         private ILogger logger;
         private Timer reliable_packet_timer;
 
-        private FasterConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new FasterConcurrentDictionary<EndPoint, UdpServerConnection>();
+        private FastConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new FastConcurrentDictionary<EndPoint, UdpServerConnection>();
 
         public UdpConnectionListener(IPEndPoint _endpoint, IPMode _ip_mode = IPMode.IPv4, ILogger _logger = null)
         {

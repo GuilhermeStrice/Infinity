@@ -2,7 +2,7 @@
 
 namespace Infinity.Udp.Tests
 {
-    internal class NoConnectionUdpConnection : UdpConnection
+    public class NoConnectionUdpConnection : UdpConnection
     {
         public List<MessageReader> BytesSent = new List<MessageReader>();
 

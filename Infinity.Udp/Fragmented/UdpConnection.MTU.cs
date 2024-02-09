@@ -30,7 +30,7 @@ namespace Infinity.Udp
 
         private int last_mtu = 0;
 
-        internal void BootstrapMTU()
+        protected void BootstrapMTU()
         {
             lock (mtu_lock)
             {
@@ -46,12 +46,12 @@ namespace Infinity.Udp
             }
         }
 
-        internal void DiscoverMTU()
+        protected void DiscoverMTU()
         {
             ExpandMTU();
         }
 
-        internal void FinishMTUExpansion()
+        protected void FinishMTUExpansion()
         {
             if (MTU == MaximumAllowedMTU)
             {

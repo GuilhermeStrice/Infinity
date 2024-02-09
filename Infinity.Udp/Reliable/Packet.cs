@@ -37,7 +37,7 @@ namespace Infinity.Udp
         {
             if (!Acknowledged && connection != null)
             {
-                ushort id = GetId();
+                ushort id = (ushort)((buffer[1] << 8) + buffer[2]);
 
                 long lifetimeMs = Stopwatch.ElapsedMilliseconds;
                 if (lifetimeMs >= connection.configuration.DisconnectTimeoutMs)
@@ -97,12 +97,6 @@ namespace Infinity.Udp
             Acknowledged = true;
 
             Pools.PacketPool.PutObject(this);
-        }
-
-        internal ushort GetId()
-        {
-            ushort id = (ushort)((buffer[1] << 8) + buffer[2]);
-            return id;
         }
     }
 }

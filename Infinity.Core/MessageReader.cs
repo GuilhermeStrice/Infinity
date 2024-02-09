@@ -11,8 +11,8 @@ namespace Infinity.Core
 
         public int BytesRemaining => Length - Position;
 
-        internal int _position;
-        internal int head;
+        private int _position;
+        private int head;
 
         public int Position
         {
