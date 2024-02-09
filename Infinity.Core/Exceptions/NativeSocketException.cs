@@ -1,4 +1,4 @@
-﻿using Infinity.Core.Sockets;
+﻿using Infinity.Core.Net.Sockets;
 
 namespace Infinity.Core.Exceptions
 {
