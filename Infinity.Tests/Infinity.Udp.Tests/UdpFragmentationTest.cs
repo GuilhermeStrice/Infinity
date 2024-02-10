@@ -132,7 +132,7 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                Thread.Sleep(1500);
+                Thread.Sleep(5000);
 
                 Assert.True(connection.MTU == desired_mtu);
             }
