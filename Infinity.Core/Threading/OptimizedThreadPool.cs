@@ -115,7 +115,7 @@ namespace Infinity.Core.Threading
         {
             while (continue_working)
             {
-                bool success = job_queue.TryTake(out var job);
+                bool success = job_queue.TryTake(out var job, 50);
 
                 if (success)
                 {
