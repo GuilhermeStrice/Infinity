@@ -19,7 +19,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void OrderedTest()
         {
-            output.WriteLine("OrderedTest");
+            Console.WriteLine("OrderedTest");
 
             ManualResetEvent mutex = new ManualResetEvent(false);
 

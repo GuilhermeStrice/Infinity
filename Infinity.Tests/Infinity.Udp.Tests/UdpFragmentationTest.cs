@@ -19,7 +19,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void FragmentedSendTest()
         {
-            output.WriteLine("FragmentedSendTest");
+            Console.WriteLine("FragmentedSendTest");
 
             ManualResetEvent mutex = new ManualResetEvent(false);
 
@@ -65,7 +65,7 @@ namespace Infinity.Udp.Tests
         //[Fact]
         public void FragmentedSendTest10000()
         {
-            output.WriteLine("FragmentedSendTest10000");
+            Console.WriteLine("FragmentedSendTest10000");
 
             int count = 0;
 
@@ -123,7 +123,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void MTUTest()
         {
-            output.WriteLine("MTUTest");
+            Console.WriteLine("MTUTest");
 
             int desired_mtu = 1500;
 

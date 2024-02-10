@@ -18,7 +18,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void DoesItWork()
         {
-            output.WriteLine("DoesItWork");
+            Console.WriteLine("DoesItWork");
 
             ManualResetEvent waitHandle = new ManualResetEvent(false);
 

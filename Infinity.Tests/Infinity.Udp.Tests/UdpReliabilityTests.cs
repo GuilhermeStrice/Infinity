@@ -17,7 +17,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void TestReliableWrapOffByOne()
         {
-            output.WriteLine("TestReliableWrapOffByOne");
+            Console.WriteLine("TestReliableWrapOffByOne");
 
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
@@ -58,7 +58,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void TestThatAllMessagesAreReceived()
         {
-            output.WriteLine("TestThatAllMessagesAreReceived");
+            Console.WriteLine("TestThatAllMessagesAreReceived");
 
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
@@ -107,7 +107,7 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void TestAcksForNotReceivedMessages()
         {
-            output.WriteLine("TestAcksForNotReceivedMessages");
+            Console.WriteLine("TestAcksForNotReceivedMessages");
 
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
