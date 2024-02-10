@@ -21,7 +21,7 @@ namespace Infinity.Core.Tests
 
             Parallel.For(0, 100, (a) =>
             {
-                OptimizedThreadPool.EnqueueJob(Testt, null, null);
+                OptimizedThreadPool.EnqueueJob(Testt, null);
             });
 
             mutex.WaitOne(2500);

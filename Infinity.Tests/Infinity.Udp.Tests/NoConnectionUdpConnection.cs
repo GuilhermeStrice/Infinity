@@ -63,5 +63,20 @@ namespace Infinity.Udp.Tests
         protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {
         }
+
+        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void ShareConfiguration()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void ReadConfiguration(MessageReader _reader)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

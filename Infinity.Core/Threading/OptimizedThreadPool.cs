@@ -6,12 +6,10 @@ namespace Infinity.Core.Threading
     public static class OptimizedThreadPool
     {
         private static BlockingCollection<OptimizedThreadPoolWorkItem> job_queue = new BlockingCollection<OptimizedThreadPoolWorkItem>();
-        private static BlockingCollection<OptimizedThreadPoolWorkItem> callback_queue = new BlockingCollection<OptimizedThreadPoolWorkItem>();
 
         private static object threads_list_lock = new object();
 
         private static List<Thread> worker_threads = new List<Thread>();
-        private static List<Thread> callback_threads = new List<Thread>();
 
         private static int thread_count = Environment.ProcessorCount / 4;
         private static bool initialized = false;
@@ -48,9 +46,6 @@ namespace Infinity.Core.Threading
                     {
                         worker_threads[i].Interrupt();
                         worker_threads.RemoveAt(i);
-
-                        callback_threads[i].Interrupt();
-                        callback_threads.RemoveAt(i);
                     }
                 }
                 else if (current_size < thread_count)
@@ -63,17 +58,12 @@ namespace Infinity.Core.Threading
                         worker_thread.Start();
 
                         worker_threads.Add(worker_thread);
-
-                        var callback_thread = new Thread(CallbackAction);
-                        callback_thread.Start();
-
-                        callback_threads.Add(callback_thread);
                     }
                 }
             }
         }
 
-        public static void EnqueueJob(ThreadedAction _method_to_execute, ThreadedAction? _callback, object? _state = null)
+        public static void EnqueueJob(ThreadedAction _method_to_execute, object? _state = null)
         {
             Initialize();
 
@@ -84,7 +74,6 @@ namespace Infinity.Core.Threading
             
             var work_item = new OptimizedThreadPoolWorkItem();
             work_item.MethodToExecute = _method_to_execute;
-            work_item.Callback = _callback;
             work_item.State = _state;
 
             job_queue.Add(work_item);
@@ -99,24 +88,6 @@ namespace Infinity.Core.Threading
                     if (job_queue.TryTake(out var work_item, 50))
                     {
                         work_item.MethodToExecute.Invoke(work_item.State);
-                        if (work_item.Callback != null)
-                        {
-                            callback_queue.Add(work_item);
-                        }
-                    }
-                }
-            }
-        }
-
-        private static void CallbackAction()
-        {
-            while (continue_working)
-            {
-                lock (callback_queue)
-                {
-                    if (callback_queue.TryTake(out var work_item, 50))
-                    {
-                        work_item.Callback.Invoke(work_item.State);
                     }
                 }
             }
@@ -136,11 +107,6 @@ namespace Infinity.Core.Threading
                             worker_thread.Start();
 
                             worker_threads.Add(worker_thread);
-
-                            var callback_thread = new Thread(CallbackAction);
-                            callback_thread.Start();
-
-                            callback_threads.Add(callback_thread);
                         }
                     }
                 }

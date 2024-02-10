@@ -47,6 +47,37 @@ namespace Infinity.Udp.Tests
             Thread.Sleep(3000); // wait events
         }
 
+        // leaving it like this because it needs the Infinity.Udp.TestListener running
+        // [Fact]
+        public void StressTestMessages()
+        {
+            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 22023);
+
+            using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
+            {
+                connection.Disconnected += delegate (DisconnectedEvent obj)
+                {
+                    obj.Recycle();
+                };
+
+                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                connection.Connect(handshake);
+                handshake.Recycle();
+
+                var message = UdpMessageFactory.BuildReliableMessage();
+                message.Write(123);
+
+                for (int i = 0; i < 10000; i++)
+                {
+                    connection.Send(message);
+                }
+
+                message.Recycle();
+
+                Thread.Sleep(3000); // wait events
+            }
+        }
+
         [Fact]
         public void StressTestOpeningConnections()
         {
@@ -163,23 +194,17 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                Thread.Sleep(2000);
-
                 var message = UdpMessageFactory.BuildReliableMessage();
                 message.Write(123);
 
                 for (int i = 0; i < 200; i++)
                 {
                     connection.Send(message);
-                    Thread.Sleep(1);
                 }
 
-                Thread.Sleep(100);
                 message.Recycle();
 
                 mutex.WaitOne();
-
-                Thread.Sleep(1000);
             }
         }
 

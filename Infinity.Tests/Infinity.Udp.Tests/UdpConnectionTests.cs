@@ -54,7 +54,7 @@ namespace Infinity.Udp.Tests
 
                 Thread.Sleep(200); // Gotta wait for the server to set up the events.
                 listener.Dispose();
-                Thread.Sleep(200);
+                Thread.Sleep(2000);
 
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
@@ -76,8 +76,11 @@ namespace Infinity.Udp.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
+                listener.Configuration.KeepAliveInterval = 100;
+                UdpServerConnection serverConnection;
                 listener.NewConnection += (evt) =>
                 {
+                    serverConnection = (UdpServerConnection)evt.Connection;
                     serverConnected = true;
                     evt.Connection.Disconnected += (et) =>
                     {
@@ -103,7 +106,7 @@ namespace Infinity.Udp.Tests
                 Thread.Sleep(100); // Gotta wait for the server to set up the events.
                 connection.Dispose();
 
-                Thread.Sleep(100);
+                Thread.Sleep(1000);
 
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
@@ -177,6 +180,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpUnreliableMessageSendTest()
         {
+            ManualResetEvent mutex = new ManualResetEvent(false);
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -187,6 +192,7 @@ namespace Infinity.Udp.Tests
                     {
                         output = evt.Message;
                         evt.Recycle(false);
+                        mutex.Set();
                     };
                     e.Recycle();
                 };
@@ -205,14 +211,13 @@ namespace Infinity.Udp.Tests
                     connection.Send(writer);
                 }
 
-                writer.Recycle();
-
-                Thread.Sleep(10);
+                mutex.WaitOne();
                 for (int i = 0; i < writer.Length; ++i)
                 {
                     Assert.Equal(writer.Buffer[i], output.Buffer[i]);
                 }
 
+                writer.Recycle();
                 output.Recycle();
             }
         }
@@ -413,14 +418,14 @@ namespace Infinity.Udp.Tests
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                listener.Configuration.KeepAliveInterval = 200;
+                listener.Configuration.KeepAliveInterval = 100;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                Thread.Sleep(1050);    //Enough time for ~5 keep alive packets
+                Thread.Sleep(2000);    //Enough time for at least some keep alive packets
 
                 Assert.Equal(ConnectionState.Connected, connection.State);
             }
@@ -457,16 +462,7 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
-                mutex.WaitOne(500);
+                mutex.WaitOne();
 
                 Assert.Equal(ConnectionState.Connected, client.State);
             }

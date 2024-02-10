@@ -8,23 +8,17 @@ namespace TestListener
     {
         static volatile bool run = true;
         static volatile int connection_count = 0;
+        static volatile int message_count = 0;
+
+        static IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 22023);
+
+        static UdpConnectionListener listener = new UdpConnectionListener(ep, IPMode.IPv4);
 
         static void Main(string[] args)
         {
-            var ep = new IPEndPoint(IPAddress.Loopback, 22023);
-            UdpConnectionListener listener = new UdpConnectionListener(ep, IPMode.IPv4);
             listener.NewConnection += Listener_NewConnection;
 
             listener.Start();
-
-            while (run)
-            {
-                if (connection_count >= 50)
-                {
-                    run = false;
-                    Console.WriteLine(listener.ConnectionCount);
-                }
-            }
 
             Console.ReadKey();
         }
@@ -35,6 +29,12 @@ namespace TestListener
             new_con.Connection.Disconnected += Connection_Disconnected;
             new_con.Recycle();
             connection_count++;
+
+            if (connection_count >= 50)
+            {
+                run = false;
+                Console.WriteLine(listener.ConnectionCount);
+            }
         }
 
         private static void Connection_Disconnected(DisconnectedEvent obj)
@@ -44,7 +44,13 @@ namespace TestListener
 
         private static void Connection_DataReceived(DataReceivedEvent obj)
         {
-            obj.Recycle();
+            message_count++;
+            if (message_count == 10000)
+            {
+                Console.WriteLine("5000");
+            }
+
+            obj.Recycle(true);
         }
     }
 }

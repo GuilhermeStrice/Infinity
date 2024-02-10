@@ -16,7 +16,6 @@ namespace Infinity.Udp
             IPMode = _ip_mode;
 
             State = ConnectionState.Connected;
-            InitializeKeepAliveTimer();
 
             BootstrapMTU();
         }
@@ -99,6 +98,50 @@ namespace Infinity.Udp
             }
 
             Disconnect(_reason, msg);
+        }
+
+        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void ShareConfiguration()
+        {
+            // Connection config
+            MessageWriter writer = MessageWriter.Get();
+            writer.Write(UdpSendOptionInternal.ShareConfiguration);
+
+            writer.Position += 2;
+
+            // Reliability
+            writer.Write(configuration.ResendTimeoutMs);
+            writer.Write(configuration.ResendLimit);
+            writer.Write(configuration.ResendPingMultiplier);
+            writer.Write(configuration.DisconnectTimeoutMs);
+
+            // Keep Alive
+            writer.Write(configuration.KeepAliveInterval);
+            writer.Write(configuration.MissingPingsUntilDisconnect);
+
+            // Fragmentation
+
+            writer.Write(configuration.EnableFragmentation);
+
+            byte[] buffer = new byte[writer.Length];
+
+            Array.Copy(writer.Buffer, 0, buffer, 0, writer.Length);
+
+            writer.Recycle();
+
+            ReliableSend(buffer, () =>
+            {
+                InitializeKeepAliveTimer();
+            });
+        }
+
+        protected override void ReadConfiguration(MessageReader _reader)
+        {
+            // do nothing here
         }
     }
 }

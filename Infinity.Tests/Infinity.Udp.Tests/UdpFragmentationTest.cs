@@ -119,23 +119,22 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void MTUTest()
         {
-            ManualResetEvent mutex = new ManualResetEvent(false);
+            int desired_mtu = 1500;
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
                 listener.Configuration.EnableFragmentation = true;
-                connection.MaximumAllowedMTU = 1500;
+                connection.MaximumAllowedMTU = desired_mtu;
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                mutex.WaitOne(5000);
+                Thread.Sleep(1500);
 
-                Assert.True(connection.MTU > 0);
-                output.WriteLine(connection.MTU.ToString());
+                Assert.True(connection.MTU == desired_mtu);
             }
         }
     }

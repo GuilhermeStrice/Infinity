@@ -5,7 +5,6 @@
     public class OptimizedThreadPoolWorkItem
     {
         public ThreadedAction MethodToExecute;
-        public ThreadedAction Callback;
         public object State;
     }
 }

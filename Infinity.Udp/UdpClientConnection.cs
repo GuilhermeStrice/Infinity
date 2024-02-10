@@ -1,5 +1,6 @@
 using Infinity.Core;
 using Infinity.Core.Exceptions;
+using Infinity.Core.Threading;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -23,32 +24,6 @@ namespace Infinity.Udp
             socket = CreateSocket(_ip_mode);
 
             reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
-
-            OnReceiveConfiguration = (_reader) =>
-            {
-                // Read Config
-                _reader.Position += 3;
-
-                // Reliability
-                configuration.ResendTimeoutMs = _reader.ReadInt32();
-                configuration.ResendLimit = _reader.ReadInt32();
-                configuration.ResendPingMultiplier = _reader.ReadSingle();
-                configuration.DisconnectTimeoutMs = _reader.ReadInt32();
-
-                // Keep Alive
-                configuration.KeepAliveInterval = _reader.ReadInt32();
-                configuration.MissingPingsUntilDisconnect = _reader.ReadInt32();
-
-                // Fragmentation
-                configuration.EnableFragmentation = _reader.ReadBoolean();
-
-                DiscoverMTU();
-
-                keep_alive_wait_mutex.Reset();
-
-                InitializeKeepAliveTimer();
-                State = ConnectionState.Connected;
-            };
         }
 
         protected Socket CreateSocket(IPMode _ip_mode)
@@ -84,6 +59,8 @@ namespace Infinity.Udp
                 socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
             }
 
+            socket.Blocking = false;
+
             return socket;
         }
 
@@ -103,6 +80,24 @@ namespace Infinity.Udp
 #endif
             {
                 WriteBytesToConnectionReal(_bytes, _length);
+            }
+        }
+
+        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        {
+            try
+            {
+                int sent = socket.SendTo(_bytes, _length, SocketFlags.None, EndPoint);
+                Statistics.LogPacketSent(sent);
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
+            {
+                FinishMTUExpansion();
+            }
+            catch
+            {
+                // this is handles by keep alive and packet resends
+                logger?.WriteError("thing");
             }
         }
 
@@ -142,21 +137,7 @@ namespace Infinity.Udp
                 throw new InfinityException("A SocketException occurred while binding to the port.", e);
             }
 
-            try
-            {
-                StartListeningForData();
-            }
-            catch (ObjectDisposedException)
-            {
-                // If the socket's been disposed then we can just end there but make sure we're in NotConnected state.
-                // If we end up here I'm really lost...
-                State = ConnectionState.NotConnected;
-                return;
-            }
-            catch (SocketException e)
-            {
-                throw new InfinityException("A SocketException occurred while initiating a receive operation.", e);
-            }
+            StartListeningForData();
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             SendHandshake(_writer, () =>
@@ -165,6 +146,14 @@ namespace Infinity.Udp
 
                 AskConfiguration();
             });
+        }
+
+        private void WriteBytesToConnectionReal(byte[] _bytes, int _length)
+        {
+            OptimizedThreadPool.EnqueueJob((state) =>
+            {
+                WriteBytesToConnectionSync(_bytes, _length);
+            }, null);
         }
 
         private void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
@@ -183,46 +172,6 @@ namespace Infinity.Udp
             ReliableSend(buffer);
         }
 
-        private void WriteBytesToConnectionReal(byte[] _bytes, int _length)
-        {
-            try
-            {
-                socket.BeginSendTo(
-                    _bytes,
-                    0,
-                    _length,
-                    SocketFlags.None,
-                    EndPoint,
-                    HandleSendTo,
-                    null);
-            }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
-            {
-                FinishMTUExpansion();
-            }
-            catch
-            {
-                // this is handles by keep alive and packet resends
-            }
-        }
-
-        private void HandleSendTo(IAsyncResult _result)
-        {
-            try
-            {
-                int sent = socket.EndSendTo(_result);
-                Statistics.LogPacketSent(sent);
-            }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
-            {
-                FinishMTUExpansion();
-            }
-            catch
-            {
-                // this is handles by keep alive and packet resends
-            }
-        }
-
         private void ManageReliablePacketsInternal(object? _state)
         {
             ManageReliablePackets();
@@ -235,6 +184,11 @@ namespace Infinity.Udp
 
         private void StartListeningForData()
         {
+            OptimizedThreadPool.EnqueueJob(ReceiveAndProcessData, null, null);
+        }
+
+        private void ReceiveAndProcessData(object? state)
+        {
 #if DEBUG
             if (TestLagMs > 0)
             {
@@ -242,39 +196,32 @@ namespace Infinity.Udp
             }
 #endif
 
-            var reader = MessageReader.Get();
-            try
-            {
-                socket.BeginReceive(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ReadCallback, reader);
-            }
-            catch
-            {
-                // this is handles by keep alive and packet resends
-                reader.Recycle();
-            }
-        }
+            EndPoint remote_ep = EndPoint;
 
-        private void ReadCallback(IAsyncResult result)
-        {
-            var reader = (MessageReader)result.AsyncState;
+            var reader = MessageReader.Get();
+            int bytes_received;
 
             bool process = true;
 
             try
             {
-                reader.Length = socket.EndReceive(result);
+                bytes_received = socket.ReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remote_ep);
+                reader.Length = bytes_received;
             }
             catch
             {
                 // this is handles by keep alive and packet resends
                 reader.Recycle();
                 process = false;
+                StartListeningForData();
+                return;
             }
 
             //Exit if no bytes read, we've failed.
             if (reader.Length == 0)
             {
                 reader.Recycle();
+                StartListeningForData();
                 return;
             }
 
@@ -318,7 +265,7 @@ namespace Infinity.Udp
 
         protected override bool SendDisconnect(MessageWriter _writer)
         {
-            Send(_writer);
+            SendSync(_writer);
 
             if (State == ConnectionState.NotConnected)
             {
@@ -330,9 +277,9 @@ namespace Infinity.Udp
             return true;
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool _disposing)
         {
-            if (disposing)
+            if (_disposing)
             {
                 var writer = UdpMessageFactory.BuildDisconnectMessage();
                 SendDisconnect(writer);
@@ -343,10 +290,7 @@ namespace Infinity.Udp
             try { socket.Close(); } catch { }
             try { socket.Dispose(); } catch { }
 
-            reliable_packet_timer.Dispose();
-            connect_wait_lock.Dispose();
-
-            base.Dispose(disposing);
+            base.Dispose(_disposing);
         }
 
         protected override void DisconnectRemote(string _reason, MessageReader _reader)
@@ -372,6 +316,38 @@ namespace Infinity.Udp
             }
 
             Disconnect(_reason, msg);
+        }
+
+        protected override void ShareConfiguration()
+        {
+            // do nothing here
+        }
+
+        protected override void ReadConfiguration(MessageReader _reader)
+        {
+            // Read Config
+            _reader.Position += 3;
+
+            // Reliability
+            configuration.ResendTimeoutMs = _reader.ReadInt32();
+            configuration.ResendLimit = _reader.ReadInt32();
+            configuration.ResendPingMultiplier = _reader.ReadSingle();
+            configuration.DisconnectTimeoutMs = _reader.ReadInt32();
+
+            // Keep Alive
+            configuration.KeepAliveInterval = _reader.ReadInt32();
+            configuration.MissingPingsUntilDisconnect = _reader.ReadInt32();
+
+            // Fragmentation
+            configuration.EnableFragmentation = _reader.ReadBoolean();
+
+            State = ConnectionState.Connected;
+
+            keep_alive_wait_mutex.Reset();
+
+            InitializeKeepAliveTimer();
+
+            DiscoverMTU();
         }
     }
 }

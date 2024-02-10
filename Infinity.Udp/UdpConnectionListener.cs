@@ -1,5 +1,6 @@
 ﻿using Infinity.Core;
 using Infinity.Core.Exceptions;
+using Infinity.Core.Threading;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -72,6 +73,8 @@ namespace Infinity.Udp
                 socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
             }
 
+            socket.Blocking = false;
+
             return socket;
         }
 
@@ -96,65 +99,36 @@ namespace Infinity.Udp
 
         private void StartListeningForData()
         {
+            OptimizedThreadPool.EnqueueJob(ReceiveAndProcessData, null);
+        }
+
+        private void ReceiveAndProcessData(object? state)
+        {
             EndPoint remoteEP = EndPoint;
 
             MessageReader reader = MessageReader.Get();
-            try
-            {
-                socket.BeginReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, reader);
-            }
-            catch (SocketException sx)
-            {
-                reader.Recycle();
-
-                logger?.WriteError("Socket Ex in StartListening: " + sx.Message);
-
-                Thread.Sleep(10);
-                StartListeningForData();
-                return;
-            }
-            catch (Exception ex)
-            {
-                reader.Recycle();
-                logger?.WriteError("Stopped due to: " + ex.Message);
-                return;
-            }
-        }
-
-        private void ReadCallback(IAsyncResult _result)
-        {
-            MessageReader reader = (MessageReader)_result.AsyncState;
             int bytes_received;
-            EndPoint remote_end_point = new IPEndPoint(EndPoint.Address, EndPoint.Port);
-
-            //End the receive operation
             try
             {
-                bytes_received = socket.EndReceiveFrom(_result, ref remote_end_point);
-
+                bytes_received = socket.ReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP);
                 reader.Length = bytes_received;
-                reader.Position = 0;
             }
             catch (ObjectDisposedException)
             {
                 reader.Recycle();
                 return;
             }
-            catch (SocketException sx)
+            catch (SocketException sx) // will always throw this because its non blocking now
             {
                 reader.Recycle();
-
-                logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
-
-                Thread.Sleep(10);
                 StartListeningForData();
                 return;
             }
             catch (Exception ex)
             {
-                // Idk, maybe a null ref after dispose?
                 reader.Recycle();
                 logger?.WriteError("Stopped due to: " + ex.Message);
+                StartListeningForData();
                 return;
             }
 
@@ -178,7 +152,7 @@ namespace Infinity.Udp
             // If we're aware of this connection use the one already
             // If this is a new client then connect with them!
             UdpServerConnection connection;
-            if (!all_connections.TryGetValue(remote_end_point, out connection))
+            if (!all_connections.TryGetValue(remoteEP, out connection))
             {
                 // Check for malformed connection attempts
                 if (!is_handshake)
@@ -187,21 +161,21 @@ namespace Infinity.Udp
                     return;
                 }
 
-                if (HandshakeConnection != null && 
-                    !HandshakeConnection((IPEndPoint)remote_end_point, reader, out var response))
+                if (HandshakeConnection != null &&
+                    !HandshakeConnection((IPEndPoint)remoteEP, reader, out var response))
                 {
                     reader.Recycle();
                     if (response != null)
                     {
-                        SendData(response, response.Length, remote_end_point);
+                        SendData(response, response.Length, remoteEP);
                     }
 
                     return;
                 }
 
                 aware = false;
-                connection = new UdpServerConnection(this, (IPEndPoint)remote_end_point, IPMode, logger);
-                all_connections.TryAdd(remote_end_point, connection);
+                connection = new UdpServerConnection(this, (IPEndPoint)remoteEP, IPMode, logger);
+                all_connections.TryAdd(remoteEP, connection);
             }
 
             // Inform the connection of the buffer (new connections need to send an ack back to client)
@@ -224,15 +198,6 @@ namespace Infinity.Udp
             try
             {
                 reliable_packet_timer.Change(100, Timeout.Infinite);
-            }
-            catch { }
-        }
-
-        private void SendCallback(IAsyncResult _result)
-        {
-            try
-            {
-                socket.EndSendTo(_result);
             }
             catch { }
         }
@@ -280,28 +245,24 @@ namespace Infinity.Udp
             }
 #endif
 
-            try
+            OptimizedThreadPool.EnqueueJob((state) =>
             {
-                socket.BeginSendTo(
-                    _bytes,
-                    0,
-                    _length,
-                    SocketFlags.None,
-                    _endpoint,
-                    SendCallback,
-                    null);
+                try
+                {
+                    socket.SendTo(_bytes, 0, _length, SocketFlags.None, _endpoint);
 
-                Statistics.AddBytesSent(_length);
-            }
-            catch (SocketException e)
-            {
-                logger?.WriteError("Could not send data as a SocketException occurred: " + e);
-            }
-            catch (ObjectDisposedException)
-            {
-                //Keep alive timer probably ran, ignore
-                return;
-            }
+                    Statistics.AddBytesSent(_length);
+                }
+                catch (SocketException e)
+                {
+                    logger?.WriteError("Could not send data as a SocketException occurred: " + e);
+                }
+                catch (ObjectDisposedException)
+                {
+                    //Keep alive timer probably ran, ignore
+                    return;
+                }
+            }, null);
         }
     }
 }

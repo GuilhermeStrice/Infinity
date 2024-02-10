@@ -42,7 +42,7 @@ namespace Infinity.Udp.Tests
             handshake.Recycle();
 
             //Wait until data is received
-            mutex.WaitOne(5000);
+            mutex.WaitOne();
 
             var reader = data.ToReader();
             Assert.Equal(reader.Length, result.Message.Length);
@@ -204,6 +204,7 @@ namespace Infinity.Udp.Tests
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
 
+            listener.Configuration.KeepAliveInterval = 100;
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
                 args.Connection.Disconnected += delegate (DisconnectedEvent args2)
@@ -229,6 +230,8 @@ namespace Infinity.Udp.Tests
             }
 
             connection.Dispose();
+
+            Thread.Sleep(1000);
 
             if (!mutex2.WaitOne(TimeSpan.FromSeconds(2)))
             {

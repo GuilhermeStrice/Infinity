@@ -1,5 +1,6 @@
 using Infinity.Core;
 using Infinity.Core.Exceptions;
+using Infinity.Core.Threading;
 
 namespace Infinity.Udp
 {
@@ -17,8 +18,6 @@ namespace Infinity.Udp
 
         protected readonly ILogger logger;
 
-        protected Action<MessageReader> OnReceiveConfiguration;
-
         internal UdpConnectionConfiguration configuration;
 
         public UdpConnection(ILogger _logger) : base()
@@ -28,6 +27,25 @@ namespace Infinity.Udp
         }
 
         public abstract void WriteBytesToConnection(byte[] _bytes, int _length);
+        public abstract void WriteBytesToConnectionSync(byte[] _bytes, int _length);
+
+        protected abstract void ShareConfiguration();
+        protected abstract void ReadConfiguration(MessageReader _reader);
+
+        public SendErrors SendSync(MessageWriter _writer)
+        {
+            if (state != ConnectionState.Connected)
+            {
+                return SendErrors.Disconnected;
+            }
+
+            var buffer = new byte[_writer.Length];
+            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+            WriteBytesToConnectionSync(buffer, buffer.Length);
+
+            return SendErrors.None;
+        }
 
         public override SendErrors Send(MessageWriter _writer)
         {
@@ -106,6 +124,7 @@ namespace Infinity.Udp
             }
             catch (InfinityException e)
             {
+                logger?.WriteError(e.Message);
                 throw e;
             }
             catch (Exception e)
@@ -188,6 +207,7 @@ namespace Infinity.Udp
                         break;
                     }
 
+                    // sent by client
                 case UdpSendOptionInternal.AskConfiguration:
                     {
                         ProcessReliableReceive(_reader.Buffer, 1, out id);
@@ -196,10 +216,11 @@ namespace Infinity.Udp
                         break;
                     }
 
+                    // sent by server
                 case UdpSendOptionInternal.ShareConfiguration:
                     {
                         ProcessReliableReceive(_reader.Buffer, 1, out id);
-                        OnReceiveConfiguration?.Invoke(_reader);
+                        ReadConfiguration(_reader);
                         _reader.Recycle();
                         break;
                     }
@@ -229,37 +250,6 @@ namespace Infinity.Udp
                         break;
                     }
             }
-        }
-
-        private void ShareConfiguration()
-        {
-            // Connection config
-            MessageWriter writer = MessageWriter.Get();
-            writer.Write(UdpSendOptionInternal.ShareConfiguration);
-
-            writer.Position += 2;
-
-            // Reliability
-            writer.Write(configuration.ResendTimeoutMs);
-            writer.Write(configuration.ResendLimit);
-            writer.Write(configuration.ResendPingMultiplier);
-            writer.Write(configuration.DisconnectTimeoutMs);
-
-            // Keep Alive
-            writer.Write(configuration.KeepAliveInterval);
-            writer.Write(configuration.MissingPingsUntilDisconnect);
-
-            // Fragmentation
-
-            writer.Write(configuration.EnableFragmentation);
-
-            byte[] buffer = new byte[writer.Length];
-
-            Array.Copy(writer.Buffer, 0, buffer, 0, writer.Length);
-
-            writer.Recycle();
-
-            ReliableSend(buffer);
         }
     }
 }
