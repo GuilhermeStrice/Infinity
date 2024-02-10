@@ -211,7 +211,7 @@ namespace Infinity.Udp.Tests
                     connection.Send(writer);
                 }
 
-                mutex.WaitOne();
+                mutex.WaitOne(5000);
                 for (int i = 0; i < writer.Length; ++i)
                 {
                     Assert.Equal(writer.Buffer[i], output.Buffer[i]);
@@ -462,7 +462,7 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                mutex.WaitOne();
+                mutex.WaitOne(5000);
 
                 Assert.Equal(ConnectionState.Connected, client.State);
             }

@@ -18,7 +18,7 @@ namespace Infinity.SNTP.Tests
             client.OnNtpReceived += Client_OnNtpReceived;
             client.Query();
 
-            mutex.WaitOne();
+            mutex.WaitOne(5000);
         }
 
         private void Client_OnNtpReceived(NtpClock obj)

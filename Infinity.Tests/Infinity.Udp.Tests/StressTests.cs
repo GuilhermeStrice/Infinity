@@ -134,7 +134,7 @@ namespace Infinity.Udp.Tests
                     connections.Push(connection);
                 }
 
-                mutex.WaitOne();
+                mutex.WaitOne(10000);
 
                 // wait for all events to process
                 Thread.Sleep(2000);
@@ -204,7 +204,7 @@ namespace Infinity.Udp.Tests
 
                 message.Recycle();
 
-                mutex.WaitOne();
+                mutex.WaitOne(10000);
             }
         }
 

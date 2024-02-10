@@ -66,7 +66,7 @@ namespace Infinity.Udp.Tests
 
                 writer.Recycle();
 
-                mutex.WaitOne();
+                mutex.WaitOne(5000);
             }
         }
     }

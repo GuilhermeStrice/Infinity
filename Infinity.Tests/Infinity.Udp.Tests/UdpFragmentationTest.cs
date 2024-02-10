@@ -112,7 +112,7 @@ namespace Infinity.Udp.Tests
                 Thread.Sleep(200);
                 message.Recycle();
 
-                mutex.WaitOne();
+                mutex.WaitOne(5000);
             }
         }
 

@@ -61,7 +61,7 @@ namespace Infinity.SNTP.Tests
 
             client.Query();
 
-            mutex.WaitOne();
+            mutex.WaitOne(5000);
         }
 
         //[Fact]
@@ -88,7 +88,7 @@ namespace Infinity.SNTP.Tests
 
             client.Query();
 
-            mutex.WaitOne();
+            mutex.WaitOne(5000);
         }
     }
 }
