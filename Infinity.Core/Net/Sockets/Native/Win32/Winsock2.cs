@@ -5,34 +5,15 @@ namespace Infinity.Core.Net.Sockets.Native.Win32
 {
     internal static unsafe class Winsock2
     {
-        [DllImport("Ws2_32.dll", ExactSpelling = true, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
-        internal static extern int GetAddrInfoW(
-            [In] string nodename,
-            [In] string servicename,
-            [In] ref AddressInfo hints,
-            [Out] out nint handle
-            );
+        [DllImport("Ws2_32.dll", CharSet = CharSet.Ansi)]
+        internal static extern int getaddrinfo(
+            [In] [MarshalAs(UnmanagedType.LPStr)] string pNodeName,
+            [In] [MarshalAs(UnmanagedType.LPStr)] string pServiceName, 
+            [In] ref AddressInfo pHints,
+            [In, Out] ref nint ppResult);
 
-        internal const string GetAddrInfoExCancelFunctionName = "GetAddrInfoExCancel";
-
-        internal delegate void LPLOOKUPSERVICE_COMPLETION_ROUTINE([In] int dwError, [In] int dwBytes, [In] NativeOverlapped* lpOverlapped);
-
-        [DllImport("Ws2_32.dll", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int GetAddrInfoExW(
-            [In] string pName,
-            [In] string pServiceName,
-            [In] int dwNamespace,
-            [In] nint lpNspId,
-            [In] ref AddressInfoEx pHints,
-            [Out] out AddressInfoEx* ppResult,
-            [In] nint timeout,
-            [In] ref NativeOverlapped lpOverlapped,
-            [In] LPLOOKUPSERVICE_COMPLETION_ROUTINE lpCompletionRoutine,
-            [Out] out nint lpNameHandle
-        );
-
-        [DllImport("ws2_32.dll", ExactSpelling = true, SetLastError = true)]
-        internal static extern void FreeAddrInfoEx([In] AddressInfoEx* pAddrInfo);
+        [DllImport("Ws2_32.dll", ExactSpelling = true, SetLastError = true)]
+        internal static extern void freeaddrinfo([In] IntPtr info);
 
         [DllImport("Ws2_32.dll", CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
         internal static extern SocketError GetNameInfoW(
@@ -58,9 +39,6 @@ namespace Infinity.Core.Net.Sockets.Native.Win32
 
         [DllImport("Ws2_32.dll", ExactSpelling = true, SetLastError = true)]
         internal static extern SocketError closesocket([In] nint socketHandle);
-
-        [DllImport("Ws2_32.dll", ExactSpelling = true, SetLastError = true)]
-        internal static extern void freeaddrinfo([In] nint info);
 
         [DllImport("Ws2_32.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
         internal static extern SocketError gethostname(

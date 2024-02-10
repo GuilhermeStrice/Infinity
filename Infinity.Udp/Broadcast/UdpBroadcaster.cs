@@ -1,6 +1,12 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using Infinity.Core;
+using Infinity.Core.Net;
+using Infinity.Core.Net.Sockets.Native;
+using System.Runtime.InteropServices;
+using Infinity.Core.Net.Sockets.Native.Win32;
+using System.Runtime.CompilerServices;
+using System.Net.NetworkInformation;
 
 namespace Infinity.Udp.Broadcast
 {
@@ -20,17 +26,27 @@ namespace Infinity.Udp.Broadcast
             identifier = _identifier;
             logger = _logger;
 
-            var addresses = Util.GetAddressesFromNetworkInterfaces(AddressFamily.InterNetwork);
+            nint addresses = Util.getaddrinfo(Core.Net.Sockets.AddressFamily.InterNetwork);
 
-            if (addresses.Count > 0)
+            if (addresses != 0)
             {
-                foreach (var addressInformation in addresses)
+                var ptr = addresses;
+                while (ptr != 0)
                 {
-                    Socket socket = CreateSocket(new IPEndPoint(addressInformation.Address, 0));
-                    IPAddress broadcast = Util.GetBroadcastAddress(addressInformation);
+                    var addr_info = Marshal.PtrToStructure<AddressInfo>(ptr);
 
-                    available_addresses.TryAdd(new IPEndPoint(broadcast, _port), socket);
+                    var thing = addr_info.ai_addr;
+                    var in_addr = Marshal.PtrToStructure<SocketAddressInput>(thing);
+                    var ip_str = Util.ToIP(in_addr);
+
+                    Socket socket = CreateSocket(new IPEndPoint(IPAddress.Parse(ip_str), 0));
+
+                    available_addresses.TryAdd(new IPEndPoint(IPAddress.Parse(ip_str), _port), socket);
+
+                    ptr = addr_info.ai_next;
                 }
+
+                Util.freeaddrinfo(addresses);
             }
             else
             {

@@ -1,7 +1,7 @@
-﻿namespace Infinity.Core.Net.Sockets.Native.Win32
+﻿namespace Infinity.Core.Net.Sockets.Native
 {
     [Flags]
-    internal enum AddressInfoHints
+    public enum AddressInfoHints
     {
         AI_PASSIVE = 0x01,
         AI_CANONNAME = 0x02,

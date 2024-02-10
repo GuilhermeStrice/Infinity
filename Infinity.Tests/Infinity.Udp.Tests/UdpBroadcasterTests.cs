@@ -15,7 +15,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void CanStart()
+        public void DoesItWork()
         {
             ManualResetEvent waitHandle = new ManualResetEvent(false);
 

@@ -1,5 +1,6 @@
 ﻿namespace Infinity.Core.Net.Sockets
 {
+    [Flags]
     public enum SocketType : int
     {
         Stream = 1,
