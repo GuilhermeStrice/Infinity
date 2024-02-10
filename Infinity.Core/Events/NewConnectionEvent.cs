@@ -2,8 +2,8 @@
 {
     public class NewConnectionEvent : IRecyclable
     {
-        public NetworkConnection Connection;
-        public MessageReader HandshakeData;
+        public NetworkConnection? Connection;
+        public MessageReader? HandshakeData;
 
         internal NewConnectionEvent()
         {

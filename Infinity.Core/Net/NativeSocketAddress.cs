@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Infinity.Core.Net
 {
-    public class SocketAddress
+    public class NativeSocketAddress
     {
 
         internal const int IPv6AddressSize = 28;
@@ -97,14 +97,14 @@ namespace Infinity.Core.Net
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SocketAddress(AddressFamily family) : this(family, MaxSize)
+        public NativeSocketAddress(AddressFamily family) : this(family, MaxSize)
         {
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SocketAddress(AddressFamily family, int size)
+        public NativeSocketAddress(AddressFamily family, int size)
         {
             if (size < WriteableOffset)
             {
@@ -126,7 +126,7 @@ namespace Infinity.Core.Net
 #endif
         }
 
-        internal SocketAddress(NativeIPAddress ipAddress)
+        internal NativeSocketAddress(NativeIPAddress ipAddress)
             : this(ipAddress.AddressFamily,
                 ipAddress.AddressFamily == AddressFamily.InterNetwork ? IPv4AddressSize : IPv6AddressSize)
         {
@@ -167,7 +167,7 @@ namespace Infinity.Core.Net
             }
         }
 
-        internal SocketAddress(NativeIPAddress ipaddress, int port)
+        internal NativeSocketAddress(NativeIPAddress ipaddress, int port)
             : this(ipaddress)
         {
             m_Buffer[2] = (byte)(port >> 8);
@@ -217,7 +217,7 @@ namespace Infinity.Core.Net
         internal NativeEndPoint GetIPEndPoint()
         {
             NativeIPAddress address = GetIPAddress();
-            int port = m_Buffer[2] << 8 & 0xFF00 | m_Buffer[3];
+            ushort port = (ushort)(m_Buffer[2] << 8 & 0xFF00 | m_Buffer[3]);
             return new NativeEndPoint(address, port);
         }
 
@@ -249,7 +249,7 @@ namespace Infinity.Core.Net
         }
         public override bool Equals(object comparand)
         {
-            SocketAddress castedComparand = comparand as SocketAddress;
+            NativeSocketAddress castedComparand = comparand as NativeSocketAddress;
             if (castedComparand == null || Size != castedComparand.Size)
             {
                 return false;

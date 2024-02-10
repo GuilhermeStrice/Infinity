@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Infinity.Core.Net.Sockets.Native.Win32
+namespace Infinity.Core.Net.Sockets.Native
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct SocketAddressInput

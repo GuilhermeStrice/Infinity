@@ -87,10 +87,10 @@ namespace Infinity.Udp.Tests
                     conn.BytesSent.RemoveAt(1);
                 }
 
-                Assert.Equal(1, messagesReceived.Count);
+                Assert.Single(messagesReceived);
                 messagesReceived.Clear();
 
-                Assert.Equal(1, conn.BytesSent.Count);
+                Assert.Single(conn.BytesSent);
                 conn.BytesSent.Clear();
             }
 

@@ -39,7 +39,8 @@ namespace Infinity.Udp.Broadcast
 
                         var addr_ptr = addr_info.ai_addr;
                         var in_addr = Marshal.PtrToStructure<SocketAddressInput>(addr_ptr);
-                        var ip_str = Util.ToIP(in_addr);
+                        var ip = new NativeIPAddress(in_addr.sin_addr.S_addr);
+                        var ip_str = ip.ToString();
 
                         Socket socket = CreateSocket(new IPEndPoint(IPAddress.Parse(ip_str), 0));
 

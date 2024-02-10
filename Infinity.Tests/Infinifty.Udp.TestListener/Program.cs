@@ -6,7 +6,6 @@ namespace TestListener
 {
     public static class Program
     {
-        static volatile bool run = true;
         static volatile int connection_count = 0;
         static volatile int message_count = 0;
 
@@ -32,7 +31,6 @@ namespace TestListener
 
             if (connection_count >= 50)
             {
-                run = false;
                 Console.WriteLine(listener.ConnectionCount);
             }
         }

@@ -151,33 +151,11 @@ namespace Infinity.Core.Net
             return stringValue == null || stringValue.Length == 0;
         }
 
-        /*
-        // Consider removing.
-        public static bool ValidateUInt32(long address) {
-            // on false, API should throw new ArgumentOutOfRangeException("address");
-            return address>=0x00000000 && address<=0xFFFFFFFF;
-        }
-        */
-
-        public static bool ValidateTcpPort(int port)
-        {
-            // on false, API should throw new ArgumentOutOfRangeException("port");
-            return port >= NativeEndPoint.MinPort && port <= NativeEndPoint.MaxPort;
-        }
-
         public static bool ValidateRange(int actual, int fromAllowed, int toAllowed)
         {
             // on false, API should throw new ArgumentOutOfRangeException("argument");
             return actual >= fromAllowed && actual <= toAllowed;
         }
-
-        /*
-        // Consider removing.
-        public static bool ValidateRange(long actual, long fromAllowed, long toAllowed) {
-            // on false, API should throw new ArgumentOutOfRangeException("argument");
-            return actual>=fromAllowed && actual<=toAllowed;
-        }
-        */
 
         // There are threading tricks a malicious app can use to create an ArraySegment with mismatched 
         // array/offset/count.  Copy locally and make sure they're valid before using them.

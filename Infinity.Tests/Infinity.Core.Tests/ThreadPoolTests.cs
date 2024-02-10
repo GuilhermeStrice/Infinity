@@ -29,7 +29,7 @@ namespace Infinity.Core.Tests
             output.WriteLine(count.ToString());
         }
 
-        public void Testt(object? state)
+        private void Testt(object? state)
         {
             count++;
 

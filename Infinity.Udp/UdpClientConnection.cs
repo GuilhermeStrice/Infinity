@@ -26,7 +26,7 @@ namespace Infinity.Udp
             reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
         }
 
-        protected Socket CreateSocket(IPMode _ip_mode)
+        private Socket CreateSocket(IPMode _ip_mode)
         {
             Socket socket;
 

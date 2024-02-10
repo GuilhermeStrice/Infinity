@@ -16,7 +16,7 @@ namespace Infinity.Udp.Tests
         }
 
         // disable for now
-        // [Fact]
+        [Fact]
         public void DoesItWork()
         {
             Console.WriteLine("DoesItWork");

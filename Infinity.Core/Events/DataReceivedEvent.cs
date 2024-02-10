@@ -2,8 +2,8 @@
 {
     public class DataReceivedEvent : IRecyclable
     {
-        public NetworkConnection Connection;
-        public MessageReader Message;
+        public NetworkConnection? Connection;
+        public MessageReader? Message;
 
         internal DataReceivedEvent()
         {

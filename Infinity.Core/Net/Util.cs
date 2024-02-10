@@ -52,22 +52,5 @@ namespace Infinity.Core.Net
                 // linux impl
             }
         }
-
-        public static string ToIP(uint addr)
-        {
-            var part1 = (addr >> 24) & 255;
-            var part2 = ((addr >> 16) & 255);
-            var part3 = ((addr >> 8) & 255);
-            var part4 = ((addr) & 255);
-
-            return part4 + "." + part3 + "." + part2 + "." + part1;
-        }
-
-        public static string ToIP(SocketAddressInput addr)
-        {
-            var parts = addr.sin_addr.S_un_b;
-
-            return parts.s_b1 + "." + parts.s_b2 + "." + parts.s_b3 + "." + parts.s_b4;
-        }
     }
 }

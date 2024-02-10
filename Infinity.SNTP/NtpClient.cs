@@ -24,7 +24,7 @@ namespace Infinity.SNTP
         public event Action<NtpClock>? OnNtpReceived;
         public event Action<Exception>? OnInternalError;
 
-        public NtpClock Last { get; private set; }
+        public NtpClock? Last { get; private set; }
 
         private EndPoint endpoint;
         private Socket socket;

@@ -4,7 +4,7 @@
 
     public class OptimizedThreadPoolWorkItem
     {
-        public ThreadedAction MethodToExecute;
-        public object State;
+        public ThreadedAction? MethodToExecute;
+        public object? State;
     }
 }

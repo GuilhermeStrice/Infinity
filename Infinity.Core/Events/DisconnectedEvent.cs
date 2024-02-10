@@ -2,9 +2,9 @@
 {
     public class DisconnectedEvent : IRecyclable
     {
-        public NetworkConnection Connection;
-        public MessageReader Message;
-        public string Reason;
+        public NetworkConnection? Connection;
+        public MessageReader? Message;
+        public string? Reason;
 
         internal DisconnectedEvent()
         {

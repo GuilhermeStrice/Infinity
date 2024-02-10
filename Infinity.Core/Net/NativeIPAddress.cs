@@ -21,10 +21,6 @@ namespace Infinity.Core.Net
 
         internal const long LoopbackMask = 0x00000000000000FF;
 
-        //
-        // IPv6 Changes: make this internal so other NCL classes that understand about
-        //               IPv4 and IPv4 can still access it rather than the obsolete property.
-        //
         internal long m_Address;
 
         [NonSerialized]
@@ -49,14 +45,6 @@ namespace Infinity.Core.Net
 
         internal const int NumberOfLabels = IPv6AddressBytes / 2;
 
-
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Net.NativeIPAddress'/>
-        ///       class with the specified
-        ///       address.
-        ///    </para>
-        /// </devdoc>
         public NativeIPAddress(long newAddress)
         {
             if (newAddress < 0 || newAddress > 0x00000000FFFFFFFF)
@@ -66,15 +54,8 @@ namespace Infinity.Core.Net
             m_Address = newAddress;
         }
 
-
-        /// <devdoc>
-        ///    <para>
-        ///       Constructor for an IPv6 Address with a specified Scope.
-        ///    </para>
-        /// </devdoc>
         public NativeIPAddress(byte[] address, long scopeid)
         {
-
             if (address == null)
             {
                 throw new ArgumentNullException("address");
@@ -111,12 +92,6 @@ namespace Infinity.Core.Net
             m_ScopeId = scopeid;
         }
 
-
-        /// <devdoc>
-        ///    <para>
-        ///       Constructor for IPv4 and IPv6 Address.
-        ///    </para>
-        /// </devdoc>
         public NativeIPAddress(byte[] address)
         {
             if (address == null)
@@ -153,12 +128,6 @@ namespace Infinity.Core.Net
             m_Address = newAddress & 0x00000000FFFFFFFF;
         }
 
-
-
-        /// <devdoc>
-        /// <para>Converts an IP address string to an <see cref='System.Net.NativeIPAddress'/>
-        /// instance.</para>
-        /// </devdoc>
         public static bool TryParse(string ipString, out NativeIPAddress address)
         {
             address = InternalParse(ipString, true);

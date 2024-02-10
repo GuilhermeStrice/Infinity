@@ -118,7 +118,7 @@ namespace Infinity.Udp
                 reader.Recycle();
                 return;
             }
-            catch (SocketException sx) // will always throw this because its non blocking now
+            catch (SocketException) // will always throw this because its non blocking now
             {
                 reader.Recycle();
                 StartListeningForData();
