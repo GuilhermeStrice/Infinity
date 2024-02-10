@@ -19,6 +19,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void FragmentedSendTest()
         {
+            output.WriteLine("FragmentedSendTest");
+
             ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -63,6 +65,8 @@ namespace Infinity.Udp.Tests
         //[Fact]
         public void FragmentedSendTest10000()
         {
+            output.WriteLine("FragmentedSendTest10000");
+
             int count = 0;
 
             var mutex = new ManualResetEvent(false);
@@ -119,6 +123,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void MTUTest()
         {
+            output.WriteLine("MTUTest");
+
             int desired_mtu = 1500;
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))

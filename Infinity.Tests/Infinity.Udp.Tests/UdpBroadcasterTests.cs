@@ -1,4 +1,5 @@
 ﻿using Infinity.Udp.Broadcast;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using System.Net;
 using System.Text;
 using Xunit.Abstractions;
@@ -7,16 +8,18 @@ namespace Infinity.Udp.Tests
 {
     public class BroadcastTests
     {
-        public ITestOutputHelper _output;
+        public ITestOutputHelper output;
 
-        public BroadcastTests(ITestOutputHelper output)
+        public BroadcastTests(ITestOutputHelper _output)
         {
-            _output = output;
+            output = _output;
         }
 
         [Fact]
         public void DoesItWork()
         {
+            output.WriteLine("DoesItWork");
+
             ManualResetEvent waitHandle = new ManualResetEvent(false);
 
             byte[] TestData = Encoding.UTF8.GetBytes("pwerowerower");

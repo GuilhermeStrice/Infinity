@@ -19,6 +19,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void OrderedTest()
         {
+            output.WriteLine("OrderedTest");
+
             ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))

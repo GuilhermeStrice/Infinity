@@ -80,6 +80,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void StressTestOpeningConnections()
         {
+            output.WriteLine("StressTestOpeningConnections");
+
             int connections_to_test = 100;
             ManualResetEvent mutex = new ManualResetEvent(false);
 
@@ -142,6 +144,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void StressReliableMessages()
         {
+            output.WriteLine("StressReliableMessages");
+
             IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 4296);
 
             int count = 0;

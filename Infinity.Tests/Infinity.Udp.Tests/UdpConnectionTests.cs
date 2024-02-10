@@ -19,6 +19,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void ServerDisposeDisconnectsTest()
         {
+            output.WriteLine("ServerDisposeDisconnectsTest");
+
             IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 4296);
 
             bool serverConnected = false;
@@ -67,6 +69,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void ClientServerDisposeDisconnectsTest()
         {
+            output.WriteLine("ClientServerDisposeDisconnectsTest");
+
             IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 4296);
 
             bool serverConnected = false;
@@ -120,6 +124,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpFieldTest()
         {
+            output.WriteLine("UdpFieldTest");
+
             IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 4296);
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -142,6 +148,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpHandshakeTest()
         {
+            output.WriteLine("UdpHandshakeTest");
+
             var mutex = new ManualResetEvent(false);
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -180,6 +188,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpUnreliableMessageSendTest()
         {
+            output.WriteLine("UdpUnreliableMessageSendTest");
+
             ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -228,6 +238,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpIPv4ConnectionTest()
         {
+            output.WriteLine("UdpIPv4ConnectionTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -245,6 +257,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void MixedConnectionTest()
         {
+            output.WriteLine("MixedConnectionTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.IPv6Any, 4296), IPMode.IPv6))
             {
                 listener.Start();
@@ -282,6 +296,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void FalseConnectionTest()
         {
+            output.WriteLine("FalseConnectionTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
@@ -314,6 +330,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpIPv6ConnectionTest()
         {
+            output.WriteLine("UdpIPv6ConnectionTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.IPv6Any, 4296), IPMode.IPv6))
             {
                 listener.Start();
@@ -333,6 +351,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpUnreliableServerToClientTest()
         {
+            output.WriteLine("UdpUnreliableServerToClientTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -346,6 +366,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpReliableServerToClientTest()
         {
+            output.WriteLine("UdpReliableServerToClientTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -359,6 +381,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpUnreliableClientToServerTest()
         {
+            output.WriteLine("UdpUnreliableClientToServerTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -372,6 +396,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void UdpReliableClientToServerTest()
         {
+            output.WriteLine("UdpReliableClientToServerTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -385,6 +411,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void PingDisconnectClientTest()
         {
+            output.WriteLine("PingDisconnectClientTest");
+
 #if DEBUG
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
@@ -415,6 +443,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void KeepAliveClientTest()
         {
+            output.WriteLine("KeepAliveClientTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -437,6 +467,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void KeepAliveServerTest()
         {
+            output.WriteLine("KeepAliveServerTest");
+
             ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
@@ -474,6 +506,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void ClientDisconnectTest()
         {
+            output.WriteLine("ClientDisconnectTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -487,6 +521,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void ClientDisconnectOnDisposeTest()
         {
+            output.WriteLine("ClientDisconnectOnDisposeTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -500,6 +536,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void ServerDisconnectTest()
         {
+            output.WriteLine("ServerDisconnectTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
@@ -513,6 +551,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void ServerExtraDataDisconnectTest()
         {
+            output.WriteLine("ServerExtraDataDisconnectTest");
+
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {

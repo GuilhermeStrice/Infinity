@@ -1,13 +1,24 @@
 ﻿using Infinity.Core;
 using Infinity.Tests.Core;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
+using Xunit.Abstractions;
 
 namespace Infinity.Udp.Tests
 {
     public class UdpReliabilityTests
     {
+        ITestOutputHelper output;
+
+        public UdpReliabilityTests(ITestOutputHelper _output)
+        {
+            output = _output;
+        }
+
         [Fact]
         public void TestReliableWrapOffByOne()
         {
+            output.WriteLine("TestReliableWrapOffByOne");
+
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
             var conn = new NoConnectionUdpConnection(new TestLogger());
@@ -47,6 +58,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void TestThatAllMessagesAreReceived()
         {
+            output.WriteLine("TestThatAllMessagesAreReceived");
+
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
             var conn = new NoConnectionUdpConnection(new TestLogger());
@@ -94,6 +107,8 @@ namespace Infinity.Udp.Tests
         [Fact]
         public void TestAcksForNotReceivedMessages()
         {
+            output.WriteLine("TestAcksForNotReceivedMessages");
+
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
             var conn = new NoConnectionUdpConnection(new TestLogger());
