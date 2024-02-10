@@ -30,7 +30,6 @@ namespace Infinity.Udp.Tests
             for (int i = 0; i < connection_count; i++)
             {
                 var connection = new UdpClientConnection(new TestLogger(), ep);
-                Thread.Sleep(5);
                 connection.DataReceived += delegate (DataReceivedEvent obj)
                 {
                     obj.Recycle();
@@ -120,7 +119,6 @@ namespace Infinity.Udp.Tests
                 for (int i = 0; i < connections_to_test; i++)
                 {
                     var connection = new UdpClientConnection(new TestLogger(), ep);
-                    Thread.Sleep(5);
                     connection.DataReceived += delegate (DataReceivedEvent obj)
                     {
                         obj.Recycle();
@@ -137,7 +135,6 @@ namespace Infinity.Udp.Tests
                 mutex.WaitOne(10000);
 
                 // wait for all events to process
-                Thread.Sleep(2000);
                 handshake.Recycle();
             }
         }

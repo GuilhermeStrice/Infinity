@@ -231,8 +231,6 @@ namespace Infinity.Udp.Tests
 
             connection.Dispose();
 
-            Thread.Sleep(1000);
-
             if (!mutex2.WaitOne(TimeSpan.FromSeconds(2)))
             {
                 Assert.Fail("Timeout waiting for client disconnect packet");

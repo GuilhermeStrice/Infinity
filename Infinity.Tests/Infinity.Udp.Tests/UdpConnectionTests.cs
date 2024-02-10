@@ -54,7 +54,7 @@ namespace Infinity.Udp.Tests
 
                 Thread.Sleep(200); // Gotta wait for the server to set up the events.
                 listener.Dispose();
-                Thread.Sleep(2000);
+                Thread.Sleep(1000);
 
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
@@ -106,7 +106,7 @@ namespace Infinity.Udp.Tests
                 Thread.Sleep(100); // Gotta wait for the server to set up the events.
                 connection.Dispose();
 
-                Thread.Sleep(1000);
+                Thread.Sleep(100);
 
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
@@ -400,7 +400,7 @@ namespace Infinity.Udp.Tests
                 Thread.Sleep(10);
                 listener.TestDropRate = 1;
 
-                Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
+                Thread.Sleep(1000);    //Enough time for some keep alive packets
 
                 Assert.Equal(ConnectionState.NotConnected, connection.State);
             }
@@ -425,7 +425,7 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                Thread.Sleep(2000);    //Enough time for at least some keep alive packets
+                Thread.Sleep(1000);    //Enough time for at least some keep alive packets
 
                 Assert.Equal(ConnectionState.Connected, connection.State);
             }
@@ -449,7 +449,7 @@ namespace Infinity.Udp.Tests
                 {
                     client = (UdpConnection)args.Connection;
 
-                    Thread.Sleep(1050);    //Enough time for ~10 keep alive packets
+                    Thread.Sleep(1000);    //Enough time for some keep alive packets
 
                     args.Recycle();
 
