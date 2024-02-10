@@ -54,83 +54,70 @@ namespace Infinity.Udp
                 return SendErrors.Disconnected;
             }
 
-            try
+            InvokeBeforeSend(_writer);
+
+            switch (_writer.Buffer[0])
             {
-                InvokeBeforeSend(_writer);
-
-                switch (_writer.Buffer[0])
-                {
-                    case UdpSendOption.Reliable:
+                case UdpSendOption.Reliable:
+                    {
+                        if (_writer.Length > MTU)
                         {
-                            if (_writer.Length > MTU)
+                            throw new InfinityException("not allowed");
+                        }
+
+                        byte[] buffer = new byte[_writer.Length];
+                        Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+                        ReliableSend(buffer);
+                        break;
+                    }
+                case UdpSendOption.ReliableOrdered:
+                    {
+                        if (_writer.Length > MTU)
+                        {
+                            throw new InfinityException("not allowed");
+                        }
+
+                        byte[] buffer = new byte[_writer.Length];
+                        Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+                        OrderedSend(buffer);
+                        Statistics.LogReliableMessageSent(buffer.Length);
+
+                        break;
+                    }
+                case UdpSendOption.Fragmented:
+                    {
+                        if (configuration.EnableFragmentation)
+                        {
+                            if (_writer.Length <= MTU)
                             {
-                                throw new InfinityException("not allowed");
+                                throw new InfinityException("Message not big enough");
                             }
 
-                            byte[] buffer = new byte[_writer.Length];
-                            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+                            byte[] buffer = new byte[_writer.Length - 3];
+                            Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
 
-                            ReliableSend(buffer);
-                            break;
+                            FragmentedSend(buffer);
+                            Statistics.LogFragmentedMessageSent(buffer.Length);
                         }
-                    case UdpSendOption.ReliableOrdered:
+                        else
                         {
-                            if (_writer.Length > MTU)
-                            {
-                                throw new InfinityException("not allowed");
-                            }
-
-                            byte[] buffer = new byte[_writer.Length];
-                            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                            OrderedSend(buffer);
-                            Statistics.LogReliableMessageSent(buffer.Length);
-
-                            break;
+                            throw new InfinityException("Enable fragmentation to use fragmented messages");
                         }
-                    case UdpSendOption.Fragmented:
-                        {
-                            if (configuration.EnableFragmentation)
-                            {
-                                if (_writer.Length <= MTU)
-                                {
-                                    throw new InfinityException("Message not big enough");
-                                }
 
-                                byte[] buffer = new byte[_writer.Length - 3];
-                                Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
+                        break;
+                    }
+                default: // applies to disconnect and unreliable
+                    {
+                        byte[] buffer = new byte[_writer.Length];
+                        Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
-                                FragmentedSend(buffer);
-                                Statistics.LogFragmentedMessageSent(buffer.Length);
-                            }
-                            else
-                            {
-                                throw new InfinityException("Enable fragmentation to use fragmented messages");
-                            }
+                        WriteBytesToConnection(buffer, buffer.Length);
+                        Statistics.LogUnreliableMessageSent(buffer.Length);
 
-                            break;
-                        }
-                    default: // applies to disconnect and unreliable
-                        {
-                            byte[] buffer = new byte[_writer.Length];
-                            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                            WriteBytesToConnection(buffer, buffer.Length);
-                            Statistics.LogUnreliableMessageSent(buffer.Length);
-
-                            break;
-                        }
-                }
-            }
-            catch (InfinityException e)
-            {
-                logger?.WriteError(e.Message);
-                throw e;
-            }
-            catch (Exception e)
-            {
-                logger?.WriteError("Unknown exception while sending: " + e);
-                return SendErrors.Unknown;
+                        break;
+                    }
             }
 
             return SendErrors.None;

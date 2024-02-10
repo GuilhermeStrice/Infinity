@@ -184,7 +184,7 @@ namespace Infinity.Udp
 
         private void StartListeningForData()
         {
-            OptimizedThreadPool.EnqueueJob(ReceiveAndProcessData, null, null);
+            OptimizedThreadPool.EnqueueJob(ReceiveAndProcessData, null);
         }
 
         private void ReceiveAndProcessData(object? state)
