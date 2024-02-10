@@ -2,9 +2,11 @@
 {
     public delegate void ThreadedAction(object? state);
 
-    public class OptimizedThreadPoolWorkItem
+    public class OptimizedThreadPoolJob
     {
         public ThreadedAction? MethodToExecute;
         public object? State;
+        public int Id = -1;
+        public bool WasCancelled = false;
     }
 }
