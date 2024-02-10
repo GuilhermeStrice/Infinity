@@ -43,7 +43,7 @@ namespace Infinity.Udp.Tests
 
                 client.StartListen();
 
-                waitHandle.WaitOne();
+                waitHandle.WaitOne(5000);
             }
         }
     }
