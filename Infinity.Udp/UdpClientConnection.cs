@@ -97,7 +97,6 @@ namespace Infinity.Udp
             catch
             {
                 // this is handles by keep alive and packet resends
-                logger?.WriteError("thing");
             }
         }
 
