@@ -86,17 +86,14 @@ namespace Infinity.Core.Threading
 
         public static bool CancelJob(int _job_id)
         {
-            lock (job_queue)
+            // first check if the job hasn't been executed
+            for (int i = 0; i < job_queue.Count; i++)
             {
-                // first check if the job hasn't been executed
-                for (int i = 0; i < job_queue.Count; i++)
+                var item = job_queue.ElementAt(i);
+                if (item.Id == _job_id)
                 {
-                    var item = job_queue.ElementAt(i);
-                    if (item.Id == _job_id)
-                    {
-                        item.WasCancelled = true;
-                        return true;
-                    }
+                    item.WasCancelled = true;
+                    return true;
                 }
             }
 
@@ -118,12 +115,7 @@ namespace Infinity.Core.Threading
         {
             while (continue_working)
             {
-                OptimizedThreadPoolJob job = null;
-                bool success = false;
-                lock (job_queue)
-                {
-                    success = job_queue.TryTake(out job, 200);
-                }
+                bool success = job_queue.TryTake(out var job);
 
                 if (success)
                 {
@@ -134,6 +126,7 @@ namespace Infinity.Core.Threading
                         thread_job_link.Remove(job.Id);
                     }
                 }
+                
             }
         }
 

@@ -7,33 +7,35 @@ namespace Infinity.Core.Tests
     {
         ITestOutputHelper output;
         ManualResetEvent mutex = new ManualResetEvent(false);
-        int count = 0;
+        long count = 0;
 
         public ThreadPoolTests(ITestOutputHelper output)
         {
             this.output = output;
         }
 
+        int desired_tests = 10000;
+
         [Fact]
         public void ThreadPoolTest()
         {
             OptimizedThreadPool.AdjustThreadCount(2);
 
-            Parallel.For(0, 100, (a) =>
+            for (int i = 0; i < desired_tests; i++)
             {
                 OptimizedThreadPool.EnqueueJob(Testt, null);
-            });
+            }
 
-            mutex.WaitOne(2500);
+            mutex.WaitOne(5000);
 
             output.WriteLine(count.ToString());
         }
 
         private void Testt(object? state)
         {
-            count++;
+            Interlocked.Increment(ref count);
 
-            if (count == 100)
+            if (Interlocked.Read(ref count) == desired_tests)
             {
                 mutex.Set();
             }
