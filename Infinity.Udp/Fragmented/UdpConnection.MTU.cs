@@ -63,6 +63,8 @@ namespace Infinity.Udp
 
         private void ExpandMTU()
         {
+            KeepAliveTimerWait();
+
             lock (mtu_lock)
             {
                 var buffer = new byte[MTU];

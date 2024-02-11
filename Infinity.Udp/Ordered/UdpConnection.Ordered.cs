@@ -11,6 +11,8 @@ namespace Infinity.Udp
 
         private void OrderedSend(byte[] _buffer)
         {
+            KeepAliveTimerWait();
+
             AttachReliableID(_buffer, 1);
 
             _buffer[3] = (byte)send_sequence;

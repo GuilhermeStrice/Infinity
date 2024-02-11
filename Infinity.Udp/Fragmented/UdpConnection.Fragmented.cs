@@ -12,6 +12,8 @@ namespace Infinity.Udp
 
         private void FragmentedSend(byte[] _buffer)
         {
+            KeepAliveTimerWait();
+
             var fragment_size = MTU - fragment_header_size;
 
             var fragment_id = (byte)++last_fragment_id_allocated;
