@@ -1,6 +1,5 @@
 using Infinity.Core;
 using Infinity.Core.Exceptions;
-using Infinity.Core.Threading;
 
 namespace Infinity.Udp
 {
@@ -123,17 +122,6 @@ namespace Infinity.Udp
             return SendErrors.None;
         }
 
-        protected override void Dispose(bool _disposing)
-        {
-            if (_disposing)
-            {
-                DisposeKeepAliveTimer();
-                DisposeReliablePackets();
-            }
-
-            base.Dispose(_disposing);
-        }
-
         protected internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
         {
             ushort id;
@@ -237,6 +225,17 @@ namespace Infinity.Udp
                         break;
                     }
             }
+        }
+
+        protected override void Dispose(bool _disposing)
+        {
+            if (_disposing)
+            {
+                DisposeKeepAliveTimer();
+                DisposeReliablePackets();
+            }
+
+            base.Dispose(_disposing);
         }
     }
 }

@@ -59,22 +59,6 @@ namespace Infinity.Udp
             return true;
         }
 
-        protected override void Dispose(bool _disposing)
-        {
-            if (State == ConnectionState.Connected)
-            {
-                var writer = UdpMessageFactory.BuildDisconnectMessage();
-
-                SendDisconnect(writer);
-
-                writer.Recycle();
-            }
-
-            Listener.RemoveConnection(EndPoint);
-
-            base.Dispose(_disposing);
-        }
-
         protected override void DisconnectRemote(string _reason, MessageReader _reader)
         {
             var writer = UdpMessageFactory.BuildDisconnectMessage();
@@ -142,6 +126,22 @@ namespace Infinity.Udp
         protected override void ReadConfiguration(MessageReader _reader)
         {
             // do nothing here
+        }
+
+        protected override void Dispose(bool _disposing)
+        {
+            if (State == ConnectionState.Connected)
+            {
+                var writer = UdpMessageFactory.BuildDisconnectMessage();
+
+                SendDisconnect(writer);
+
+                writer.Recycle();
+            }
+
+            Listener.RemoveConnection(EndPoint);
+
+            base.Dispose(_disposing);
         }
     }
 }

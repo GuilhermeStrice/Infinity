@@ -276,22 +276,6 @@ namespace Infinity.Udp
             return true;
         }
 
-        protected override void Dispose(bool _disposing)
-        {
-            if (_disposing)
-            {
-                var writer = UdpMessageFactory.BuildDisconnectMessage();
-                SendDisconnect(writer);
-                writer.Recycle();
-            }
-
-            try { socket.Shutdown(SocketShutdown.Both); } catch { }
-            try { socket.Close(); } catch { }
-            try { socket.Dispose(); } catch { }
-
-            base.Dispose(_disposing);
-        }
-
         protected override void DisconnectRemote(string _reason, MessageReader _reader)
         {
             var writer = UdpMessageFactory.BuildDisconnectMessage();
@@ -347,6 +331,22 @@ namespace Infinity.Udp
             InitializeKeepAliveTimer();
 
             DiscoverMTU();
+        }
+
+        protected override void Dispose(bool _disposing)
+        {
+            if (_disposing)
+            {
+                var writer = UdpMessageFactory.BuildDisconnectMessage();
+                SendDisconnect(writer);
+                writer.Recycle();
+            }
+
+            try { socket.Shutdown(SocketShutdown.Both); } catch { }
+            try { socket.Close(); } catch { }
+            try { socket.Dispose(); } catch { }
+
+            base.Dispose(_disposing);
         }
     }
 }
