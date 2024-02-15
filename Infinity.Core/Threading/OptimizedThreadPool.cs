@@ -84,7 +84,7 @@ namespace Infinity.Core.Threading
             return job_id;
         }
 
-        public static bool CancelJob(int _job_id)
+        private static bool CancelJob(int _job_id)
         {
             // first check if the job hasn't been executed
             for (int i = 0; i < job_queue.Count; i++)
@@ -119,6 +119,8 @@ namespace Infinity.Core.Threading
 
                 if (success)
                 {
+                    thread_job_link.Add(job.Id, _thread_id);
+
                     if (!job.WasCancelled)
                     {
                         job.MethodToExecute.Invoke(job.State);
@@ -126,7 +128,6 @@ namespace Infinity.Core.Threading
                         thread_job_link.Remove(job.Id);
                     }
                 }
-                
             }
         }
 

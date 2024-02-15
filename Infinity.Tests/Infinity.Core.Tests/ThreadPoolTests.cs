@@ -56,5 +56,28 @@ namespace Infinity.Core.Tests
 
             output.WriteLine(count.ToString());
         }
+
+        [Fact]
+        public void CancelTest()
+        {
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            int job_id = OptimizedThreadPool.EnqueueJob((state) =>
+            {
+                while (true)
+                {
+                    // do nothing
+                    //manualResetEvent.WaitOne();
+                    Math.Floor(20.5);
+                }
+                
+            });
+
+            Thread.Sleep(1500);
+            bool result = OptimizedThreadPool.CancelJob(job_id);
+            Thread.Sleep(1500);
+
+            Assert.True(result);
+        }
     }
 }
