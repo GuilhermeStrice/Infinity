@@ -1,4 +1,4 @@
-﻿namespace Infinity.Udp
+﻿namespace Infinity.Core.KeepAlive
 {
     internal struct PingInfo
     {

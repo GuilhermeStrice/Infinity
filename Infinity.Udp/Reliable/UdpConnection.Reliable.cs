@@ -7,7 +7,7 @@ namespace Infinity.Udp
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        internal FastConcurrentDictionary<ushort, Packet> reliable_data_packets_sent = new FastConcurrentDictionary<ushort, Packet>();
+        internal FastConcurrentDictionary<ushort, UdpPacket> reliable_data_packets_sent = new FastConcurrentDictionary<ushort, UdpPacket>();
 
         private int last_id_allocated = -1;
 
@@ -18,7 +18,7 @@ namespace Infinity.Udp
             {
                 reliable_data_packets_sent.ForEach(id_packet =>
                 {
-                    Packet packet = id_packet.Value;
+                    UdpPacket packet = id_packet.Value;
 
                     try
                     {
@@ -64,10 +64,10 @@ namespace Infinity.Udp
             if (resend_delay_ms <= 0)
             {
                 resend_delay_ms = Math.Clamp((int)(AveragePingMs * configuration.ResendPingMultiplier), 
-                    Packet.MinResendDelayMs, Packet.MaxInitialResendDelayMs);
+                    UdpPacket.MinResendDelayMs, UdpPacket.MaxInitialResendDelayMs);
             }
 
-            Packet packet = Pools.PacketPool.GetObject();
+            UdpPacket packet = Pools.PacketPool.GetObject();
             packet.Set(
                 this,
                 _buffer,

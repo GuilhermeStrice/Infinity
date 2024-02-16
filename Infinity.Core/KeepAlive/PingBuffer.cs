@@ -1,6 +1,6 @@
-﻿namespace Infinity.Udp
+﻿namespace Infinity.Core.KeepAlive
 {
-    internal class PingBuffer
+    public class PingBuffer
     {
         private const ushort InvalidatingFactor = ushort.MaxValue / 2;
 

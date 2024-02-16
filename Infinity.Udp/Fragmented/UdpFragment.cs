@@ -2,16 +2,16 @@
 
 namespace Infinity.Udp
 {
-    public class Fragment : IRecyclable
+    public class UdpFragment : IRecyclable
     {
         public int Id { get; set; }
         public MessageReader? Reader { get; set; }
 
-        public Fragment()
+        public UdpFragment()
         {
         }
 
-        public static Fragment Get()
+        public static UdpFragment Get()
         {
             return Pools.FragmentPool.GetObject();
         }

@@ -209,6 +209,8 @@ namespace Infinity.Udp
                 entry.Value.Dispose();
             });
 
+            Thread.Sleep(500);
+
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }
             try { socket.Dispose(); } catch { }

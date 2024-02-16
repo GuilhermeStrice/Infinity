@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Infinity.Udp
 {
-    public class Packet : IRecyclable
+    public class UdpPacket : IRecyclable
     {
         public const int MaxInitialResendDelayMs = 300;
         public const int MinResendDelayMs = 50;
@@ -42,7 +42,7 @@ namespace Infinity.Udp
                 long lifetimeMs = Stopwatch.ElapsedMilliseconds;
                 if (lifetimeMs >= connection.configuration.DisconnectTimeoutMs)
                 {
-                    if (connection.reliable_data_packets_sent.TryRemove(id, out Packet self))
+                    if (connection.reliable_data_packets_sent.TryRemove(id, out UdpPacket self))
                     {
                         connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {id} (size={buffer.Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
                         self.Recycle();
@@ -63,7 +63,7 @@ namespace Infinity.Udp
                     if (connection.configuration.ResendLimit != 0
                         && Retransmissions > connection.configuration.ResendLimit)
                     {
-                        if (connection.reliable_data_packets_sent.TryRemove(id, out Packet self))
+                        if (connection.reliable_data_packets_sent.TryRemove(id, out UdpPacket self))
                         {
                             connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {id} (size={buffer.Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
                             self.Recycle();

@@ -13,7 +13,7 @@ namespace Infinity.SNTP.Tests
             output = _output;
         }
 
-        // This test sometimes fails on github, but passes properly
+        // This test sometimes fails on github/windows, but passes properly
         //[Fact]
         public void Timeout()
         {

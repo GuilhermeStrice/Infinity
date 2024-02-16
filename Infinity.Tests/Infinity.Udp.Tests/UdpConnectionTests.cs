@@ -61,8 +61,6 @@ namespace Infinity.Udp.Tests
                 Assert.True(serverConnected);
                 Assert.True(serverDisconnected);
                 Assert.False(clientDisconnected);
-
-                connection.Dispose();
             }
         }
 

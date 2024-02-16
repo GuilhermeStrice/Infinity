@@ -5,7 +5,7 @@ namespace Infinity.Udp
     /// <summary>
     ///     Holding class for the parts of a fragmented message so far received.
     /// </summary>
-    public class FragmentedMessage : IRecyclable
+    public class UdpFragmentedMessage : IRecyclable
     {
         /// <summary>
         ///     The total number of fragments expected
@@ -15,13 +15,13 @@ namespace Infinity.Udp
         /// <summary>
         ///     The fragments received so far.
         /// </summary>
-        public HashSet<Fragment> Fragments { get; set; } = new HashSet<Fragment>();
+        public HashSet<UdpFragment> Fragments { get; set; } = new HashSet<UdpFragment>();
 
-        public FragmentedMessage()
+        public UdpFragmentedMessage()
         {
         }
 
-        public static FragmentedMessage Get()
+        public static UdpFragmentedMessage Get()
         {
             return Pools.FragmentedMessagePool.GetObject();
         }

@@ -6,7 +6,7 @@ namespace Infinity.Udp
     {
         private volatile int last_fragment_id_allocated = 0;
 
-        private FragmentedMessage[] fragmented_messages_received = new FragmentedMessage[byte.MaxValue];
+        private UdpFragmentedMessage[] fragmented_messages_received = new UdpFragmentedMessage[byte.MaxValue];
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte);
 
@@ -56,7 +56,7 @@ namespace Infinity.Udp
                 var fragments_count = _reader.ReadInt32();
                 var fragmented_message_id = _reader.ReadByte();
 
-                FragmentedMessage fragmented_message;
+                UdpFragmentedMessage fragmented_message;
 
                 if (fragmented_messages_received[fragmented_message_id] != null)
                 {
@@ -64,13 +64,13 @@ namespace Infinity.Udp
                 }
                 else
                 {
-                    fragmented_message = FragmentedMessage.Get();
+                    fragmented_message = UdpFragmentedMessage.Get();
                     fragmented_message.FragmentsCount = fragments_count;
 
                     fragmented_messages_received[fragmented_message_id] = fragmented_message;
                 }
 
-                var fragment = Fragment.Get();
+                var fragment = UdpFragment.Get();
                 fragment.Id = id;
                 fragment.Reader = _reader;
 

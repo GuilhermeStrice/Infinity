@@ -27,7 +27,7 @@
         private void AcknowledgeMessageId(ushort _id)
         {
             // Dispose of timer and remove from dictionary
-            if (reliable_data_packets_sent.TryRemove(_id, out Packet packet))
+            if (reliable_data_packets_sent.TryRemove(_id, out UdpPacket packet))
             {
                 Statistics.LogReliablePacketAcknowledged();
                 float rt = packet.Stopwatch.ElapsedMilliseconds;
