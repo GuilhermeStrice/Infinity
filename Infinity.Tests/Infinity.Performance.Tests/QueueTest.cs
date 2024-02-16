@@ -1,12 +1,13 @@
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Infinity.Performance.Tests
 {
     [SimpleJob(RuntimeMoniker.Net80)]
     [RPlotExporter]
-    public class DictionaryTest
+    public class QueueTest
     {
         [GlobalSetup]
         public void Setup()
@@ -15,33 +16,33 @@ namespace Infinity.Performance.Tests
         }
 
         [Benchmark]
-        public void SimpleDictionaryTest()
+        public void SimpleQueueTest()
         {
-            Dictionary<int, int> first = new Dictionary<int, int>();
+            Queue<int> first = new Queue<int>();
 
             Parallel.For(0, 50, (i) =>
             {
                 lock (first)
                 {
-                    first.TryAdd(i, i);
+                    first.Enqueue(i);
                 }
 
                 lock (first)
                 {
-                    first.TryGetValue(i, out var _);
+                    first.Dequeue();
                 }
             });
         }
 
         [Benchmark]
-        public void ConcurrentDictionaryTest()
+        public void ConcurrentQueueTest()
         {
-            ConcurrentDictionary<int, int> second = new ConcurrentDictionary<int, int>();
+            ConcurrentQueue<int> second = new ConcurrentQueue<int>();
 
             Parallel.For(0, 50, (i) =>
             {
-                second.TryAdd(i, i);
-                second.TryGetValue(i, out var _);
+                second.Enqueue(i);
+                second.TryDequeue(out var _);
             });
         }
     }

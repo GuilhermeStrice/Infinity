@@ -4,15 +4,13 @@ using Infinity.Core;
 using Infinity.Core.Net;
 using Infinity.Core.Net.Sockets.Native;
 using System.Runtime.InteropServices;
-using Infinity.Core.Net.Sockets.Native.Win32;
-using System.Runtime.CompilerServices;
-using System.Net.NetworkInformation;
+using System.Collections.Concurrent;
 
 namespace Infinity.Udp.Broadcast
 {
     public class UdpBroadcaster : IDisposable
     {
-        private FastConcurrentDictionary<IPEndPoint, Socket> available_addresses = new FastConcurrentDictionary<IPEndPoint, Socket>();
+        private ConcurrentDictionary<IPEndPoint, Socket> available_addresses = new ConcurrentDictionary<IPEndPoint, Socket>();
         private byte[] identifier;
         private ILogger logger;
 
@@ -78,7 +76,7 @@ namespace Infinity.Udp.Broadcast
             Array.Copy(identifier, 0, buffer, 0, identifier_length);
             Array.Copy(_buffer, 0, buffer, identifier_length, data_length);
 
-            available_addresses.ForEach(available_addr =>
+            foreach (var available_addr in available_addresses)
             {
                 try
                 {
@@ -90,16 +88,16 @@ namespace Infinity.Udp.Broadcast
                 {
                     logger?.WriteError("Broadcaster: " + e);
                 }
-            });
+            }
         }
 
         public void Dispose()
         {
-            available_addresses.ForEach(available_addr =>
+            foreach (var available_addr in available_addresses)
             {
                 Socket socket = available_addr.Value;
                 CloseSocket(socket);
-            });
+            }
 
             available_addresses.Clear();
         }

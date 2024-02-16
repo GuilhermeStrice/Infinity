@@ -1,4 +1,5 @@
 ﻿using Infinity.Core;
+using System.Collections.Concurrent;
 
 namespace Infinity.Udp
 {
@@ -7,7 +8,7 @@ namespace Infinity.Udp
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        internal FastConcurrentDictionary<ushort, UdpPacket> reliable_data_packets_sent = new FastConcurrentDictionary<ushort, UdpPacket>();
+        internal ConcurrentDictionary<ushort, UdpPacket> reliable_data_packets_sent = new ConcurrentDictionary<ushort, UdpPacket>();
 
         private int last_id_allocated = -1;
 
@@ -16,7 +17,7 @@ namespace Infinity.Udp
             int output = 0;
             if (reliable_data_packets_sent.Count > 0)
             {
-                reliable_data_packets_sent.ForEach(id_packet =>
+                foreach (var id_packet in reliable_data_packets_sent)
                 {
                     UdpPacket packet = id_packet.Value;
 
@@ -25,7 +26,7 @@ namespace Infinity.Udp
                         output += packet.Resend();
                     }
                     catch { }
-                });
+                }
             }
 
             return output;
@@ -43,14 +44,14 @@ namespace Infinity.Udp
 
         private void DisposeReliablePackets()
         {
-            reliable_data_packets_sent.ForEach(id_packet =>
+            foreach (var id_packet in reliable_data_packets_sent)
             {
                 ushort id = id_packet.Key;
                 if (reliable_data_packets_sent.TryRemove(id, out var packet))
                 {
                     packet.Recycle();
                 }
-            });
+            }
         }
 
         protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)

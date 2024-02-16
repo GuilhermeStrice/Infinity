@@ -1,6 +1,7 @@
 ﻿using Infinity.Core;
 using Infinity.Core.Exceptions;
 using Infinity.Core.Threading;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -22,7 +23,7 @@ namespace Infinity.Udp
         private ILogger logger;
         private Timer reliable_packet_timer;
 
-        private FastConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new FastConcurrentDictionary<EndPoint, UdpServerConnection>();
+        private ConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
 
         public UdpConnectionListener(IPEndPoint _endpoint, IPMode _ip_mode = IPMode.IPv4, ILogger _logger = null)
         {
@@ -189,11 +190,10 @@ namespace Infinity.Udp
 
         private void ManageReliablePackets(object? _state)
         {
-            all_connections.ForEach(entry =>
+            foreach (var connection in all_connections.Values)
             {
-                var connection = entry.Value;
                 connection.ManageReliablePackets();
-            });
+            }
 
             try
             {
@@ -204,10 +204,10 @@ namespace Infinity.Udp
 
         protected override void Dispose(bool _disposing)
         {
-            all_connections.ForEach(entry =>
+            foreach (var connection in all_connections.Values)
             {
-                entry.Value.Dispose();
-            });
+                connection.Dispose();
+            }
 
             Thread.Sleep(250); // give time to send all the disconnect messages
 

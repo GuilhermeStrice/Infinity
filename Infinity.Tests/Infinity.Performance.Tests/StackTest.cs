@@ -1,10 +1,51 @@
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using Xunit.Abstractions;
 
 namespace Infinity.Performance.Tests
 {
+    [SimpleJob(RuntimeMoniker.Net80)]
+    [RPlotExporter]
     public class StackTest
+    {
+        [GlobalSetup]
+        public void Setup()
+        {
+
+        }
+
+        [Benchmark]
+        public void SimpleStackTest()
+        {
+            Stack<int> first = new Stack<int>();
+
+            Parallel.For(1, 50, (n) =>
+            {
+                lock (first)
+                {
+                    first.Push(n);
+                }
+
+                lock (first)
+                {
+                    first.Pop();
+                }
+            });
+        }
+
+        [Benchmark]
+        public void ConcurrentStackTest()
+        {
+            ConcurrentStack<int> second = new ConcurrentStack<int>();
+
+            Parallel.For(0, 50, (i) =>
+            {
+                second.Push(i);
+                second.TryPop(out int val);
+            });
+        }
+    }
+    /*public class StackTest
     {
         ITestOutputHelper output;
 
@@ -59,5 +100,5 @@ namespace Infinity.Performance.Tests
             output.WriteLine(sw2.ElapsedTicks.ToString());
             // ConcurrentStack is faster
         }
-    }
+    }*/
 }

@@ -6,7 +6,7 @@ namespace Infinity.Core.Threading
     public static class OptimizedThreadPool
     {
         // work item id -> thread id
-        private static FastConcurrentDictionary<int, int> thread_job_link = new FastConcurrentDictionary<int, int>();
+        private static ConcurrentDictionary<int, int> thread_job_link = new ConcurrentDictionary<int, int>();
         private static BlockingCollection<OptimizedThreadPoolJob> job_queue = new BlockingCollection<OptimizedThreadPoolJob>();
 
         private static List<OptimizedThread> worker_threads = new List<OptimizedThread>();
@@ -124,13 +124,13 @@ namespace Infinity.Core.Threading
 
                 if (success)
                 {
-                    thread_job_link.Add(job.Id, _thread_id);
+                    thread_job_link.TryAdd(job.Id, _thread_id);
 
                     if (!job.WasCancelled)
                     {
                         job.MethodToExecute.Invoke(job.State);
 
-                        thread_job_link.Remove(job.Id);
+                        thread_job_link.TryRemove(job.Id, out int _);
                     }
                 }
             }
