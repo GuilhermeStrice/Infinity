@@ -7,4 +7,12 @@
     <Platforms>AnyCPU;x86;x64</Platforms>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Infinity.Core\Infinity.Core.csproj" />
+  </ItemGroup>
+
 </Project>
