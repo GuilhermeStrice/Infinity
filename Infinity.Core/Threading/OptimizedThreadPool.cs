@@ -119,13 +119,13 @@ namespace Infinity.Core.Threading
 
                 if (success)
                 {
-                    thread_job_link.Add(job.Id, _thread_id);
+                    //thread_job_link.Add(job.Id, _thread_id);
 
                     if (!job.WasCancelled)
                     {
                         job.MethodToExecute.Invoke(job.State);
 
-                        thread_job_link.Remove(job.Id);
+                        //thread_job_link.Remove(job.Id);
                     }
                 }
             }

@@ -21,7 +21,7 @@ namespace Infinity.SNTP.Tests
             var timeout = TimeSpan.FromMilliseconds(1000);
 
             // Note: pick a host that *drops* packets. The test will fail if the host merely *rejects* packets.
-            var client = new NtpClient(IPAddress.Parse("192.168.0.0"), timeout);
+            var client = new NtpClient(IPAddress.Parse("2.2.2.2"), timeout);
 
             var timer = Stopwatch.StartNew();
 

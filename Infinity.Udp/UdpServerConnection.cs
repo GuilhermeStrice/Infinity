@@ -130,14 +130,11 @@ namespace Infinity.Udp
 
         protected override void Dispose(bool _disposing)
         {
-            if (State == ConnectionState.Connected)
-            {
-                var writer = UdpMessageFactory.BuildDisconnectMessage();
+            var writer = UdpMessageFactory.BuildDisconnectMessage();
 
-                SendDisconnect(writer);
+            SendDisconnect(writer);
 
-                writer.Recycle();
-            }
+            writer.Recycle();
 
             Listener.RemoveConnection(EndPoint);
 
