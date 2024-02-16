@@ -193,3 +193,9 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 *.ide
+
+**/BenchmarkDotNet.Artifacts/*
+**/project.lock.json
+tests/output/*
+.vs/restore.dg
+artifacts/*
