@@ -1,16 +1,19 @@
 ﻿namespace Infinity.Core
 {
-    public class FastConcurrentDictionary<K, V> : Dictionary<K, V> where K : notnull
+    public class FastConcurrentDictionary<K, V>
+        where K : notnull
+        where V : notnull
     {
+        private Dictionary<K, V> inner_dictionary = new Dictionary<K, V>();
         private readonly object @lock = new object();
 
-        public new V this[K key]
+        public V this[K key]
         {
             get
             {
                 lock (@lock)
                 {
-                    return base[key];
+                    return inner_dictionary[key];
                 }
             }
 
@@ -18,51 +21,51 @@
             {
                 lock (@lock)
                 {
-                    base[key] = value;
+                    inner_dictionary[key] = value;
                 }
             }
         }
 
-        public new int Count
+        public int Count
         {
             get
             {
                 lock (@lock)
                 {
-                    return base.Count;
+                    return inner_dictionary.Count;
                 }
             }
         }
 
-        public new bool TryAdd(K key, V value)
+        public bool TryAdd(K key, V value)
         {
             lock (@lock)
             {
-                return base.TryAdd(key, value);
+                return inner_dictionary.TryAdd(key, value);
             }
         }
 
-        public new void Add(K key, V value)
+        public void Add(K key, V value)
         {
             lock (@lock)
             {
-                base.Add(key, value);
+                inner_dictionary.Add(key, value);
             }
         }
 
-        public new bool ContainsKey(K key)
+        public bool ContainsKey(K key)
         {
             lock (@lock)
             {
-                return base.ContainsKey(key);
+                return inner_dictionary.ContainsKey(key);
             }
         }
 
-        public new bool TryGetValue(K key, out V value)
+        public bool TryGetValue(K key, out V value)
         {
             lock (@lock)
             {
-                return base.TryGetValue(key, out value);
+                return inner_dictionary.TryGetValue(key, out value);
             }
         }
 
@@ -70,23 +73,23 @@
         {
             lock (@lock)
             {
-                return Remove(key, out value);
+                return inner_dictionary.Remove(key, out value);
             }
         }
 
-        public new bool Remove(K key)
+        public bool Remove(K key)
         {
             lock (@lock)
             {
-                return base.Remove(key);
+                return inner_dictionary.Remove(key);
             }
         }
 
-        public new void Clear()
+        public void Clear()
         {
             lock (@lock)
             {
-                base.Clear();
+                inner_dictionary.Clear();
             }
         }
 
@@ -94,7 +97,7 @@
         {
             lock (@lock)
             {
-                foreach (var kv in this)
+                foreach (var kv in inner_dictionary)
                 {
                     action(kv);
                 }

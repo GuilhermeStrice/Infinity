@@ -84,6 +84,11 @@ namespace Infinity.Core.Threading
             return job_id;
         }
 
+        public static bool IsJobRunning(int _job_id)
+        {
+            return thread_job_link.ContainsKey(_job_id);
+        }
+
         private static bool CancelJob(int _job_id)
         {
             // first check if the job hasn't been executed
