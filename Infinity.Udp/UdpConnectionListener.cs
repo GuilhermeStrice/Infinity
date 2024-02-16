@@ -209,7 +209,7 @@ namespace Infinity.Udp
                 entry.Value.Dispose();
             });
 
-            Thread.Sleep(500);
+            Thread.Sleep(500); // give time to send all the disconnect messages
 
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }
