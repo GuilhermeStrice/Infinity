@@ -19,6 +19,8 @@ namespace TestListener
 
             listener.Start();
 
+            Console.WriteLine("Listening");
+
             Console.ReadKey();
         }
 
