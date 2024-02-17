@@ -6,9 +6,10 @@ namespace Infinity.Performance.Tests
     {
         public static void Main(string[] args)
         {
-            BenchmarkRunner.Run<DictionaryTest>();
-            BenchmarkRunner.Run<QueueTest>();
-            BenchmarkRunner.Run<StackTest>();
+            //BenchmarkRunner.Run<DictionaryTest>();
+            //BenchmarkRunner.Run<QueueTest>();
+            //BenchmarkRunner.Run<StackTest>();
+            BenchmarkRunner.Run<ArrayBufferCopyTest>();
         }
     }
 }

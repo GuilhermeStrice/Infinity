@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 namespace Infinity.Performance.Tests
 {
     [SimpleJob(RuntimeMoniker.Net80)]
-    [RPlotExporter]
     public class DictionaryTest
     {
         [GlobalSetup]

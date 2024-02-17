@@ -1,12 +1,10 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace Infinity.Performance.Tests
 {
     [SimpleJob(RuntimeMoniker.Net80)]
-    [RPlotExporter]
     public class QueueTest
     {
         [GlobalSetup]

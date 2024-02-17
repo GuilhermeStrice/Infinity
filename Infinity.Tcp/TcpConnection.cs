@@ -374,7 +374,7 @@ namespace Infinity.Core.Tcp
             buffer[2] = (byte)(((uint)writer.Length >> 8) & 0xFF);
             buffer[3] = (byte)(uint)writer.Length;
 
-            Buffer.BlockCopy(writer.Buffer, 0, buffer, 4, writer.Length);
+            Array.Copy(writer.Buffer, 0, buffer, 4, writer.Length);
 
             return buffer;
         }
@@ -416,7 +416,7 @@ namespace Infinity.Core.Tcp
 
             if (data != null)
             {
-                Buffer.BlockCopy(data.Buffer, 0, msg.Buffer, 1, data.Length);
+                Array.Copy(data.Buffer, 0, msg.Buffer, 1, data.Length);
             }
 
             Send(msg);

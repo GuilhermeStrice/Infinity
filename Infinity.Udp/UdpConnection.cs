@@ -39,7 +39,7 @@ namespace Infinity.Udp
             }
 
             var buffer = new byte[_writer.Length];
-            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+            Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
             WriteBytesToConnectionSync(buffer, buffer.Length);
 
@@ -65,7 +65,7 @@ namespace Infinity.Udp
                         }
 
                         byte[] buffer = new byte[_writer.Length];
-                        Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+                        Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
                         ReliableSend(buffer);
                         break;
@@ -78,7 +78,7 @@ namespace Infinity.Udp
                         }
 
                         byte[] buffer = new byte[_writer.Length];
-                        Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+                        Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
                         OrderedSend(buffer);
                         Statistics.LogReliableMessageSent(buffer.Length);
@@ -95,7 +95,7 @@ namespace Infinity.Udp
                             }
 
                             byte[] buffer = new byte[_writer.Length - 3];
-                            Buffer.BlockCopy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
+                            Array.Copy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
 
                             FragmentedSend(buffer);
                             Statistics.LogFragmentedMessageSent(buffer.Length);
@@ -110,7 +110,7 @@ namespace Infinity.Udp
                 default: // applies to disconnect and unreliable
                     {
                         byte[] buffer = new byte[_writer.Length];
-                        Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+                        Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
                         WriteBytesToConnection(buffer, buffer.Length);
                         Statistics.LogUnreliableMessageSent(buffer.Length);

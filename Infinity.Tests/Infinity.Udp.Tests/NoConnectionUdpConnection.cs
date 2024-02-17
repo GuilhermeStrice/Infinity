@@ -30,7 +30,7 @@ namespace Infinity.Udp.Tests
         public void Test_Receive(MessageWriter msg)
         {
             byte[] buffer = new byte[msg.Length];
-            Buffer.BlockCopy(msg.Buffer, 0, buffer, 0, msg.Length);
+            Array.Copy(msg.Buffer, 0, buffer, 0, msg.Length);
 
             var data = MessageReader.Get(buffer);
             HandleReceive(data, data.Length);

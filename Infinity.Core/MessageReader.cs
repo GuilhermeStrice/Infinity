@@ -222,7 +222,7 @@ namespace Infinity.Core
         {
             MessageReader reader = Get();
 
-            System.Buffer.BlockCopy(_buffer, _offset, reader.Buffer, 0, _length);
+            Array.Copy(_buffer, _offset, reader.Buffer, 0, _length);
 
             reader.Position = 0;
             reader.Length = _length;

@@ -190,7 +190,7 @@ namespace Infinity.Core
         public byte[] ToByteArray(int _offset)
         {
             byte[] output = new byte[Length - _offset];
-            System.Buffer.BlockCopy(Buffer, _offset, output, 0, Length - _offset);
+            Array.Copy(Buffer, _offset, output, 0, Length - _offset);
             return output;
         }
 

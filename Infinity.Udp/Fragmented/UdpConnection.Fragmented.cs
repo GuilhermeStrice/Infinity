@@ -36,7 +36,7 @@ namespace Infinity.Udp
 
                 fragment_buffer[7] = fragment_id;
 
-                Buffer.BlockCopy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
+                Array.Copy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
                 
                 WriteBytesToConnection(fragment_buffer, fragment_buffer.Length);
             }

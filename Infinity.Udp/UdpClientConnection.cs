@@ -158,7 +158,7 @@ namespace Infinity.Udp
         private void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
         {
             byte[] buffer = new byte[_writer.Length];
-            Buffer.BlockCopy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+            Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
             ReliableSend(buffer, _acknowledge_callback);
         }
