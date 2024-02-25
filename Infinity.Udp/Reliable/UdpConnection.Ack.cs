@@ -49,17 +49,14 @@
         private void SendAck(ushort _id)
         {
             byte recent_packets = 0;
-            lock (reliable_data_packets_missing)
+            for (int i = 1; i <= 8; ++i)
             {
-                for (int i = 1; i <= 8; ++i)
+                var index = (ushort)(_id - i);
+                if (index >= 0)
                 {
-                    var index = (ushort)(_id - i);
-                    if (index >= 0)
+                    if (!reliable_data_packets_missing.ContainsKey(index))
                     {
-                        if (!reliable_data_packets_missing[index])
-                        {
-                            recent_packets |= (byte)(1 << (i - 1));
-                        }
+                        recent_packets |= (byte)(1 << (i - 1));
                     }
                 }
             }

@@ -1,7 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace Infinity.Performance.Tests
 {

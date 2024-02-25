@@ -1,4 +1,5 @@
 ﻿using Infinity.Core;
+using System.Collections.Concurrent;
 
 namespace Infinity.Udp
 {
@@ -6,7 +7,7 @@ namespace Infinity.Udp
     {
         private volatile int last_fragment_id_allocated = 0;
 
-        private UdpFragmentedMessage[] fragmented_messages_received = new UdpFragmentedMessage[byte.MaxValue];
+        private ConcurrentDictionary<byte, UdpFragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<byte, UdpFragmentedMessage>();
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte);
 
@@ -58,45 +59,41 @@ namespace Infinity.Udp
 
                 UdpFragmentedMessage fragmented_message;
 
-                if (fragmented_messages_received[fragmented_message_id] != null)
-                {
-                    fragmented_message = fragmented_messages_received[fragmented_message_id];
-                }
-                else
+                if (!fragmented_messages_received.ContainsKey(fragmented_message_id))
                 {
                     fragmented_message = UdpFragmentedMessage.Get();
                     fragmented_message.FragmentsCount = fragments_count;
 
-                    fragmented_messages_received[fragmented_message_id] = fragmented_message;
+                    fragmented_messages_received.TryAdd(fragmented_message_id, fragmented_message);
+                }
+                else
+                {
+                    // reference
+                    fragmented_message = fragmented_messages_received[fragmented_message_id];
                 }
 
-                var fragment = UdpFragment.Get();
-                fragment.Id = id;
-                fragment.Reader = _reader;
+                fragmented_message.Fragments.TryAdd(id, _reader);
 
-                lock (fragmented_message)
+                if (fragmented_message.Fragments.Count == fragments_count)
                 {
-                    fragmented_message.Fragments.Add(fragment);
+                    var writer = UdpMessageFactory.BuildFragmentedMessage();
 
-                    if (fragmented_message.Fragments.Count == fragments_count)
+                    foreach (var fragment in fragmented_message.Fragments.OrderBy(fragment => fragment.Key))
                     {
-                        var writer = UdpMessageFactory.BuildFragmentedMessage();
-
-                        foreach (var f in fragmented_message.Fragments.OrderBy(fragment => fragment.Id))
-                        {
-                            writer.Write(f.Reader.Buffer, f.Reader.Position, f.Reader.Length - f.Reader.Position);
-                        }
-
-                        fragmented_message.Recycle();
-
-                        var reader = writer.ToReader();
-                        writer.Recycle();
-
-                        InvokeBeforeReceive(reader);
-                        InvokeDataReceived(reader);
-
-                        fragmented_messages_received[fragmented_message_id] = null;
+                        var fragment_reader = fragment.Value;
+                        writer.Write(fragment_reader.Buffer, fragment_reader.Position, fragment_reader.Length - fragment_reader.Position);
                     }
+
+                    fragmented_message.Recycle();
+
+                    var reader = writer.ToReader();
+                    writer.Recycle();
+
+                    InvokeBeforeReceive(reader);
+                    InvokeDataReceived(reader);
+
+                    // remove from dictionary
+                    fragmented_messages_received.TryRemove(fragmented_message_id, out var _);
                 }
             }
         }

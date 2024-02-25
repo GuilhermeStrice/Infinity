@@ -14,7 +14,7 @@ namespace Infinity.Udp.Tests
         }
 
         volatile int count = 1;
-        volatile int lastId = 0;
+        volatile byte lastId = 0;
 
         [Fact]
         public void OrderedTest()
@@ -36,14 +36,17 @@ namespace Infinity.Udp.Tests
 
                         Assert.Equal(lastId, receivedId);
 
-                        lastId = (lastId + 1) % 255;
+                        ++lastId;
 
                         count++;
 
                         data.Recycle();
 
-                        if (count == 100)
+                        if (count == 300)
+                        {
                             mutex.Set();
+                            output.WriteLine("Done");
+                        }
                     };
 
                     e.Recycle();
@@ -61,7 +64,7 @@ namespace Infinity.Udp.Tests
                 writer.Write(20);
 
                 // needs further testing
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 300; i++)
                 {
                     connection.Send(writer);
                 }
