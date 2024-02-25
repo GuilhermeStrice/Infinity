@@ -11,18 +11,6 @@ namespace Infinity.Udp
 
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
-        private void ReliableMessageReceive(MessageReader _reader)
-        {
-            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
-            {
-                InvokeDataReceived(_reader);
-            }
-            else
-            {
-                _reader.Recycle();
-            }
-        }
-
         private bool ProcessReliableReceive(byte[] _bytes, int _offset, out ushort _id)
         {
             byte b1 = _bytes[_offset];
