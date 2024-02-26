@@ -1,4 +1,4 @@
-﻿using Infinity.Core;
+﻿using System.Collections.Concurrent;
 
 namespace Infinity.Udp
 {
@@ -7,21 +7,10 @@ namespace Infinity.Udp
         /// <summary>
         ///     Packet ids that have not been received, but are expected. 
         /// </summary>
-        protected bool[] reliable_data_packets_missing = new bool[ushort.MaxValue + 1];
+        // dummy bool value
+        protected ConcurrentDictionary<ushort, bool> reliable_data_packets_missing = new ConcurrentDictionary<ushort, bool>();
 
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
-
-        private void ReliableMessageReceive(MessageReader _reader)
-        {
-            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
-            {
-                InvokeDataReceived(_reader);
-            }
-            else
-            {
-                _reader.Recycle();
-            }
-        }
 
         private bool ProcessReliableReceive(byte[] _bytes, int _offset, out ushort _id)
         {
@@ -58,58 +47,51 @@ namespace Infinity.Udp
 
             bool result = true;
 
-            lock (reliable_data_packets_missing)
+            //Calculate overwritePointer
+            ushort overwrite_pointer = (ushort)(reliable_receive_last - 32768);
+
+            //Calculate if it is a new packet by examining if it is within the range
+            bool is_new;
+            if (overwrite_pointer < reliable_receive_last)
             {
-                //Calculate overwritePointer
-                ushort overwrite_pointer = (ushort)(reliable_receive_last - 32768);
+                is_new = _id > reliable_receive_last || _id <= overwrite_pointer;     //Figure (2)
+            }
+            else
+            {
+                is_new = _id > reliable_receive_last && _id <= overwrite_pointer;     //Figure (3)
+            }
 
-                //Calculate if it is a new packet by examining if it is within the range
-                bool is_new;
-                if (overwrite_pointer < reliable_receive_last)
+            //If it's new or we've not received anything yet
+            if (is_new)
+            {
+                // Mark items between the most recent receive and the id received as missing
+                if (_id > reliable_receive_last)
                 {
-                    is_new = _id > reliable_receive_last || _id <= overwrite_pointer;     //Figure (2)
+                    for (ushort i = (ushort)(reliable_receive_last + 1); i < _id; i++)
+                    {
+                        reliable_data_packets_missing.TryAdd(i, true);
+                    }
                 }
                 else
                 {
-                    is_new = _id > reliable_receive_last && _id <= overwrite_pointer;     //Figure (3)
+                    int cnt = (ushort.MaxValue - reliable_receive_last) + _id;
+                    for (ushort i = 1; i <= cnt; ++i)
+                    {
+                        reliable_data_packets_missing.TryAdd((ushort)(i + reliable_receive_last), true);
+                    }
                 }
 
-                //If it's new or we've not received anything yet
-                if (is_new)
-                {
-                    // Mark items between the most recent receive and the id received as missing
-                    if (_id > reliable_receive_last)
-                    {
-                        for (ushort i = (ushort)(reliable_receive_last + 1); i < _id; i++)
-                        {
-                            reliable_data_packets_missing[i] = true;
-                        }
-                    }
-                    else
-                    {
-                        int cnt = (ushort.MaxValue - reliable_receive_last) + _id;
-                        for (ushort i = 1; i <= cnt; ++i)
-                        {
-                            reliable_data_packets_missing[(ushort)(i + reliable_receive_last)] = true;
-                        }
-                    }
+                //Update the most recently received
+                reliable_receive_last = _id;
+            }
 
-                    //Update the most recently received
-                    reliable_receive_last = _id;
-                }
-
-                //Else it could be a missing packet
-                else
+            //Else it could be a missing packet
+            else
+            {
+                //See if we're missing it, else this packet is a duplicate as so we return false
+                if (!reliable_data_packets_missing.TryRemove(_id, out var _))
                 {
-                    //See if we're missing it, else this packet is a duplicate as so we return false
-                    if (reliable_data_packets_missing[_id] == false)
-                    {
-                        result = false;
-                    }
-                    else
-                    {
-                        reliable_data_packets_missing[_id] = false;
-                    }
+                    result = false;
                 }
             }
 

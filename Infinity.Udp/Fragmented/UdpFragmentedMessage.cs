@@ -1,4 +1,5 @@
 ﻿using Infinity.Core;
+using System.Collections.Concurrent;
 
 namespace Infinity.Udp
 {
@@ -15,7 +16,7 @@ namespace Infinity.Udp
         /// <summary>
         ///     The fragments received so far.
         /// </summary>
-        public HashSet<UdpFragment> Fragments { get; set; } = new HashSet<UdpFragment>();
+        public ConcurrentDictionary<int, MessageReader> Fragments { get; set; } = new ConcurrentDictionary<int, MessageReader>();
 
         public UdpFragmentedMessage()
         {
@@ -28,7 +29,7 @@ namespace Infinity.Udp
 
         public void Recycle()
         {
-            foreach (var fragment in Fragments)
+            foreach (var fragment in Fragments.Values)
             {
                 fragment.Recycle();
             }

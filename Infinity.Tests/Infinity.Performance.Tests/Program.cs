@@ -9,7 +9,8 @@ namespace Infinity.Performance.Tests
             //BenchmarkRunner.Run<DictionaryTest>();
             //BenchmarkRunner.Run<QueueTest>();
             //BenchmarkRunner.Run<StackTest>();
-            BenchmarkRunner.Run<ArrayBufferCopyTest>();
+            //BenchmarkRunner.Run<ArrayBufferCopyTest>();
+            BenchmarkRunner.Run<ConcurrentDictionaryArrayTest>();
         }
     }
 }

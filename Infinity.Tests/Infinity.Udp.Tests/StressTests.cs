@@ -171,7 +171,6 @@ namespace Infinity.Udp.Tests
                             output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
                             output.WriteLine(Infinity.Udp.Pools.PacketPool.InUse.ToString());
                             output.WriteLine(Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                            output.WriteLine(Infinity.Udp.Pools.FragmentPool.InUse.ToString());
                             output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
 
                             output.WriteLine(Core.Pools.DataReceivedEventPool.InUse.ToString());
