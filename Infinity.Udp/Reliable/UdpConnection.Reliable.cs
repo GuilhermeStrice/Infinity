@@ -12,7 +12,7 @@ namespace Infinity.Udp
 
         private int last_id_allocated = -1;
 
-        public int ManageReliablePackets()
+        internal int ManageReliablePackets()
         {
             int output = 0;
             if (reliable_data_packets_sent.Count > 0)
@@ -46,6 +46,7 @@ namespace Infinity.Udp
         {
             if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
             {
+                _reader.Position = 3;
                 InvokeDataReceived(_reader);
             }
             else

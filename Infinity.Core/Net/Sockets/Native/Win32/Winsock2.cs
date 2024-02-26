@@ -15,16 +15,6 @@ namespace Infinity.Core.Net.Sockets.Native.Win32
         [DllImport("Ws2_32.dll", ExactSpelling = true, SetLastError = true)]
         internal static extern void freeaddrinfo([In] IntPtr info);
 
-        [DllImport("Ws2_32.dll", CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
-        internal static extern SocketError GetNameInfoW(
-            [In] byte[] sa,
-            [In] int salen,
-            [Out] StringBuilder host,
-            [In] int hostlen,
-            [Out] StringBuilder serv,
-            [In] int servlen,
-            [In] int flags);
-
         [DllImport("Ws2_32.dll", ExactSpelling = true, SetLastError = true)]
         internal static extern nint accept(
             [In] nint socketHandle,

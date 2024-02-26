@@ -210,6 +210,7 @@ namespace Infinity.Udp
 
                 case UdpSendOption.Unreliable:
                     {
+                        _reader.Position = 1;
                         InvokeBeforeReceive(_reader);
                         InvokeDataReceived(_reader);
                         Statistics.LogUnreliableMessageReceived(_bytes_received);

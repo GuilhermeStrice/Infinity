@@ -33,6 +33,7 @@ namespace Infinity.Udp
 
                 while (ordered_messages_received.TryRemove(receive_sequence, out var ordered_reader))
                 {
+                    ordered_reader.Position = 3;
                     InvokeDataReceived(ordered_reader);
 
                     receive_sequence++;

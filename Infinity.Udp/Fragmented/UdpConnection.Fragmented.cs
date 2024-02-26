@@ -89,6 +89,8 @@ namespace Infinity.Udp
                     var reader = writer.ToReader();
                     writer.Recycle();
 
+                    reader.Position = 3;
+
                     InvokeBeforeReceive(reader);
                     InvokeDataReceived(reader);
 

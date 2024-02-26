@@ -74,8 +74,6 @@ namespace Infinity.Udp
                 socket.IOControl(SIO_UDP_CONNRESET, new byte[1], null);
             }
 
-            socket.Blocking = false;
-
             return socket;
         }
 
