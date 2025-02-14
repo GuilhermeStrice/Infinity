@@ -183,11 +183,6 @@ namespace Infinity.Udp
 
         private void StartListeningForData()
         {
-            OptimizedThreadPool.EnqueueJob(ReceiveAndProcessData, null);
-        }
-
-        private void ReceiveAndProcessData(object? state)
-        {
 #if DEBUG
             if (TestLagMs > 0)
             {
@@ -195,32 +190,39 @@ namespace Infinity.Udp
             }
 #endif
 
-            EndPoint remote_ep = EndPoint;
-
             var reader = MessageReader.Get();
-            int bytes_received;
+            try
+            {
+                socket.BeginReceive(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ReadCallback, reader);
+            }
+            catch
+            {
+                // this is handles by keep alive and packet resends
+                reader.Recycle();
+            }
+        }
+
+        private void ReadCallback(IAsyncResult result)
+        {
+            var reader = (MessageReader)result.AsyncState;
 
             bool process = true;
 
             try
             {
-                bytes_received = socket.ReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remote_ep);
-                reader.Length = bytes_received;
+                reader.Length = socket.EndReceive(result);
             }
             catch
             {
                 // this is handles by keep alive and packet resends
                 reader.Recycle();
                 process = false;
-                StartListeningForData();
-                return;
             }
 
             //Exit if no bytes read, we've failed.
             if (reader.Length == 0)
             {
                 reader.Recycle();
-                StartListeningForData();
                 return;
             }
 

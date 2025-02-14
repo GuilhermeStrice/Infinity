@@ -98,28 +98,20 @@ namespace Infinity.Udp
 
         private void StartListeningForData()
         {
-            OptimizedThreadPool.EnqueueJob(ReceiveAndProcessData, null);
-        }
-
-        private void ReceiveAndProcessData(object? state)
-        {
             EndPoint remoteEP = EndPoint;
 
             MessageReader reader = MessageReader.Get();
-            int bytes_received;
             try
             {
-                bytes_received = socket.ReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP);
-                reader.Length = bytes_received;
+                socket.BeginReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, reader);
             }
-            catch (ObjectDisposedException)
+            catch (SocketException sx)
             {
                 reader.Recycle();
-                return;
-            }
-            catch (SocketException) // will always throw this because its non blocking now
-            {
-                reader.Recycle();
+
+                logger?.WriteError("Socket Ex in StartListening: " + sx.Message);
+
+                Thread.Sleep(10);
                 StartListeningForData();
                 return;
             }
@@ -127,7 +119,44 @@ namespace Infinity.Udp
             {
                 reader.Recycle();
                 logger?.WriteError("Stopped due to: " + ex.Message);
+                return;
+            }
+        }
+
+        private void ReadCallback(IAsyncResult _result)
+        {
+            MessageReader reader = (MessageReader)_result.AsyncState;
+            int bytes_received;
+            EndPoint remote_end_point = new IPEndPoint(EndPoint.Address, EndPoint.Port);
+
+            //End the receive operation
+            try
+            {
+                bytes_received = socket.EndReceiveFrom(_result, ref remote_end_point);
+
+                reader.Length = bytes_received;
+                reader.Position = 0;
+            }
+            catch (ObjectDisposedException)
+            {
+                reader.Recycle();
+                return;
+            }
+            catch (SocketException sx)
+            {
+                reader.Recycle();
+
+                logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
+
+                Thread.Sleep(10);
                 StartListeningForData();
+                return;
+            }
+            catch (Exception ex)
+            {
+                // Idk, maybe a null ref after dispose?
+                reader.Recycle();
+                logger?.WriteError("Stopped due to: " + ex.Message);
                 return;
             }
 
@@ -151,7 +180,7 @@ namespace Infinity.Udp
             // If we're aware of this connection use the one already
             // If this is a new client then connect with them!
             UdpServerConnection connection;
-            if (!all_connections.TryGetValue(remoteEP, out connection))
+            if (!all_connections.TryGetValue(remote_end_point, out connection))
             {
                 // Check for malformed connection attempts
                 if (!is_handshake)
@@ -160,21 +189,21 @@ namespace Infinity.Udp
                     return;
                 }
 
-                if (HandshakeConnection != null &&
-                    !HandshakeConnection((IPEndPoint)remoteEP, reader, out var response))
+                if (HandshakeConnection != null && 
+                    !HandshakeConnection((IPEndPoint)remote_end_point, reader, out var response))
                 {
                     reader.Recycle();
                     if (response != null)
                     {
-                        SendData(response, response.Length, remoteEP);
+                        SendData(response, response.Length, remote_end_point);
                     }
 
                     return;
                 }
 
                 aware = false;
-                connection = new UdpServerConnection(this, (IPEndPoint)remoteEP, IPMode, logger);
-                all_connections.TryAdd(remoteEP, connection);
+                connection = new UdpServerConnection(this, (IPEndPoint)remote_end_point, IPMode, logger);
+                all_connections.TryAdd(remote_end_point, connection);
             }
 
             // Inform the connection of the buffer (new connections need to send an ack back to client)
