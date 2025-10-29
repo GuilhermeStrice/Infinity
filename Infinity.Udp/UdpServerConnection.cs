@@ -1,5 +1,6 @@
 using Infinity.Core;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -17,13 +18,13 @@ namespace Infinity.Udp
 
             State = ConnectionState.Connected;
 
-            BootstrapMTU();
+            _ = BootstrapMTU();
         }
 
-        public override void WriteBytesToConnection(byte[] _bytes, int _length)
+        public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
         {
             Statistics.LogPacketSent(_length);
-            Listener.SendData(_bytes, _length, EndPoint);
+            await Listener.SendData(_bytes, _length, EndPoint);
         }
 
         public override void Connect(MessageWriter _writer, int _timeout = 5000)
@@ -31,7 +32,7 @@ namespace Infinity.Udp
             NotClient();
         }
 
-        public override void ConnectAsync(MessageWriter _writer)
+        public override async Task ConnectAsync(MessageWriter _writer)
         {
             NotClient();
         }
@@ -123,7 +124,7 @@ namespace Infinity.Udp
             });
         }
 
-        protected override void ReadConfiguration(MessageReader _reader)
+        protected override async Task ReadConfiguration(MessageReader _reader)
         {
             // do nothing here
         }

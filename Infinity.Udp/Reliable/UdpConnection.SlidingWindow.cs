@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -12,13 +13,13 @@ namespace Infinity.Udp
 
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
-        private bool ProcessReliableReceive(byte[] _bytes, int _offset, out ushort _id)
+        private async Task<(bool, ushort)> ProcessReliableReceive(byte[] _bytes, int _offset)
         {
             byte b1 = _bytes[_offset];
             byte b2 = _bytes[_offset + 1];
 
             //Get the ID form the packet
-            _id = (ushort)((b1 << 8) + b2);
+            ushort _id = (ushort)((b1 << 8) + b2);
 
             /*
              * It gets a little complicated here (note the fact I'm actually using a multiline comment for once...)
@@ -74,7 +75,7 @@ namespace Infinity.Udp
                 }
                 else
                 {
-                    int cnt = (ushort.MaxValue - reliable_receive_last) + _id;
+                    int cnt = ushort.MaxValue - reliable_receive_last + _id;
                     for (ushort i = 1; i <= cnt; ++i)
                     {
                         reliable_data_packets_missing.TryAdd((ushort)(i + reliable_receive_last), true);
@@ -96,9 +97,9 @@ namespace Infinity.Udp
             }
 
             // Send an acknowledgement
-            SendAck(_id);
+            await SendAck(_id);
 
-            return result;
+            return (result, _id);
         }
     }
 }

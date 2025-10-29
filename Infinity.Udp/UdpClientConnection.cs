@@ -4,6 +4,7 @@ using Infinity.Core.Threading;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -14,6 +15,8 @@ namespace Infinity.Udp
         private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
 
         private Timer reliable_packet_timer;
+
+        CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
 
         public UdpClientConnection(ILogger _logger, IPEndPoint _remote_end_point, IPMode _ip_mode = IPMode.IPv4)
             : base(_logger)
@@ -69,17 +72,18 @@ namespace Infinity.Udp
             Dispose(false);
         }
 
-        public override void WriteBytesToConnection(byte[] _bytes, int _length)
+        public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
         {
 #if DEBUG
             if (TestLagMs > 0)
             {
-                ThreadPool.QueueUserWorkItem(a => { Thread.Sleep(TestLagMs); WriteBytesToConnectionReal(_bytes, _length); });
+                Thread.Sleep(TestLagMs);
+                await WriteBytesToConnectionReal(_bytes, _length);
             }
             else
 #endif
             {
-                WriteBytesToConnectionReal(_bytes, _length);
+                await WriteBytesToConnectionReal(_bytes, _length);
             }
         }
 
@@ -102,7 +106,7 @@ namespace Infinity.Udp
 
         public override void Connect(MessageWriter _writer, int _timeout = 5000)
         {
-            ConnectAsync(_writer);
+            _ = ConnectAsync(_writer);
 
             //Wait till Handshake packet is acknowledged and the state is set to Connected
             bool timed_out = !connect_wait_lock.WaitOne(_timeout);
@@ -115,7 +119,7 @@ namespace Infinity.Udp
             }
         }
 
-        public override void ConnectAsync(MessageWriter _writer)
+        public override async Task ConnectAsync(MessageWriter _writer)
         {
             State = ConnectionState.Connecting;
 
@@ -136,39 +140,49 @@ namespace Infinity.Udp
                 throw new InfinityException("A SocketException occurred while binding to the port.", e);
             }
 
-            StartListeningForData();
+            _ = Task.Run(StartListeningForData);
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
-            SendHandshake(_writer, () =>
+            await SendHandshake(_writer, async () =>
             {
-                BootstrapMTU();
+                await BootstrapMTU();
 
-                AskConfiguration();
+                await AskConfiguration();
             });
         }
 
-        private void WriteBytesToConnectionReal(byte[] _bytes, int _length)
+        private async Task WriteBytesToConnectionReal(byte[] _bytes, int _length)
         {
-            OptimizedThreadPool.EnqueueJob((state) =>
+            try
             {
-                WriteBytesToConnectionSync(_bytes, _length);
-            }, null);
+                var segment = new ArraySegment<byte>(_bytes, 0, _length);
+                int sent = await socket.SendToAsync(segment, SocketFlags.None, EndPoint);
+                Statistics.LogPacketSent(sent);
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
+            {
+                FinishMTUExpansion();
+            }
+            catch
+            {
+                // this is handles by keep alive and packet resends
+            }
         }
 
-        private void SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
+        private async Task SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
         {
             byte[] buffer = new byte[_writer.Length];
             Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
-            ReliableSend(buffer, _acknowledge_callback);
+            await ReliableSend(buffer, _acknowledge_callback);
         }
 
-        private void AskConfiguration()
+        private async Task AskConfiguration()
         {
             byte[] buffer = new byte[3];
             buffer[0] = UdpSendOptionInternal.AskConfiguration;
 
-            ReliableSend(buffer);
+            await ReliableSend(buffer);
         }
 
         private void ManageReliablePacketsInternal(object? _state)
@@ -181,53 +195,42 @@ namespace Infinity.Udp
             catch { }
         }
 
-        private void StartListeningForData()
+        private async Task StartListeningForData()
         {
-#if DEBUG
-            if (TestLagMs > 0)
+            while (!cancellation_token_source.IsCancellationRequested)
             {
-                Thread.Sleep(TestLagMs);
-            }
+#if DEBUG
+                if (TestLagMs > 0)
+                {
+                    Thread.Sleep(TestLagMs);
+                }
 #endif
 
-            var reader = MessageReader.Get();
-            try
-            {
-                socket.BeginReceive(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ReadCallback, reader);
-            }
-            catch
-            {
-                // this is handles by keep alive and packet resends
-                reader.Recycle();
+                var reader = MessageReader.Get();
+                try
+                {
+                    var bytes_received = await socket.ReceiveAsync(reader.Buffer, SocketFlags.None);
+                    reader.Length = bytes_received;
+                    reader.Position = 0;
+
+                    await ReadCallback(reader);
+                }
+                catch
+                {
+                    // this is handles by keep alive and packet resends
+                    reader.Recycle();
+                }
             }
         }
 
-        private void ReadCallback(IAsyncResult result)
+        private async Task ReadCallback(MessageReader reader)
         {
-            var reader = (MessageReader)result.AsyncState;
-
-            bool process = true;
-
-            try
-            {
-                reader.Length = socket.EndReceive(result);
-            }
-            catch
-            {
-                // this is handles by keep alive and packet resends
-                reader.Recycle();
-                process = false;
-            }
-
             //Exit if no bytes read, we've failed.
             if (reader.Length == 0)
             {
                 reader.Recycle();
                 return;
             }
-
-            //Begin receiving again
-            StartListeningForData();
 
 #if DEBUG
             if (TestDropRate > 0)
@@ -238,10 +241,7 @@ namespace Infinity.Udp
                 }
             }
 #endif
-            if (process)
-            {
-                HandleReceive(reader, reader.Length);
-            }
+            await HandleReceive(reader, reader.Length);
         }
 
         protected override void SetState(ConnectionState _state)
@@ -308,7 +308,7 @@ namespace Infinity.Udp
             // do nothing here
         }
 
-        protected override void ReadConfiguration(MessageReader _reader)
+        protected override async Task ReadConfiguration(MessageReader _reader)
         {
             // Read Config
             _reader.Position += 3;
@@ -328,11 +328,9 @@ namespace Infinity.Udp
 
             State = ConnectionState.Connected;
 
-            keep_alive_wait_mutex.Reset();
-
             InitializeKeepAliveTimer();
 
-            DiscoverMTU();
+            _ = DiscoverMTU();
         }
 
         protected override void Dispose(bool _disposing)

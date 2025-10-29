@@ -2,51 +2,68 @@
 using Infinity.Core.KeepAlive;
 
 namespace Infinity.Udp
-{
+{   
     public partial class UdpConnection
     {
         private PingBuffer active_pings = new PingBuffer(16);
         private volatile int pings_since_ack = 0;
 
-        private Timer? keep_alive_timer;
+        private CancellationTokenSource? keep_alive_cts;
 
-        protected ManualResetEvent keep_alive_wait_mutex = new ManualResetEvent(true);
-
-        protected void InitializeKeepAliveTimer()
+        /// <summary>
+        /// Starts the async keep-alive loop.
+        /// </summary>
+        public void InitializeKeepAliveTimer()
         {
-            keep_alive_timer = new Timer(
-                HandleKeepAlive,
-                null,
-                configuration.KeepAliveInterval,
-                configuration.KeepAliveInterval
-            );
+            keep_alive_cts = new CancellationTokenSource();
+            _ = KeepAliveLoopAsync(keep_alive_cts.Token); // fire-and-forget
         }
 
-        private void HandleKeepAlive(object? _state)
+        /// <summary>
+        /// Stops the async keep-alive loop.
+        /// </summary>
+        public void DisposeKeepAliveTimer()
         {
-            keep_alive_wait_mutex.WaitOne(100); // 100ms should be enough
-            keep_alive_wait_mutex.Set();
+            keep_alive_cts?.Cancel();
+            keep_alive_cts?.Dispose();
+            keep_alive_cts = null;
+        }
 
-            if (State != ConnectionState.Connected)
-            {
-                return;
-            }
-
-            if (pings_since_ack >= configuration.MissingPingsUntilDisconnect)
-            {
-                DisposeKeepAliveTimer();
-                DisconnectInternal(InfinityInternalErrors.PingsWithoutResponse, 
-                    $"Sent {pings_since_ack} pings that remote has not responded to.");
-                return;
-            }
-
+        private async Task KeepAliveLoopAsync(CancellationToken ct)
+        {
             try
             {
-                pings_since_ack++;
-                SendPing();
+                while (!ct.IsCancellationRequested)
+                {
+                    if (State != ConnectionState.Connected)
+                        return;
+
+                    if (pings_since_ack >= configuration.MissingPingsUntilDisconnect)
+                    {
+                        DisposeKeepAliveTimer();
+                        DisconnectInternal(
+                            InfinityInternalErrors.PingsWithoutResponse,
+                            $"Sent {pings_since_ack} pings that remote has not responded to."
+                        );
+                        return;
+                    }
+
+                    try
+                    {
+                        pings_since_ack++;
+                        SendPing();
+                    }
+                    catch
+                    {
+                        // optionally log
+                    }
+
+                    await Task.Delay(configuration.KeepAliveInterval, ct);
+                }
             }
-            catch
+            catch (TaskCanceledException)
             {
+                // normal cancellation, ignore
             }
         }
 
@@ -65,20 +82,8 @@ namespace Infinity.Udp
             bytes[2] = (byte)id;
 
             active_pings.AddPing(id);
-
             WriteBytesToConnection(bytes, bytes.Length);
-
             Statistics.LogPingSent(3);
-        }
-
-        private void KeepAliveTimerWait()
-        {
-            keep_alive_wait_mutex.Reset();
-        }
-
-        private void DisposeKeepAliveTimer()
-        {
-            keep_alive_timer?.Dispose();
         }
     }
 }

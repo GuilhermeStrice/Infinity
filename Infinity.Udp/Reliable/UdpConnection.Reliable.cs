@@ -1,5 +1,6 @@
 ﻿using Infinity.Core;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -32,19 +33,17 @@ namespace Infinity.Udp
             return output;
         }
 
-        protected void ReliableSend(byte[] _buffer, Action _ack_callback = null)
+        protected async Task ReliableSend(byte[] _buffer, Action _ack_callback = null)
         {
-            //Inform keepalive not to send for a while
-            KeepAliveTimerWait();
-
             AttachReliableID(_buffer, 1, _ack_callback);
-            WriteBytesToConnection(_buffer, _buffer.Length);
+            await WriteBytesToConnection(_buffer, _buffer.Length);
             Statistics.LogReliableMessageSent(_buffer.Length);
         }
 
-        private void ReliableMessageReceive(MessageReader _reader)
+        private async Task ReliableMessageReceive(MessageReader _reader)
         {
-            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
+            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            if (result.Item1)
             {
                 _reader.Position = 3;
                 InvokeDataReceived(_reader);

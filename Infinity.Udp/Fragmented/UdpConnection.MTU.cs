@@ -1,4 +1,6 @@
-﻿using Infinity.Core;
+﻿using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using Infinity.Core;
 
 namespace Infinity.Udp
 {
@@ -23,16 +25,17 @@ namespace Infinity.Udp
 
         public int MTU { get; private set; } = -1; // we are guaranteed to be able to send at least the minimum IP frame size
 
-        private readonly object mtu_lock = new object();
+        private SemaphoreSlim mtu_lock = new SemaphoreSlim(1, 1);
 
         private const int minimum_mtu_ipv4 = 576 - 68; // Minimum required by https://datatracker.ietf.org/doc/html/rfc791 - 60 is maximum possible ipv4 header size + 8 bytes for udp header
         private const int minimum_mtu_ipv6 = 1280 - 48; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
 
         private int last_mtu = 0;
 
-        protected void BootstrapMTU()
+        protected async Task BootstrapMTU()
         {
-            lock (mtu_lock)
+            await mtu_lock.WaitAsync();
+            try
             {
                 if (MTU == -1)
                 {
@@ -44,11 +47,15 @@ namespace Infinity.Udp
                     MTU = ForcedMTU.Value;
                 }
             }
+            finally
+            {
+                mtu_lock.Release();
+            }
         }
 
-        protected void DiscoverMTU()
+        protected async Task DiscoverMTU()
         {
-            ExpandMTU();
+            await ExpandMTU();
         }
 
         protected void FinishMTUExpansion()
@@ -61,19 +68,19 @@ namespace Infinity.Udp
             MTU = last_mtu;
         }
 
-        private void ExpandMTU()
+        private async Task ExpandMTU()
         {
-            KeepAliveTimerWait();
-
-            lock (mtu_lock)
+            await mtu_lock.WaitAsync();
+            try
             {
                 var buffer = new byte[MTU];
 
                 buffer[0] = UdpSendOptionInternal.TestMTU;
 
-                AttachReliableID(buffer, 1, () =>
+                AttachReliableID(buffer, 1, async () =>
                 {
-                    lock (mtu_lock)
+                    await mtu_lock.WaitAsync();
+                    try
                     {
                         if (MTU >= MaximumAllowedMTU)
                         {
@@ -84,8 +91,12 @@ namespace Infinity.Udp
                         last_mtu = MTU;
                         MTU++;
                     }
+                    finally
+                    {
+                        mtu_lock.Release();
+                    }
 
-                    ExpandMTU();
+                    await ExpandMTU();
                 });
 
                 buffer[MTU - 4] = (byte)MTU;
@@ -93,21 +104,31 @@ namespace Infinity.Udp
                 buffer[MTU - 2] = (byte)(MTU >> 16);
                 buffer[MTU - 1] = (byte)(MTU >> 24);
 
-                WriteBytesToConnection(buffer, MTU);
+                await WriteBytesToConnection(buffer, MTU);
+            }
+            finally
+            {
+                mtu_lock.Release();
             }
         }
 
-        private void MTUTestReceive(MessageReader _reader)
+        private async Task MTUTestReceive(MessageReader _reader)
         {
-            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
+            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            if (result.Item1)
             {
                 _reader.Position = _reader.Length - 4;
                 int received_mtu = _reader.ReadInt32();
 
-                lock (mtu_lock)
+                await mtu_lock.WaitAsync();
+                try
                 {
                     last_mtu = MTU;
                     MTU = received_mtu;
+                }
+                finally
+                {
+
                 }
             }
         }

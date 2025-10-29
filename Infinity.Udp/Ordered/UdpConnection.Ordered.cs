@@ -1,5 +1,6 @@
 ﻿using Infinity.Core;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -10,22 +11,21 @@ namespace Infinity.Udp
         private volatile byte send_sequence = 0;
         private volatile byte receive_sequence = 0;
 
-        private void OrderedSend(byte[] _buffer)
+        private async Task OrderedSend(byte[] _buffer)
         {
-            KeepAliveTimerWait();
-
             AttachReliableID(_buffer, 1);
 
             _buffer[3] = send_sequence;
 
-            WriteBytesToConnection(_buffer, _buffer.Length);
+            await WriteBytesToConnection(_buffer, _buffer.Length);
 
             send_sequence++;
         }
 
-        private void OrderedMessageReceived(MessageReader _reader)
+        private async Task OrderedMessageReceived(MessageReader _reader)
         {
-            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
+            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            if (result.Item1)
             {
                 byte ordered_id = _reader.Buffer[3];
 

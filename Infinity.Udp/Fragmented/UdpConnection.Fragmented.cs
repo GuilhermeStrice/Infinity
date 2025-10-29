@@ -11,10 +11,8 @@ namespace Infinity.Udp
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte);
 
-        private void FragmentedSend(byte[] _buffer)
+        private async Task FragmentedSend(byte[] _buffer)
         {
-            KeepAliveTimerWait();
-
             var fragment_size = MTU - fragment_header_size;
 
             var fragment_id = (byte)++last_fragment_id_allocated;
@@ -39,7 +37,7 @@ namespace Infinity.Udp
 
                 Array.Copy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
                 
-                WriteBytesToConnection(fragment_buffer, fragment_buffer.Length);
+                await WriteBytesToConnection(fragment_buffer, fragment_buffer.Length);
             }
 
             if (last_fragment_id_allocated >= byte.MaxValue)
@@ -48,9 +46,10 @@ namespace Infinity.Udp
             }
         }
 
-        private void FragmentMessageReceive(MessageReader _reader)
+        private async Task FragmentMessageReceive(MessageReader _reader)
         {
-            if (ProcessReliableReceive(_reader.Buffer, 1, out var id))
+            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            if (result.Item1)
             {
                 _reader.Position += 3;
 
@@ -72,7 +71,7 @@ namespace Infinity.Udp
                     fragmented_message = fragmented_messages_received[fragmented_message_id];
                 }
 
-                fragmented_message.Fragments.TryAdd(id, _reader);
+                fragmented_message.Fragments.TryAdd(result.Item2, _reader);
 
                 if (fragmented_message.Fragments.Count == fragments_count)
                 {

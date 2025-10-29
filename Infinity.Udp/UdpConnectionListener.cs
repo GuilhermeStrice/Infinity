@@ -1,6 +1,8 @@
 ﻿using Infinity.Core;
 using Infinity.Core.Exceptions;
 using Infinity.Core.Threading;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -22,6 +24,8 @@ namespace Infinity.Udp
         private Socket socket;
         private ILogger logger;
         private Timer reliable_packet_timer;
+
+        private CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
 
         private ConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
 
@@ -79,6 +83,8 @@ namespace Infinity.Udp
 
         ~UdpConnectionListener()
         {
+            cancellation_token_source.Cancel();
+            Thread.Sleep(500);
             Dispose(false);
         }
 
@@ -93,86 +99,56 @@ namespace Infinity.Udp
                 throw new InfinityException("Could not start listening as a SocketException occurred", e);
             }
 
-            StartListeningForData();
+            _ = Task.Run(StartListeningForData);
         }
 
-        private void StartListeningForData()
+        private async Task StartListeningForData()
         {
-            EndPoint remoteEP = EndPoint;
-
-            MessageReader reader = MessageReader.Get();
-            try
+            while (!cancellation_token_source.IsCancellationRequested)
             {
-                socket.BeginReceiveFrom(reader.Buffer, 0, reader.Buffer.Length, SocketFlags.None, ref remoteEP, ReadCallback, reader);
-            }
-            catch (SocketException sx)
-            {
-                reader.Recycle();
+                EndPoint remoteEP = EndPoint;
 
-                logger?.WriteError("Socket Ex in StartListening: " + sx.Message);
+                MessageReader reader = MessageReader.Get();
 
-                Thread.Sleep(10);
-                StartListeningForData();
-                return;
-            }
-            catch (Exception ex)
-            {
-                reader.Recycle();
-                logger?.WriteError("Stopped due to: " + ex.Message);
-                return;
+                try
+                {
+                    var result = await socket.ReceiveFromAsync(reader.Buffer, SocketFlags.None, remoteEP);
+                    reader.Length = result.ReceivedBytes;
+                    reader.Position = 0;
+
+                    await ReadCallback(reader);
+                }
+                catch (SocketException sx)
+                {
+                    reader.Recycle();
+
+                    logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
+
+                    Thread.Sleep(10);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    reader.Recycle();
+                    logger?.WriteError("Stopped due to: " + ex.Message);
+                    return;
+                }
             }
         }
 
-        private void ReadCallback(IAsyncResult _result)
+        private async Task ReadCallback(MessageReader reader)
         {
-            MessageReader reader = (MessageReader)_result.AsyncState;
-            int bytes_received;
             EndPoint remote_end_point = new IPEndPoint(EndPoint.Address, EndPoint.Port);
-
-            //End the receive operation
-            try
-            {
-                bytes_received = socket.EndReceiveFrom(_result, ref remote_end_point);
-
-                reader.Length = bytes_received;
-                reader.Position = 0;
-            }
-            catch (ObjectDisposedException)
-            {
-                reader.Recycle();
-                return;
-            }
-            catch (SocketException sx)
-            {
-                reader.Recycle();
-
-                logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
-
-                Thread.Sleep(10);
-                StartListeningForData();
-                return;
-            }
-            catch (Exception ex)
-            {
-                // Idk, maybe a null ref after dispose?
-                reader.Recycle();
-                logger?.WriteError("Stopped due to: " + ex.Message);
-                return;
-            }
 
             // I'm a little concerned about a infinite loop here, but it seems like it's possible 
             // to get 0 bytes read on UDP without the socket being shut down.
-            if (bytes_received == 0)
+            if (reader.Length == 0)
             {
                 reader.Recycle();
                 logger?.WriteInfo("Received 0 bytes");
                 Thread.Sleep(10);
-                StartListeningForData();
                 return;
             }
-
-            //Begin receiving again
-            StartListeningForData();
 
             bool aware = true;
             bool is_handshake = reader.Buffer[0] == UdpSendOptionInternal.Handshake;
@@ -195,7 +171,7 @@ namespace Infinity.Udp
                     reader.Recycle();
                     if (response != null)
                     {
-                        SendData(response, response.Length, remote_end_point);
+                        await SendData(response, response.Length, remote_end_point);
                     }
 
                     return;
@@ -207,7 +183,7 @@ namespace Infinity.Udp
             }
 
             // Inform the connection of the buffer (new connections need to send an ack back to client)
-            connection.HandleReceive(reader, bytes_received);
+            connection.HandleReceive(reader, reader.Length);
 
             if (!aware)
             {
@@ -257,7 +233,7 @@ namespace Infinity.Udp
         private int drop_counter = 0;
 #endif
 
-        internal void SendData(byte[] _bytes, int _length, EndPoint _endpoint)
+        internal async Task SendData(byte[] _bytes, int _length, EndPoint _endpoint)
         {
             if (_length > _bytes.Length)
             {
@@ -274,24 +250,22 @@ namespace Infinity.Udp
             }
 #endif
 
-            OptimizedThreadPool.EnqueueJob((state) =>
+            try
             {
-                try
-                {
-                    socket.SendTo(_bytes, 0, _length, SocketFlags.None, _endpoint);
+                var segment = new ArraySegment<byte>(_bytes, 0, _length);
+                await socket.SendToAsync(_bytes, SocketFlags.None, _endpoint);
 
-                    Statistics.AddBytesSent(_length);
-                }
-                catch (SocketException e)
-                {
-                    logger?.WriteError("Could not send data as a SocketException occurred: " + e);
-                }
-                catch (ObjectDisposedException)
-                {
-                    //Keep alive timer probably ran, ignore
-                    return;
-                }
-            }, null);
+                Statistics.AddBytesSent(_length);
+            }
+            catch (SocketException e)
+            {
+                logger?.WriteError("Could not send data as a SocketException occurred: " + e);
+            }
+            catch (ObjectDisposedException)
+            {
+                //Keep alive timer probably ran, ignore
+                return;
+            }
         }
     }
 }

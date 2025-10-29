@@ -1,4 +1,6 @@
-﻿namespace Infinity.Udp
+﻿using System.Threading.Tasks;
+
+namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
@@ -46,7 +48,7 @@
             }
         }
 
-        private void SendAck(ushort _id)
+        private async Task SendAck(ushort _id)
         {
             byte recent_packets = 0;
             for (int i = 1; i <= 8; ++i)
@@ -69,7 +71,7 @@
                 recent_packets
             };
 
-            WriteBytesToConnection(bytes, bytes.Length);
+            await WriteBytesToConnection(bytes, bytes.Length);
         }
     }
 }

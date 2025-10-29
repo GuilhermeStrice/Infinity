@@ -58,11 +58,11 @@ namespace Infinity.Core
             }
         }
 
-        public abstract SendErrors Send(MessageWriter _writer);
+        public abstract Task<SendErrors> Send(MessageWriter _writer);
 
         public abstract void Connect(MessageWriter _writer, int _timeout = 5000);
 
-        public abstract void ConnectAsync(MessageWriter _writer);
+        public abstract Task ConnectAsync(MessageWriter _writer);
 
         public void Disconnect(string _reason, MessageWriter _writer)
         {

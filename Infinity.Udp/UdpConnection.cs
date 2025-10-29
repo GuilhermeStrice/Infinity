@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Infinity.Core;
 using Infinity.Core.Exceptions;
 
@@ -25,11 +26,11 @@ namespace Infinity.Udp
             logger = _logger;
         }
 
-        public abstract void WriteBytesToConnection(byte[] _bytes, int _length);
+        public abstract Task WriteBytesToConnection(byte[] _bytes, int _length);
         public abstract void WriteBytesToConnectionSync(byte[] _bytes, int _length);
 
         protected abstract void ShareConfiguration();
-        protected abstract void ReadConfiguration(MessageReader _reader);
+        protected abstract Task ReadConfiguration(MessageReader _reader);
 
         public SendErrors SendSync(MessageWriter _writer)
         {
@@ -46,7 +47,7 @@ namespace Infinity.Udp
             return SendErrors.None;
         }
 
-        public override SendErrors Send(MessageWriter _writer)
+        public override async Task<SendErrors> Send(MessageWriter _writer)
         {
             if (state != ConnectionState.Connected)
             {
@@ -58,80 +59,79 @@ namespace Infinity.Udp
             switch (_writer.Buffer[0])
             {
                 case UdpSendOption.Reliable:
+                {
+                    if (_writer.Length > MTU)
                     {
-                        if (_writer.Length > MTU)
-                        {
-                            throw new InfinityException("not allowed");
-                        }
-
-                        byte[] buffer = new byte[_writer.Length];
-                        Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                        ReliableSend(buffer);
-                        break;
+                        throw new InfinityException("not allowed");
                     }
+
+                    byte[] buffer = new byte[_writer.Length];
+                    Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+                    await ReliableSend(buffer);
+                    break;
+                }
                 case UdpSendOption.ReliableOrdered:
+                {
+                    if (_writer.Length > MTU)
                     {
-                        if (_writer.Length > MTU)
-                        {
-                            throw new InfinityException("not allowed");
-                        }
-
-                        byte[] buffer = new byte[_writer.Length];
-                        Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                        OrderedSend(buffer);
-                        Statistics.LogReliableMessageSent(buffer.Length);
-
-                        break;
+                        throw new InfinityException("not allowed");
                     }
+
+                    byte[] buffer = new byte[_writer.Length];
+                    Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+
+                    await OrderedSend(buffer);
+                    Statistics.LogReliableMessageSent(buffer.Length);
+
+                    break;
+                }
                 case UdpSendOption.Fragmented:
+                {
+                    if (configuration.EnableFragmentation)
                     {
-                        if (configuration.EnableFragmentation)
+                        if (_writer.Length <= MTU)
                         {
-                            if (_writer.Length <= MTU)
-                            {
-                                throw new InfinityException("Message not big enough");
-                            }
-
-                            byte[] buffer = new byte[_writer.Length - 3];
-                            Array.Copy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
-
-                            FragmentedSend(buffer);
-                            Statistics.LogFragmentedMessageSent(buffer.Length);
-                        }
-                        else
-                        {
-                            throw new InfinityException("Enable fragmentation to use fragmented messages");
+                            throw new InfinityException("Message not big enough");
                         }
 
-                        break;
+                        byte[] buffer = new byte[_writer.Length - 3];
+                        Array.Copy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
+
+                        await FragmentedSend(buffer);
+                        Statistics.LogFragmentedMessageSent(buffer.Length);
                     }
+                    else
+                    {
+                        throw new InfinityException("Enable fragmentation to use fragmented messages");
+                    }
+
+                    break;
+                }
                 default: // applies to disconnect and unreliable
-                    {
-                        byte[] buffer = new byte[_writer.Length];
-                        Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
+                {
+                    byte[] buffer = new byte[_writer.Length];
+                    Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
 
-                        WriteBytesToConnection(buffer, buffer.Length);
-                        Statistics.LogUnreliableMessageSent(buffer.Length);
+                    await WriteBytesToConnection(buffer, buffer.Length);
+                    Statistics.LogUnreliableMessageSent(buffer.Length);
 
-                        break;
-                    }
+                    break;
+                }
             }
 
             return SendErrors.None;
         }
 
-        protected internal virtual void HandleReceive(MessageReader _reader, int _bytes_received)
+        protected internal virtual async Task HandleReceive(MessageReader _reader, int _bytes_received)
         {
-            ushort id;
             switch (_reader.Buffer[0])
             {
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
                     {
                         InvokeBeforeReceive(_reader);
-                        ReliableMessageReceive(_reader);
+                        await ReliableMessageReceive(_reader);
                         Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
                     }
@@ -139,7 +139,7 @@ namespace Infinity.Udp
                 case UdpSendOption.ReliableOrdered:
                     {
                         InvokeBeforeReceive(_reader);
-                        OrderedMessageReceived(_reader);
+                        await OrderedMessageReceived(_reader);
                         Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
                     }
@@ -154,7 +154,7 @@ namespace Infinity.Udp
 
                 case UdpSendOptionInternal.Ping:
                     {
-                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        await ProcessReliableReceive(_reader.Buffer, 1);
                         Statistics.LogPingReceived(_bytes_received);
                         _reader.Recycle();
                         break;
@@ -162,21 +162,21 @@ namespace Infinity.Udp
 
                 case UdpSendOptionInternal.Handshake:
                     {
-                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        await ProcessReliableReceive(_reader.Buffer, 1);
                         Statistics.LogHandshakeReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOptionInternal.Fragment:
                     {
-                        FragmentMessageReceive(_reader);
+                        await FragmentMessageReceive(_reader);
                         Statistics.LogFragmentedMessageReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOptionInternal.TestMTU:
                     {
-                        MTUTestReceive(_reader);
+                        await MTUTestReceive(_reader);
                         Statistics.LogMTUTestMessageReceived(_bytes_received);
                         _reader.Recycle();
                         break;
@@ -185,7 +185,7 @@ namespace Infinity.Udp
                     // sent by client
                 case UdpSendOptionInternal.AskConfiguration:
                     {
-                        ProcessReliableReceive(_reader.Buffer, 1, out id);
+                        await ProcessReliableReceive(_reader.Buffer, 1);
                         ShareConfiguration();
                         _reader.Recycle();
                         break;
@@ -194,8 +194,8 @@ namespace Infinity.Udp
                     // sent by server
                 case UdpSendOptionInternal.ShareConfiguration:
                     {
-                        ProcessReliableReceive(_reader.Buffer, 1, out id);
-                        ReadConfiguration(_reader);
+                        await ProcessReliableReceive(_reader.Buffer, 1);
+                        await ReadConfiguration(_reader);
                         _reader.Recycle();
                         break;
                     }
