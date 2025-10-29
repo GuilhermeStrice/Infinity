@@ -9,7 +9,7 @@ namespace Infinity.Udp
 
         private ConcurrentDictionary<byte, UdpFragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<byte, UdpFragmentedMessage>();
 
-        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte);
+        private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte) + sizeof(ushort);
 
         private async Task FragmentedSend(byte[] _buffer)
         {
@@ -35,6 +35,10 @@ namespace Infinity.Udp
 
                 fragment_buffer[7] = fragment_id;
 
+                // Add fragment sequence index
+                fragment_buffer[8] = (byte)i;
+                fragment_buffer[9] = (byte)(i >> 8);
+
                 Array.Copy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
                 
                 await WriteBytesToConnection(fragment_buffer, fragment_buffer.Length);
@@ -55,6 +59,7 @@ namespace Infinity.Udp
 
                 var fragments_count = _reader.ReadInt32();
                 var fragmented_message_id = _reader.ReadByte();
+                var fragment_index = _reader.ReadUInt16();
 
                 UdpFragmentedMessage fragmented_message;
 
@@ -71,7 +76,7 @@ namespace Infinity.Udp
                     fragmented_message = fragmented_messages_received[fragmented_message_id];
                 }
 
-                fragmented_message.Fragments.TryAdd(result.Item2, _reader);
+                fragmented_message.Fragments.TryAdd(fragment_index, _reader);
 
                 if (fragmented_message.Fragments.Count == fragments_count)
                 {

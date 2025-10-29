@@ -113,7 +113,7 @@ namespace Infinity.Udp
                     reader.Length = result.ReceivedBytes;
                     reader.Position = 0;
 
-                    await ReadCallback(reader, remoteEP);
+                    await ReadCallback(reader, result.RemoteEndPoint);
                 }
                 catch (SocketException sx)
                 {
