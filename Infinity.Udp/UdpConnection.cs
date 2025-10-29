@@ -29,7 +29,7 @@ namespace Infinity.Udp
         public abstract Task WriteBytesToConnection(byte[] _bytes, int _length);
         public abstract void WriteBytesToConnectionSync(byte[] _bytes, int _length);
 
-        protected abstract void ShareConfiguration();
+        protected abstract Task ShareConfiguration();
         protected abstract Task ReadConfiguration(MessageReader _reader);
 
         public SendErrors SendSync(MessageWriter _writer)
@@ -186,7 +186,7 @@ namespace Infinity.Udp
                 case UdpSendOptionInternal.AskConfiguration:
                     {
                         await ProcessReliableReceive(_reader.Buffer, 1);
-                        ShareConfiguration();
+                        await ShareConfiguration();
                         _reader.Recycle();
                         break;
                     }

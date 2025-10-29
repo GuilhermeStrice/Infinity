@@ -60,9 +60,7 @@ namespace Infinity.Core
 
         public abstract Task<SendErrors> Send(MessageWriter _writer);
 
-        public abstract void Connect(MessageWriter _writer, int _timeout = 5000);
-
-        public abstract Task ConnectAsync(MessageWriter _writer);
+        public abstract Task Connect(MessageWriter _writer, int _timeout = 5000);
 
         public void Disconnect(string _reason, MessageWriter _writer)
         {

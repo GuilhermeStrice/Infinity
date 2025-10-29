@@ -21,18 +21,19 @@ namespace Infinity.Udp
             _ = BootstrapMTU();
         }
 
+        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        {
+            Statistics.LogPacketSent(_length);
+            Listener.SendDataSync(_bytes, _length, EndPoint);
+        }
+
         public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
         {
             Statistics.LogPacketSent(_length);
             await Listener.SendData(_bytes, _length, EndPoint);
         }
 
-        public override void Connect(MessageWriter _writer, int _timeout = 5000)
-        {
-            NotClient();
-        }
-
-        public override async Task ConnectAsync(MessageWriter _writer)
+        public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
         {
             NotClient();
         }
@@ -48,7 +49,7 @@ namespace Infinity.Udp
 
         protected override bool SendDisconnect(MessageWriter _writer)
         {
-            Send(_writer);
+            SendSync(_writer);
 
             if (State == ConnectionState.NotConnected)
             {
@@ -85,12 +86,7 @@ namespace Infinity.Udp
             Disconnect(_reason, msg);
         }
 
-        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void ShareConfiguration()
+        protected override async Task ShareConfiguration()
         {
             // Connection config
             MessageWriter writer = MessageWriter.Get();
@@ -118,7 +114,7 @@ namespace Infinity.Udp
 
             writer.Recycle();
 
-            ReliableSend(buffer, () =>
+            await ReliableSend(buffer, () =>
             {
                 InitializeKeepAliveTimer();
             });

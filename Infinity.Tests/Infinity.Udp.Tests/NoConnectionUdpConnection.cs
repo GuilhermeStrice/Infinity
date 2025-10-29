@@ -1,4 +1,5 @@
-﻿using Infinity.Core;
+﻿using System.Threading.Tasks;
+using Infinity.Core;
 
 namespace Infinity.Udp.Tests
 {
@@ -27,26 +28,21 @@ namespace Infinity.Udp.Tests
             return true;
         }
 
-        public void Test_Receive(MessageWriter msg)
+        public async Task Test_Receive(MessageWriter msg)
         {
             byte[] buffer = new byte[msg.Length];
             Array.Copy(msg.Buffer, 0, buffer, 0, msg.Length);
 
             var data = MessageReader.Get(buffer);
-            HandleReceive(data, data.Length);
+            await HandleReceive(data, data.Length);
         }
 
-        public override void WriteBytesToConnection(byte[] _bytes, int _length)
+        public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
         {
             BytesSent.Add(MessageReader.Get(_bytes));
         }
 
-        public override void Connect(MessageWriter _writer, int _timeout = 5000)
-        {
-            State = ConnectionState.Connected;
-        }
-
-        public override void ConnectAsync(MessageWriter _writer)
+        public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
         {
             State = ConnectionState.Connected;
         }
@@ -69,12 +65,12 @@ namespace Infinity.Udp.Tests
             throw new NotImplementedException();
         }
 
-        protected override void ShareConfiguration()
+        protected override async Task ShareConfiguration()
         {
             throw new NotImplementedException();
         }
 
-        protected override void ReadConfiguration(MessageReader _reader)
+        protected override async Task ReadConfiguration(MessageReader _reader)
         {
             throw new NotImplementedException();
         }

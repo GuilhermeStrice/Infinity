@@ -1,5 +1,6 @@
 ﻿using Infinity.Tests.Core;
 using System.Net;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace Infinity.Udp.Tests
@@ -17,7 +18,7 @@ namespace Infinity.Udp.Tests
         private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
 
         [Fact]
-        public void FragmentedSendTest()
+        public async Task FragmentedSendTest()
         {
             Console.WriteLine("FragmentedSendTest");
 
@@ -45,13 +46,13 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 var writer = UdpMessageFactory.BuildFragmentedMessage();
                 writer.Write(_testData);
 
-                connection.Send(writer);
+                await connection.Send(writer);
 
                 writer.Recycle();
 
@@ -63,7 +64,7 @@ namespace Infinity.Udp.Tests
         /// Checking memory usage
         /// </summary>
         //[Fact]
-        public void FragmentedSendTest10000()
+        public async Task FragmentedSendTest10000()
         {
             Console.WriteLine("FragmentedSendTest10000");
 
@@ -100,7 +101,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 Thread.Sleep(100);
@@ -110,7 +111,7 @@ namespace Infinity.Udp.Tests
 
                 for (int i = 0; i < 100; i++)
                 {
-                    connection.Send(message);
+                    _ = connection.Send(message);
                     Thread.Sleep(50);
                 }
                 Thread.Sleep(200);
@@ -121,7 +122,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void MTUTest()
+        public async Task MTUTest()
         {
             Console.WriteLine("MTUTest");
 
@@ -135,7 +136,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 Thread.Sleep(5000);

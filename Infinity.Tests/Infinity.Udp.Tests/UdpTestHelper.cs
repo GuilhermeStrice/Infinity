@@ -1,4 +1,5 @@
-﻿using Infinity.Core;
+﻿using System.Threading.Tasks;
+using Infinity.Core;
 using Xunit.Abstractions;
 
 namespace Infinity.Udp.Tests
@@ -12,7 +13,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        public static void RunServerToClientTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
+        public static async Task RunServerToClientTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
         {
             //Setup meta stuff 
             var data = BuildData(sendOption, dataSize);
@@ -38,7 +39,7 @@ namespace Infinity.Udp.Tests
             };
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
-            connection.Connect(handshake);
+            await connection.Connect(handshake);
             handshake.Recycle();
 
             //Wait until data is received
@@ -64,7 +65,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        public static void RunClientToServerTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
+        public static async Task RunClientToServerTest(UdpConnectionListener listener, UdpConnection connection, int dataSize, byte sendOption)
         {
             //Setup meta stuff 
             var data = BuildData(sendOption, dataSize);
@@ -93,12 +94,12 @@ namespace Infinity.Udp.Tests
 
             //Connect
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
-            connection.Connect(handshake);
+            await connection.Connect(handshake);
             handshake.Recycle();
 
             Assert.True(mutex.WaitOne(1000), "Timeout while connecting");
 
-            connection.Send(data);
+            await connection.Send(data);
 
             //Wait until data is received
             Assert.True(mutex2.WaitOne(1000), "Timeout while sending data");
@@ -124,7 +125,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        public static void RunServerDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
+        public static async Task RunServerDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
         {
             var mutex = new ManualResetEvent(false);
 
@@ -144,7 +145,7 @@ namespace Infinity.Udp.Tests
             listener.Start();
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
-            connection.Connect(handshake);
+            await connection.Connect(handshake);
             handshake.Recycle();
 
             mutex.WaitOne(2500);
@@ -158,7 +159,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        public static void RunClientDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
+        public static async Task RunClientDisconnectTest(UdpConnectionListener listener, UdpConnection connection)
         {
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
@@ -179,7 +180,7 @@ namespace Infinity.Udp.Tests
             listener.Start();
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
-            connection.Connect(handshake);
+            await connection.Connect(handshake);
             handshake.Recycle();
 
             mutex.WaitOne(2500);
@@ -199,7 +200,7 @@ namespace Infinity.Udp.Tests
         /// </summary>
         /// <param name="listener">The listener to test.</param>
         /// <param name="connection">The connection to test.</param>
-        public static void RunClientDisconnectOnDisposeTest(UdpConnectionListener listener, UdpConnection connection)
+        public static async Task RunClientDisconnectOnDisposeTest(UdpConnectionListener listener, UdpConnection connection)
         {
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
@@ -221,7 +222,7 @@ namespace Infinity.Udp.Tests
             listener.Start();
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
-            connection.Connect(handshake);
+            await connection.Connect(handshake);
             handshake.Recycle();
 
             if (!mutex.WaitOne(TimeSpan.FromSeconds(2)))

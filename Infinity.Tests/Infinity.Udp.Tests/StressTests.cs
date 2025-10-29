@@ -2,6 +2,7 @@
 using Infinity.Tests.Core;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace Infinity.Udp.Tests
@@ -39,7 +40,7 @@ namespace Infinity.Udp.Tests
                     obj.Recycle();
                 };
 
-                connection.Connect(handshake);
+                _ = connection.Connect(handshake);
                 connections.Push(connection);
             }
 
@@ -68,7 +69,7 @@ namespace Infinity.Udp.Tests
 
                 for (int i = 0; i < 10000; i++)
                 {
-                    connection.Send(message);
+                    _ = connection.Send(message);
                 }
 
                 message.Recycle();
@@ -78,7 +79,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void StressTestOpeningConnections()
+        public async Task StressTestOpeningConnections()
         {
             Console.WriteLine("StressTestOpeningConnections");
 
@@ -130,7 +131,7 @@ namespace Infinity.Udp.Tests
                         obj.Recycle();
                     };
 
-                    connection.Connect(handshake);
+                    _ = connection.Connect(handshake);
                     connections.Push(connection);
                 }
 
@@ -142,7 +143,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void StressReliableMessages()
+        public async Task StressReliableMessages()
         {
             Console.WriteLine("StressReliableMessages");
 
@@ -191,7 +192,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 var message = UdpMessageFactory.BuildReliableMessage();
@@ -199,7 +200,7 @@ namespace Infinity.Udp.Tests
 
                 for (int i = 0; i < 200; i++)
                 {
-                    connection.Send(message);
+                    _ = connection.Send(message);
                 }
 
                 message.Recycle();

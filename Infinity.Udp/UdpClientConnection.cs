@@ -1,6 +1,5 @@
 using Infinity.Core;
 using Infinity.Core.Exceptions;
-using Infinity.Core.Threading;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -104,22 +103,7 @@ namespace Infinity.Udp
             }
         }
 
-        public override void Connect(MessageWriter _writer, int _timeout = 5000)
-        {
-            _ = ConnectAsync(_writer);
-
-            //Wait till Handshake packet is acknowledged and the state is set to Connected
-            bool timed_out = !connect_wait_lock.WaitOne(_timeout);
-
-            //If we timed out raise an exception
-            if (timed_out)
-            {
-                Dispose();
-                throw new InfinityException("Connection attempt timed out.");
-            }
-        }
-
-        public override async Task ConnectAsync(MessageWriter _writer)
+        public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
         {
             State = ConnectionState.Connecting;
 
@@ -143,12 +127,22 @@ namespace Infinity.Udp
             _ = Task.Run(StartListeningForData);
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
-            await SendHandshake(_writer, async () =>
+            _ = SendHandshake(_writer, async () =>
             {
                 await BootstrapMTU();
 
                 await AskConfiguration();
             });
+
+            //Wait till Handshake packet is acknowledged and the state is set to Connected
+            bool timed_out = !connect_wait_lock.WaitOne(_timeout);
+
+            //If we timed out raise an exception
+            if (timed_out)
+            {
+                Dispose();
+                throw new InfinityException("Connection attempt timed out.");
+            }
         }
 
         private async Task WriteBytesToConnectionReal(byte[] _bytes, int _length)
@@ -303,7 +297,7 @@ namespace Infinity.Udp
             Disconnect(_reason, msg);
         }
 
-        protected override void ShareConfiguration()
+        protected override async Task ShareConfiguration()
         {
             // do nothing here
         }
@@ -330,7 +324,7 @@ namespace Infinity.Udp
 
             InitializeKeepAliveTimer();
 
-            _ = DiscoverMTU();
+            await DiscoverMTU();
         }
 
         protected override void Dispose(bool _disposing)

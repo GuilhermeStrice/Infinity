@@ -1,5 +1,6 @@
 ﻿using Infinity.Tests.Core;
 using System.Net;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 namespace Infinity.Udp.Tests
@@ -17,7 +18,7 @@ namespace Infinity.Udp.Tests
         volatile byte lastId = 0;
 
         [Fact]
-        public void OrderedTest()
+        public async Task OrderedTest()
         {
             Console.WriteLine("OrderedTest");
 
@@ -55,7 +56,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 Thread.Sleep(100);
@@ -66,7 +67,7 @@ namespace Infinity.Udp.Tests
                 // needs further testing
                 for (int i = 0; i < 300; i++)
                 {
-                    connection.Send(writer);
+                    await connection.Send(writer);
                 }
 
                 writer.Recycle();

@@ -1,8 +1,5 @@
 ﻿using Infinity.Core;
 using Infinity.Core.Exceptions;
-using Infinity.Core.Threading;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -183,7 +180,7 @@ namespace Infinity.Udp
             }
 
             // Inform the connection of the buffer (new connections need to send an ack back to client)
-            connection.HandleReceive(reader, reader.Length);
+            await connection.HandleReceive(reader, reader.Length);
 
             if (!aware)
             {
@@ -254,6 +251,41 @@ namespace Infinity.Udp
             {
                 var segment = new ArraySegment<byte>(_bytes, 0, _length);
                 await socket.SendToAsync(_bytes, SocketFlags.None, _endpoint);
+
+                Statistics.AddBytesSent(_length);
+            }
+            catch (SocketException e)
+            {
+                logger?.WriteError("Could not send data as a SocketException occurred: " + e);
+            }
+            catch (ObjectDisposedException)
+            {
+                //Keep alive timer probably ran, ignore
+                return;
+            }
+        }
+
+        internal void SendDataSync(byte[] _bytes, int _length, EndPoint _endpoint)
+        {
+            if (_length > _bytes.Length)
+            {
+                return;
+            }
+
+#if DEBUG
+            if (TestDropRate > 0)
+            {
+                if (++drop_counter % TestDropRate == 0)
+                {
+                    return;
+                }
+            }
+#endif
+
+            try
+            {
+                var segment = new ArraySegment<byte>(_bytes, 0, _length);
+                socket.SendTo(_bytes, SocketFlags.None, _endpoint);
 
                 Statistics.AddBytesSent(_length);
             }

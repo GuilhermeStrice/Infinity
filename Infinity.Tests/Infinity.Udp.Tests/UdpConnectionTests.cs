@@ -3,6 +3,7 @@ using System.Net;
 using Xunit.Abstractions;
 using Infinity.Core;
 using Infinity.Tests.Core;
+using System.Threading.Tasks;
 
 namespace Infinity.Udp.Tests
 {
@@ -17,7 +18,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void ServerDisposeDisconnectsTest()
+        public async Task ServerDisposeDisconnectsTest()
         {
             Console.WriteLine("ServerDisposeDisconnectsTest");
 
@@ -51,7 +52,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 Thread.Sleep(200); // Gotta wait for the server to set up the events.
@@ -65,7 +66,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void ClientServerDisposeDisconnectsTest()
+        public async Task ClientServerDisposeDisconnectsTest()
         {
             Console.WriteLine("ClientServerDisposeDisconnectsTest");
 
@@ -102,7 +103,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 Thread.Sleep(100); // Gotta wait for the server to set up the events.
@@ -120,7 +121,7 @@ namespace Infinity.Udp.Tests
         ///     Tests the fields on UdpConnection
         /// </summary>
         [Fact]
-        public void UdpFieldTest()
+        public async Task UdpFieldTest()
         {
             Console.WriteLine("UdpFieldTest");
 
@@ -132,7 +133,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 //Connection fields
@@ -144,7 +145,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void UdpHandshakeTest()
+        public async Task UdpHandshakeTest()
         {
             Console.WriteLine("UdpHandshakeTest");
 
@@ -175,7 +176,7 @@ namespace Infinity.Udp.Tests
                     e.Recycle();
                 };
                 
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
 
                 mutex.WaitOne(2500);
 
@@ -184,7 +185,7 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public void UdpUnreliableMessageSendTest()
+        public async Task UdpUnreliableMessageSendTest()
         {
             Console.WriteLine("UdpUnreliableMessageSendTest");
 
@@ -208,7 +209,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 var writer = UdpMessageFactory.BuildUnreliableMessage();
@@ -216,7 +217,7 @@ namespace Infinity.Udp.Tests
 
                 for (int i = 0; i < 4; ++i)
                 {
-                    connection.Send(writer);
+                    _ = connection.Send(writer);
                 }
 
                 mutex.WaitOne(5000);
@@ -234,7 +235,7 @@ namespace Infinity.Udp.Tests
         ///     Tests IPv4 connectivity.
         /// </summary>
         [Fact]
-        public void UdpIPv4ConnectionTest()
+        public async Task UdpIPv4ConnectionTest()
         {
             Console.WriteLine("UdpIPv4ConnectionTest");
 
@@ -244,7 +245,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
             }
         }
@@ -253,7 +254,7 @@ namespace Infinity.Udp.Tests
         ///     Tests dual mode connectivity.
         /// </summary>
         [Fact]
-        public void MixedConnectionTest()
+        public async Task MixedConnectionTest()
         {
             Console.WriteLine("MixedConnectionTest");
 
@@ -270,7 +271,7 @@ namespace Infinity.Udp.Tests
                 using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Parse("127.0.0.1"), 4296)))
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                    connection.Connect(handshake);
+                    await connection.Connect(handshake);
 
                     Assert.Equal(ConnectionState.Connected, connection.State);
                     handshake.Recycle();
@@ -279,7 +280,7 @@ namespace Infinity.Udp.Tests
                 using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.IPv6Loopback, 4296), IPMode.IPv6))
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                    connection.Connect(handshake);
+                    await connection.Connect(handshake);
 
                     Assert.Equal(ConnectionState.Connected, connection.State);
 
@@ -326,7 +327,7 @@ namespace Infinity.Udp.Tests
         ///     Tests dual mode connectivity.
         /// </summary>
         [Fact]
-        public void UdpIPv6ConnectionTest()
+        public async Task UdpIPv6ConnectionTest()
         {
             Console.WriteLine("UdpIPv6ConnectionTest");
 
@@ -337,7 +338,7 @@ namespace Infinity.Udp.Tests
                 using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Parse("127.0.0.1"), 4296), IPMode.IPv6))
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                    connection.Connect(handshake);
+                    await connection.Connect(handshake);
                     handshake.Recycle();
                 }
             }
@@ -347,14 +348,14 @@ namespace Infinity.Udp.Tests
         ///     Tests server to client unreliable communication on the UdpConnection
         /// </summary>
         [Fact]
-        public void UdpUnreliableServerToClientTest()
+        public async Task UdpUnreliableServerToClientTest()
         {
             Console.WriteLine("UdpUnreliableServerToClientTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunServerToClientTest(listener, connection, 10, UdpSendOption.Unreliable);
+                await UdpTestHelper.RunServerToClientTest(listener, connection, 10, UdpSendOption.Unreliable);
             }
         }
 
@@ -362,14 +363,14 @@ namespace Infinity.Udp.Tests
         ///     Tests server to client reliable communication on the UdpConnection.
         /// </summary>
         [Fact]
-        public void UdpReliableServerToClientTest()
+        public async Task UdpReliableServerToClientTest()
         {
             Console.WriteLine("UdpReliableServerToClientTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunServerToClientTest(listener, connection, 10, UdpSendOption.Reliable);
+                await UdpTestHelper.RunServerToClientTest(listener, connection, 10, UdpSendOption.Reliable);
             }
         }
 
@@ -377,14 +378,14 @@ namespace Infinity.Udp.Tests
         ///     Tests server to client unreliable communication on the UdpConnection.
         /// </summary>
         [Fact]
-        public void UdpUnreliableClientToServerTest()
+        public async Task UdpUnreliableClientToServerTest()
         {
             Console.WriteLine("UdpUnreliableClientToServerTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientToServerTest(listener, connection, 10, UdpSendOption.Unreliable);
+                await UdpTestHelper.RunClientToServerTest(listener, connection, 10, UdpSendOption.Unreliable);
             }
         }
 
@@ -392,14 +393,14 @@ namespace Infinity.Udp.Tests
         ///     Tests server to client reliable communication on the UdpConnection.
         /// </summary>
         [Fact]
-        public void UdpReliableClientToServerTest()
+        public async Task UdpReliableClientToServerTest()
         {
             Console.WriteLine("UdpReliableClientToServerTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientToServerTest(listener, connection, 10, UdpSendOption.Reliable);
+                await UdpTestHelper.RunClientToServerTest(listener, connection, 10, UdpSendOption.Reliable);
             }
         }
 
@@ -407,7 +408,7 @@ namespace Infinity.Udp.Tests
         ///     Tests the keepalive functionality from the client,
         /// </summary>
         [Fact]
-        public void PingDisconnectClientTest()
+        public async Task PingDisconnectClientTest()
         {
             Console.WriteLine("PingDisconnectClientTest");
 
@@ -419,7 +420,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 // After connecting, quietly stop responding to all messages to fake connection loss.
@@ -439,7 +440,7 @@ namespace Infinity.Udp.Tests
         ///     Tests the keepalive functionality from the client,
         /// </summary>
         [Fact]
-        public void KeepAliveClientTest()
+        public async Task KeepAliveClientTest()
         {
             Console.WriteLine("KeepAliveClientTest");
 
@@ -450,7 +451,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 Thread.Sleep(1000);    //Enough time for at least some keep alive packets
@@ -463,7 +464,7 @@ namespace Infinity.Udp.Tests
         ///     Tests the keepalive functionality from the client,
         /// </summary>
         [Fact]
-        public void KeepAliveServerTest()
+        public async Task KeepAliveServerTest()
         {
             Console.WriteLine("KeepAliveServerTest");
 
@@ -489,7 +490,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 mutex.WaitOne(5000);
@@ -502,14 +503,14 @@ namespace Infinity.Udp.Tests
         ///     Tests disconnection from the client.
         /// </summary>
         [Fact]
-        public void ClientDisconnectTest()
+        public async Task ClientDisconnectTest()
         {
             Console.WriteLine("ClientDisconnectTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientDisconnectTest(listener, connection);
+                await UdpTestHelper.RunClientDisconnectTest(listener, connection);
             }
         }
 
@@ -517,14 +518,14 @@ namespace Infinity.Udp.Tests
         ///     Test that a disconnect is sent when the client is disposed.
         /// </summary>
         [Fact]
-        public void ClientDisconnectOnDisposeTest()
+        public async Task ClientDisconnectOnDisposeTest()
         {
             Console.WriteLine("ClientDisconnectOnDisposeTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunClientDisconnectOnDisposeTest(listener, connection);
+                await UdpTestHelper.RunClientDisconnectOnDisposeTest(listener, connection);
             }
         }
 
@@ -532,14 +533,14 @@ namespace Infinity.Udp.Tests
         ///     Tests disconnection from the server.
         /// </summary>
         [Fact]
-        public void ServerDisconnectTest()
+        public async Task ServerDisconnectTest()
         {
             Console.WriteLine("ServerDisconnectTest");
 
             using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
             {
-                UdpTestHelper.RunServerDisconnectTest(listener, connection);
+                await UdpTestHelper.RunServerDisconnectTest(listener, connection);
             }
         }
 
@@ -547,7 +548,7 @@ namespace Infinity.Udp.Tests
         ///     Tests disconnection from the server
         /// </summary>
         [Fact]
-        public void ServerExtraDataDisconnectTest()
+        public async Task ServerExtraDataDisconnectTest()
         {
             Console.WriteLine("ServerExtraDataDisconnectTest");
 
@@ -583,7 +584,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                connection.Connect(handshake);
+                await connection.Connect(handshake);
                 handshake.Recycle();
 
                 mutex.WaitOne(2500);
