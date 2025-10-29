@@ -113,7 +113,7 @@ namespace Infinity.Udp
                     reader.Length = result.ReceivedBytes;
                     reader.Position = 0;
 
-                    await ReadCallback(reader);
+                    await ReadCallback(reader, remoteEP);
                 }
                 catch (SocketException sx)
                 {
@@ -133,9 +133,8 @@ namespace Infinity.Udp
             }
         }
 
-        private async Task ReadCallback(MessageReader reader)
+        private async Task ReadCallback(MessageReader reader, EndPoint remote_end_point)
         {
-            EndPoint remote_end_point = new IPEndPoint(EndPoint.Address, EndPoint.Port);
 
             // I'm a little concerned about a infinite loop here, but it seems like it's possible 
             // to get 0 bytes read on UDP without the socket being shut down.
