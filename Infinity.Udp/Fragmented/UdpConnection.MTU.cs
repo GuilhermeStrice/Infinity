@@ -128,7 +128,7 @@ namespace Infinity.Udp
                 }
                 finally
                 {
-
+                    mtu_lock.Release();
                 }
             }
         }

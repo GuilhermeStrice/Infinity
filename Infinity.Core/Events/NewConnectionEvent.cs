@@ -18,7 +18,10 @@
         {
             if (_recycle_message)
             {
-                HandshakeData.Recycle();
+                if (HandshakeData != null)
+                {
+                    HandshakeData.Recycle();
+                }
             }
 
             Connection = null;
