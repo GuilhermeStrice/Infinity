@@ -107,29 +107,39 @@ namespace Infinity.WebSockets
 			_ = Task.Run(ReceiveLoop);
 		}
 
-		public override async Task<SendErrors> Send(MessageWriter _writer)
+		public override async Task<SendErrors> Send(MessageWriter message)
 		{
+			// Check if the connection is ready
 			if (state != ConnectionState.Connected || stream == null || closeSent)
-			{
 				return SendErrors.Disconnected;
-			}
 
-			InvokeBeforeSend(_writer);
-			MessageWriter frame = WebSocketFrame.CreateFrame(_writer.Buffer.AsSpan(0, _writer.Length), _writer.Length, WebSocketOpcode.Binary, true, _mask: true);
+			// Allow any pre-send processing
+			InvokeBeforeSend(message);
+
+			// Create a WebSocket frame from the message
+			var frame = WebSocketFrame.CreateFrame(
+				message.Buffer.AsSpan(0, message.Length),
+				message.Length,
+				WebSocketOpcode.Binary,
+				true, // fin
+				true // mask
+			);
+
 			try
 			{
+				// Write the frame to the network stream
 				await stream.WriteAsync(frame.Buffer, 0, frame.Length);
 				await stream.FlushAsync();
 			}
 			catch (Exception ex)
 			{
 				logger?.WriteError("WebSocket send failed: " + ex.Message);
-				frame.Recycle();
 				DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Send failed");
 				return SendErrors.Disconnected;
 			}
 			finally
 			{
+				// Always recycle the frame to avoid memory leaks
 				frame.Recycle();
 			}
 
@@ -422,49 +432,74 @@ namespace Infinity.WebSockets
 			base.Dispose(_disposing);
 		}
 
-		private static async Task<string> ReadHeaders(NetworkStream _stream)
+		private static async Task<string> ReadHeaders(NetworkStream stream)
 		{
-			var sb = new StringBuilder();
+			var builder = new StringBuilder();
 			byte[] buffer = new byte[1024];
-			int matched = 0;
+			int consecutiveMatch = 0; // Tracks \r\n\r\n sequence
+
 			while (true)
 			{
-				int read = await _stream.ReadAsync(buffer, 0, buffer.Length);
-				if (read <= 0) break;
-				sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
-				for (int i = 0; i < read; i++)
+				int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+				if (bytesRead <= 0) break; // End of stream
+
+				// Append the chunk to the string builder
+				builder.Append(Encoding.ASCII.GetString(buffer, 0, bytesRead));
+
+				// Check for end-of-headers sequence (\r\n\r\n)
+				for (int i = 0; i < bytesRead; i++)
 				{
 					char c = (char)buffer[i];
-					if ((matched == 0 || matched == 2) && c == '\r') matched++;
-					else if ((matched == 1 || matched == 3) && c == '\n') matched++;
-					else matched = 0;
-					if (matched == 4) return sb.ToString();
+
+					if ((consecutiveMatch == 0 || consecutiveMatch == 2) && c == '\r')
+						consecutiveMatch++;
+					else if ((consecutiveMatch == 1 || consecutiveMatch == 3) && c == '\n')
+						consecutiveMatch++;
+					else
+						consecutiveMatch = 0;
+
+					// End of headers found
+					if (consecutiveMatch == 4)
+						return builder.ToString();
 				}
 			}
-			return sb.ToString();
+
+			return builder.ToString();
 		}
 
-		private static Dictionary<string, string> ParseHeaders(string raw)
+		private static Dictionary<string, string> ParseHeaders(string rawHeaders)
 		{
-			var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-			var lines = raw.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+			// Use case-insensitive dictionary for HTTP headers
+			var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+			// Split the raw header string into lines, ignoring empty lines
+			var lines = rawHeaders.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+
+			// Start from index 1 assuming the first line is the request/status line
 			for (int i = 1; i < lines.Length; i++)
 			{
 				var line = lines[i];
-				int idx = line.IndexOf(':');
-				if (idx <= 0) continue;
-				var k = line[..idx].Trim();
-				var v = line[(idx + 1)..].Trim();
-				dict[k] = v;
+
+				// Find the first colon, which separates key and value
+				int colonIndex = line.IndexOf(':');
+				if (colonIndex <= 0) continue; // Skip malformed lines
+
+				// Extract key and value, trimming whitespace
+				var key = line[..colonIndex].Trim();
+				var value = line[(colonIndex + 1)..].Trim();
+
+				headers[key] = value;
 			}
-			return dict;
+
+			return headers;
 		}
 
-		private static string ComputeWebSocketAccept(string _clientKey)
+		private static string ComputeWebSocketAccept(string clientKey)
 		{
-			string concat = _clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-			byte[] sha1 = System.Security.Cryptography.SHA1.HashData(Encoding.ASCII.GetBytes(concat));
-			return Convert.ToBase64String(sha1);
+			const string WebSocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+			var concatenated = clientKey + WebSocketGuid;
+			var hash = SHA1.HashData(Encoding.ASCII.GetBytes(concatenated));
+			return Convert.ToBase64String(hash);
 		}
 	}
 }

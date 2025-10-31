@@ -9,20 +9,6 @@ namespace Infinity.WebSockets
 	{
 		public static MessageWriter CreateFrame(ReadOnlySpan<byte> _payload, int _length, WebSocketOpcode _opcode, bool _fin, bool _mask)
 		{
-			int headerLen = 2;
-			int extendedLen = 0;
-			if (_length >= 126 && _length <= ushort.MaxValue)
-			{
-				extendedLen = 2;
-			}
-			else if (_length > ushort.MaxValue)
-			{
-				extendedLen = 8;
-			}
-
-			int maskLen = _mask ? 4 : 0;
-			int totalLen = headerLen + extendedLen + maskLen + _length;
-			
 			MessageWriter writer = MessageWriter.Get();
 			writer.Position = 0; // Use from start
 			
