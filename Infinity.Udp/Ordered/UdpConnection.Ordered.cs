@@ -15,7 +15,7 @@ namespace Infinity.Udp
         {
             AttachReliableID(_buffer, 1);
 
-            _buffer[3] = send_sequence;
+            _buffer[3] = (byte)send_sequence;
 
             await WriteBytesToConnection(_buffer, _buffer.Length);
 

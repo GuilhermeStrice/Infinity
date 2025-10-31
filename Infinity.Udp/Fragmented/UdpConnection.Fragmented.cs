@@ -18,12 +18,12 @@ namespace Infinity.Udp
 
             var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
             
-            var fragments_count = (int)((_writer.Buffer.Length / (double)fragment_size) + 1);
+            var fragments_count = (int)((_buffer.Length / (double)fragment_size) + 1);
 
             for (ushort i = 0; i < fragments_count; i++)
             {
+                var data_length = Math.Min(fragment_size, _buffer.Length - fragment_size * i);
                 var fragment_buffer = new byte[data_length + fragment_header_size];
-                var data_length = Math.Min(fragment_size, _writer.Buffer.Length - fragment_size * i);
 
                 fragment_buffer[0] = UdpSendOptionInternal.Fragment;
 
