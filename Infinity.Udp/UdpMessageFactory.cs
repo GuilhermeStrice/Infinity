@@ -62,5 +62,14 @@ namespace Infinity.Udp
 
             return writer;
         }
+
+        internal static MessageWriter BuildAskConfirurationMessage()
+        {
+            MessageWriter writer = MessageWriter.Get();
+
+            writer.Write(UdpSendOptionInternal.AskConfiguration);
+
+            return writer;
+        }
     }
 }

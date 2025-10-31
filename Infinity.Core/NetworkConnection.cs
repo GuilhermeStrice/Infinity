@@ -33,7 +33,6 @@ namespace Infinity.Core
 
             protected set
             {
-                state = value;
                 SetState(value);
             }
         }

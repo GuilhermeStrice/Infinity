@@ -1,6 +1,5 @@
-﻿using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using Infinity.Core;
+﻿using Infinity.Core;
+using System.Threading;
 
 namespace Infinity.Udp
 {
@@ -23,7 +22,18 @@ namespace Infinity.Udp
 
         public int MaximumAllowedMTU { get; set; } = 2500; // In localhost scenarios MTU can be huge, takes too long to find out. Lets just have a ceiling
 
-        public int MTU { get; private set; } = -1; // we are guaranteed to be able to send at least the minimum IP frame size
+        public int MTU
+        {
+            get
+            {
+                return mtu;
+            }
+
+            private set
+            {
+                mtu = value;
+            }
+        } // we are guaranteed to be able to send at least the minimum IP frame size
 
         private SemaphoreSlim mtu_lock = new SemaphoreSlim(1, 1);
 
@@ -31,20 +41,21 @@ namespace Infinity.Udp
         private const int minimum_mtu_ipv6 = 1280 - 48; // Minimum required by https://datatracker.ietf.org/doc/html/rfc2460 - 40 is ipv6 header size + 8 bytes for udp header
 
         private int last_mtu = 0;
+        private int mtu = -1;
 
         protected async Task BootstrapMTU()
         {
-            await mtu_lock.WaitAsync();
+            await mtu_lock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (MTU == -1)
+                if (mtu == -1)
                 {
-                    MTU = MinimumMTU;
+                    Interlocked.Exchange(ref mtu, MinimumMTU);
                 }
 
                 if (ForcedMTU != null)
                 {
-                    MTU = ForcedMTU.Value;
+                    Interlocked.Exchange(ref mtu, ForcedMTU.Value);
                 }
             }
             finally
@@ -55,22 +66,22 @@ namespace Infinity.Udp
 
         protected async Task DiscoverMTU()
         {
-            await ExpandMTU();
+            await ExpandMTU().ConfigureAwait(false);
         }
 
         protected void FinishMTUExpansion()
         {
-            if (MTU == MaximumAllowedMTU)
+            if (mtu == MaximumAllowedMTU)
             {
                 return;
             }
 
-            MTU = last_mtu;
+            Interlocked.Exchange(ref mtu, last_mtu);
         }
 
         private async Task ExpandMTU()
         {
-            await mtu_lock.WaitAsync();
+            await mtu_lock.WaitAsync().ConfigureAwait(false);
             try
             {
                 var buffer = new byte[MTU];
@@ -79,24 +90,24 @@ namespace Infinity.Udp
 
                 AttachReliableID(buffer, 1, async () =>
                 {
-                    await mtu_lock.WaitAsync();
+                    await mtu_lock.WaitAsync().ConfigureAwait(false);
                     try
                     {
-                        if (MTU >= MaximumAllowedMTU)
+                        if (mtu >= MaximumAllowedMTU)
                         {
                             FinishMTUExpansion();
                             return;
                         }
 
-                        last_mtu = MTU;
-                        MTU++;
+                        Interlocked.Exchange(ref last_mtu, mtu);
+                        Interlocked.Increment(ref mtu);
                     }
                     finally
                     {
                         mtu_lock.Release();
                     }
 
-                    await ExpandMTU();
+                    await ExpandMTU().ConfigureAwait(false);
                 });
 
                 buffer[MTU - 4] = (byte)MTU;
@@ -114,17 +125,17 @@ namespace Infinity.Udp
 
         private async Task MTUTestReceive(MessageReader _reader)
         {
-            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
             if (result.Item1)
             {
                 _reader.Position = _reader.Length - 4;
                 int received_mtu = _reader.ReadInt32();
 
-                await mtu_lock.WaitAsync();
+                await mtu_lock.WaitAsync().ConfigureAwait(false);
                 try
                 {
-                    last_mtu = MTU;
-                    MTU = received_mtu;
+                    Interlocked.Exchange(ref last_mtu, mtu);
+                    Interlocked.Exchange(ref mtu, received_mtu);
                 }
                 finally
                 {

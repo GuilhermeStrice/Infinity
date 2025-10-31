@@ -1,4 +1,5 @@
-﻿using Infinity.Tests.Core;
+﻿using Infinity.Core;
+using Infinity.Tests.Core;
 using System.Net;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -14,66 +15,60 @@ namespace Infinity.Udp.Tests
             output = _output;
         }
 
-        volatile int count = 1;
-        volatile byte lastId = 0;
-
         [Fact]
         public async Task OrderedTest()
         {
             Console.WriteLine("OrderedTest");
 
-            ManualResetEvent mutex = new ManualResetEvent(false);
+            int port = Util.GetFreePort();
+            var tcs = new TaskCompletionSource();
 
-            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
-            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
+            int count = 1;
+            int lastId = 0;
+
+            using var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, port));
+            using var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, port));
+
+            listener.NewConnection += e =>
             {
-                listener.NewConnection += e =>
+                e.Connection.DataReceived += data =>
                 {
-                    e.Connection.DataReceived += data =>
+                    data.Message.Position = 3;
+                    var receivedId = data.Message.ReadByte();
+
+                    Assert.Equal((byte)lastId, receivedId);
+
+                    Interlocked.Increment(ref lastId);
+                    int newCount = Interlocked.Increment(ref count);
+                    output.WriteLine(newCount.ToString());
+
+                    data.Recycle();
+
+                    if (newCount == 1000)
                     {
-                        data.Message.Position = 3;
-
-                        var receivedId = data.Message.ReadByte();
-
-                        Assert.Equal(lastId, receivedId);
-
-                        ++lastId;
-
-                        count++;
-
-                        data.Recycle();
-
-                        if (count == 300)
-                        {
-                            mutex.Set();
-                            output.WriteLine("Done");
-                        }
-                    };
-
-                    e.Recycle();
+                        tcs.SetResult();
+                        output.WriteLine("Done");
+                    }
                 };
 
-                listener.Start();
+                e.Recycle();
+            };
 
-                var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                await connection.Connect(handshake);
-                handshake.Recycle();
+            listener.Start();
 
-                Thread.Sleep(100);
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            await connection.Connect(handshake);
+            handshake.Recycle();
 
+            for (int i = 0; i < 1000; i++)
+            {
                 var writer = UdpMessageFactory.BuildOrderedMessage();
                 writer.Write(20);
-
-                // needs further testing
-                for (int i = 0; i < 300; i++)
-                {
-                    await connection.Send(writer);
-                }
-
-                writer.Recycle();
-
-                mutex.WaitOne(5000);
+                _ = connection.Send(writer);
             }
+
+            await Task.WhenAny(tcs.Task, Task.Delay(5000));
+            Assert.True(tcs.Task.IsCompleted, "Did not receive all messages in time.");
         }
     }
 }

@@ -1,6 +1,5 @@
 using Infinity.Core;
 using System.Net;
-using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -45,6 +44,7 @@ namespace Infinity.Udp
 
         protected override void SetState(ConnectionState _state)
         {
+            state = _state;
         }
 
         protected override bool SendDisconnect(MessageWriter _writer)

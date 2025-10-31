@@ -1,5 +1,6 @@
 ﻿using Infinity.Core;
 using Infinity.Core.KeepAlive;
+using System.Threading;
 
 namespace Infinity.Udp
 {   
@@ -25,7 +26,6 @@ namespace Infinity.Udp
         public void DisposeKeepAliveTimer()
         {
             keep_alive_cts?.Cancel();
-            keep_alive_cts?.Dispose();
             keep_alive_cts = null;
         }
 
@@ -50,20 +50,25 @@ namespace Infinity.Udp
 
                     try
                     {
-                        pings_since_ack++;
-                        SendPing();
+                        await SendPing().ConfigureAwait(false);
+                        Interlocked.Increment(ref pings_since_ack);
                     }
                     catch
                     {
                         // optionally log
                     }
 
-                    await Task.Delay(configuration.KeepAliveInterval, ct);
+                    await Task.Delay(configuration.KeepAliveInterval, ct).ConfigureAwait(false);
                 }
             }
             catch (TaskCanceledException)
             {
                 // normal cancellation, ignore
+            }
+            finally
+            {
+                keep_alive_cts?.Dispose();
+                keep_alive_cts = null;
             }
         }
 
@@ -72,9 +77,9 @@ namespace Infinity.Udp
         // An unacked ping should never be the sole cause of a disconnect.
         // Rather, the responses will reset our pingsSinceAck, enough unacked 
         // pings should cause a disconnect.
-        private void SendPing()
+        private async Task SendPing()
         {
-            ushort id = (ushort)++last_id_allocated;
+            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
             byte[] bytes = new byte[3];
             bytes[0] = UdpSendOptionInternal.Ping;

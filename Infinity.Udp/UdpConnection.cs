@@ -131,7 +131,7 @@ namespace Infinity.Udp
                 case UdpSendOption.Reliable:
                     {
                         InvokeBeforeReceive(_reader);
-                        await ReliableMessageReceive(_reader);
+                        await ReliableMessageReceive(_reader).ConfigureAwait(false);
                         Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
                     }
@@ -139,7 +139,7 @@ namespace Infinity.Udp
                 case UdpSendOption.ReliableOrdered:
                     {
                         InvokeBeforeReceive(_reader);
-                        await OrderedMessageReceived(_reader);
+                        await OrderedMessageReceived(_reader).ConfigureAwait(false);
                         Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
                     }
@@ -154,7 +154,7 @@ namespace Infinity.Udp
 
                 case UdpSendOptionInternal.Ping:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1);
+                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
                         Statistics.LogPingReceived(_bytes_received);
                         _reader.Recycle();
                         break;
@@ -162,21 +162,21 @@ namespace Infinity.Udp
 
                 case UdpSendOptionInternal.Handshake:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1);
+                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
                         Statistics.LogHandshakeReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOptionInternal.Fragment:
                     {
-                        await FragmentMessageReceive(_reader);
+                        await FragmentMessageReceive(_reader).ConfigureAwait(false);
                         Statistics.LogFragmentedMessageReceived(_bytes_received);
                         break;
                     }
 
                 case UdpSendOptionInternal.TestMTU:
                     {
-                        await MTUTestReceive(_reader);
+                        await MTUTestReceive(_reader).ConfigureAwait(false);
                         Statistics.LogMTUTestMessageReceived(_bytes_received);
                         _reader.Recycle();
                         break;
@@ -185,8 +185,8 @@ namespace Infinity.Udp
                     // sent by client
                 case UdpSendOptionInternal.AskConfiguration:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1);
-                        await ShareConfiguration();
+                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
+                        await ShareConfiguration().ConfigureAwait(false);
                         _reader.Recycle();
                         break;
                     }
@@ -194,8 +194,8 @@ namespace Infinity.Udp
                     // sent by server
                 case UdpSendOptionInternal.ShareConfiguration:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1);
-                        await ReadConfiguration(_reader);
+                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
+                        await ReadConfiguration(_reader).ConfigureAwait(false);
                         _reader.Recycle();
                         break;
                     }

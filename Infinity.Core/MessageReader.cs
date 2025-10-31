@@ -11,18 +11,17 @@ namespace Infinity.Core
 
         public int BytesRemaining => Length - Position;
 
-        private int _position;
-        private int head;
+        private int position;
 
         public int Position
         {
             get
             {
-                return _position;
+                return position;
             }
             set
             {
-                _position = head = value;
+                position = value;
             }
         }
 
@@ -119,7 +118,7 @@ namespace Infinity.Core
         {
             float output = 0;
 
-            fixed (byte* buf_ptr = &Buffer[head])
+            fixed (byte* buf_ptr = &Buffer[Position])
             {
                 byte* out_ptr = (byte*)&output;
 
@@ -142,7 +141,7 @@ namespace Infinity.Core
                 throw new InvalidDataException($"Read length is longer than message length: {length} of {BytesRemaining}");
             }
 
-            string output = Encoding.UTF8.GetString(Buffer, head, length);
+            string output = Encoding.UTF8.GetString(Buffer, Position, length);
 
             Position += length;
             return output;
@@ -168,7 +167,7 @@ namespace Infinity.Core
             }
 
             byte[] output = new byte[_length];
-            Array.Copy(Buffer, head, output, 0, output.Length);
+            Array.Copy(Buffer, Position, output, 0, output.Length);
             Position += output.Length;
 
             return output;
@@ -214,8 +213,7 @@ namespace Infinity.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte FastByte()
         {
-            _position++;
-            return Buffer[head++];
+            return Buffer[Position++];
         }
 
         public static MessageReader Get(byte[] _buffer, int _offset, int _length)
@@ -242,7 +240,7 @@ namespace Infinity.Core
 
         public void Recycle()
         {
-            Position = head = Length = 0;
+            Position = Length = 0;
             Pools.ReaderPool.PutObject(this);
         }
 

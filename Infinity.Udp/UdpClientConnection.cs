@@ -13,9 +13,7 @@ namespace Infinity.Udp
 
         private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
 
-        private Timer reliable_packet_timer;
-
-        CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
+        private CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
 
         public UdpClientConnection(ILogger _logger, IPEndPoint _remote_end_point, IPMode _ip_mode = IPMode.IPv4)
             : base(_logger)
@@ -25,7 +23,7 @@ namespace Infinity.Udp
 
             socket = CreateSocket(_ip_mode);
 
-            reliable_packet_timer = new Timer(ManageReliablePacketsInternal, null, 100, Timeout.Infinite);
+            Util.FireAndForget(ManageReliablePacketsInternal(), logger);
         }
 
         private Socket CreateSocket(IPMode _ip_mode)
@@ -68,7 +66,7 @@ namespace Infinity.Udp
 
         ~UdpClientConnection()
         {
-            Dispose(false);
+            Dispose(true);
         }
 
         public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
@@ -124,15 +122,15 @@ namespace Infinity.Udp
                 throw new InfinityException("A SocketException occurred while binding to the port.", e);
             }
 
-            _ = Task.Run(StartListeningForData);
+            Util.FireAndForget(StartListeningForData(), logger);
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
-            _ = SendHandshake(_writer, async () =>
+            await SendHandshake(_writer, async () =>
             {
-                await BootstrapMTU();
+                await BootstrapMTU().ConfigureAwait(false);
 
-                await AskConfiguration();
-            });
+                await AskConfiguration().ConfigureAwait(false);
+            }).ConfigureAwait(false);
 
             //Wait till Handshake packet is acknowledged and the state is set to Connected
             bool timed_out = !connect_wait_lock.WaitOne(_timeout);
@@ -150,7 +148,7 @@ namespace Infinity.Udp
             try
             {
                 var segment = new ArraySegment<byte>(_bytes, 0, _length);
-                int sent = await socket.SendToAsync(segment, SocketFlags.None, EndPoint);
+                int sent = await socket.SendToAsync(segment, SocketFlags.None, EndPoint).ConfigureAwait(false);
                 Statistics.LogPacketSent(sent);
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
@@ -179,14 +177,13 @@ namespace Infinity.Udp
             await ReliableSend(buffer);
         }
 
-        private void ManageReliablePacketsInternal(object? _state)
+        private async Task ManageReliablePacketsInternal()
         {
-            ManageReliablePackets();
-            try
+            while (!cancellation_token_source.IsCancellationRequested)
             {
-                reliable_packet_timer.Change(100, Timeout.Infinite);
+                await ManageReliablePackets().ConfigureAwait(false);
+                await Task.Delay(100, cancellation_token_source.Token).ConfigureAwait(false);
             }
-            catch { }
         }
 
         private async Task StartListeningForData()
@@ -203,11 +200,11 @@ namespace Infinity.Udp
                 var reader = MessageReader.Get();
                 try
                 {
-                    var bytes_received = await socket.ReceiveAsync(reader.Buffer, SocketFlags.None);
+                    var bytes_received = await socket.ReceiveAsync(reader.Buffer, SocketFlags.None).ConfigureAwait(false);
                     reader.Length = bytes_received;
                     reader.Position = 0;
 
-                    await ReadCallback(reader);
+                    await ReadCallback(reader).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -235,26 +232,20 @@ namespace Infinity.Udp
                 }
             }
 #endif
-            await HandleReceive(reader, reader.Length);
+            await HandleReceive(reader, reader.Length).ConfigureAwait(false);
         }
 
         protected override void SetState(ConnectionState _state)
         {
-            try
+            state = _state;
+
+            if (_state == ConnectionState.Connected || _state == ConnectionState.NotConnected)
             {
-                // If the server disconnects you during the Handshake
-                // you can go straight from Connecting to NotConnected.
-                if (_state == ConnectionState.Connected || _state == ConnectionState.NotConnected)
-                {
-                    connect_wait_lock.Set();
-                }
-                else
-                {
-                    connect_wait_lock.Reset();
-                }
+                connect_wait_lock.Set();
             }
-            catch (ObjectDisposedException)
+            else
             {
+                connect_wait_lock.Reset();
             }
         }
 
@@ -324,21 +315,39 @@ namespace Infinity.Udp
 
             InitializeKeepAliveTimer();
 
-            await DiscoverMTU();
+            await DiscoverMTU().ConfigureAwait(false);
         }
 
         protected override void Dispose(bool _disposing)
         {
             if (_disposing)
             {
-                var writer = UdpMessageFactory.BuildDisconnectMessage();
-                SendDisconnect(writer);
-                writer.Recycle();
+                try
+                {
+                    if (State != ConnectionState.NotConnected)
+                    {
+                        // send disconnect packet to server
+                        var writer = UdpMessageFactory.BuildDisconnectMessage();
+                        SendDisconnect(writer);
+                        writer.Recycle();
+
+                        // Fire client-side Disconnected event
+                        InvokeDisconnected("Disposed", null);
+                    }
+                }
+                catch
+                {
+                    // swallow exceptions
+                }
             }
 
-            try { socket.Shutdown(SocketShutdown.Both); } catch { }
-            try { socket.Close(); } catch { }
-            try { socket.Dispose(); } catch { }
+            cancellation_token_source?.Cancel();
+
+            try { socket?.Shutdown(SocketShutdown.Both); } catch { }
+            try { socket?.Close(); } catch { }
+            try { socket?.Dispose(); } catch { }
+
+            socket = null;
 
             base.Dispose(_disposing);
         }

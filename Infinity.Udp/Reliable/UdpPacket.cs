@@ -14,10 +14,23 @@ namespace Infinity.Udp
 
         public Action? AckCallback;
 
-        public int Retransmissions { get; private set; }
+        public int Retransmissions
+        {
+            get
+            {
+                return retransmissions;
+            }
+
+            private set
+            {
+                retransmissions = value;
+            }
+        }
+
         public Stopwatch Stopwatch = new Stopwatch();
 
         private byte[]? buffer;
+        private int retransmissions;
         private UdpConnection? connection;
 
         public void Set(UdpConnection _connection, byte[] _buffer, int _timeout, Action _ack_callback)
@@ -28,12 +41,12 @@ namespace Infinity.Udp
             Acknowledged = false;
             NextTimeoutMs = _timeout;
             AckCallback = _ack_callback;
-            Retransmissions = 0;
+            retransmissions = 0;
 
             Stopwatch.Restart();
         }
 
-        public int Resend()
+        public async Task<int> Resend()
         {
             if (!Acknowledged && connection != null)
             {
@@ -54,14 +67,14 @@ namespace Infinity.Udp
                 if (lifetimeMs >= NextTimeoutMs)
                 {
                     // if it's not 0 it means we already sent it once
-                    if (Retransmissions != 0)
+                    if (retransmissions != 0)
                     {
                         connection.Statistics.LogDroppedPacket();
                     }
 
-                    ++Retransmissions;
+                    retransmissions = (int)Interlocked.Increment(ref retransmissions);
                     if (connection.configuration.ResendLimit != 0
-                        && Retransmissions > connection.configuration.ResendLimit)
+                        && retransmissions > connection.configuration.ResendLimit)
                     {
                         if (connection.reliable_data_packets_sent.TryRemove(id, out UdpPacket self))
                         {
@@ -72,8 +85,13 @@ namespace Infinity.Udp
                         return 0;
                     }
 
-                    NextTimeoutMs += (int)Math.Min(NextTimeoutMs * connection.configuration.ResendPingMultiplier, 
-                        MaxAdditionalResendDelayMs);
+                    NextTimeoutMs += (int)Math.Min(
+                        NextTimeoutMs * connection.configuration.ResendPingMultiplier,
+                        MaxAdditionalResendDelayMs
+                    );
+
+                    // Ensure we don't exceed disconnect timeout
+                    NextTimeoutMs = Math.Min(NextTimeoutMs, connection.configuration.DisconnectTimeoutMs);
 
                     try
                     {

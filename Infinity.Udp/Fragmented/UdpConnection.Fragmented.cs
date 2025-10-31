@@ -1,5 +1,6 @@
 ﻿using Infinity.Core;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Infinity.Udp
 {
@@ -15,14 +16,14 @@ namespace Infinity.Udp
         {
             var fragment_size = MTU - fragment_header_size;
 
-            var fragment_id = (byte)++last_fragment_id_allocated;
+            var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
             
-            var fragments_count = (int)((_buffer.Length / (double)fragment_size) + 1);
+            var fragments_count = (int)((_writer.Buffer.Length / (double)fragment_size) + 1);
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(fragment_size, _buffer.Length - fragment_size * i);
                 var fragment_buffer = new byte[data_length + fragment_header_size];
+                var data_length = Math.Min(fragment_size, _writer.Buffer.Length - fragment_size * i);
 
                 fragment_buffer[0] = UdpSendOptionInternal.Fragment;
 
@@ -46,13 +47,13 @@ namespace Infinity.Udp
 
             if (last_fragment_id_allocated >= byte.MaxValue)
             {
-                last_fragment_id_allocated = 0;
+                Interlocked.Exchange(ref last_fragment_id_allocated, 0);
             }
         }
 
         private async Task FragmentMessageReceive(MessageReader _reader)
         {
-            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
             if (result.Item1)
             {
                 _reader.Position += 3;

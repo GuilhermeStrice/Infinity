@@ -1,4 +1,6 @@
-﻿using Infinity.Tests.Core;
+﻿using Infinity.Core;
+using Infinity.Tests.Core;
+using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -15,49 +17,50 @@ namespace Infinity.Udp.Tests
             this.output = output;
         }
 
-        private readonly byte[] _testData = Enumerable.Range(0, 10000).Select(x => (byte)x).ToArray();
+        private readonly byte[] _testData = Enumerable.Range(0, 60000).Select(x => (byte)x).ToArray();
 
         [Fact]
         public async Task FragmentedSendTest()
         {
             Console.WriteLine("FragmentedSendTest");
 
-            ManualResetEvent mutex = new ManualResetEvent(false);
+            int port = Util.GetFreePort();
+            var tcs = new TaskCompletionSource<bool>();
 
-            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
-            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
+            using var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, port));
+            using var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, port));
+
+            listener.Configuration.EnableFragmentation = true;
+
+            listener.NewConnection += e =>
             {
-                listener.Configuration.EnableFragmentation = true;
-                listener.NewConnection += e =>
+                e.Connection.DataReceived += data =>
                 {
-                    e.Connection.DataReceived += data =>
-                    {
-                        var copy = new byte[10000];
-                        Array.Copy(data.Message.Buffer, 3, copy, 0, 10000);
-                        Assert.Equal(copy, _testData);
-                        mutex.Set();
+                    var reader = data.Message;
+                    reader.Position = 3; // Skip headers
+                    var copy = reader.ReadBytes(_testData.Length);
 
-                        data.Recycle();
-                    };
+                    Assert.Equal(_testData, copy);
 
-                    e.Recycle();
+                    data.Recycle();
+                    tcs.TrySetResult(true);
                 };
+                e.Recycle();
+            };
 
-                listener.Start();
+            listener.Start();
 
-                var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                await connection.Connect(handshake);
-                handshake.Recycle();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            await connection.Connect(handshake);
+            handshake.Recycle();
 
-                var writer = UdpMessageFactory.BuildFragmentedMessage();
-                writer.Write(_testData);
+            var writer = UdpMessageFactory.BuildFragmentedMessage();
+            writer.Write(_testData);
 
-                await connection.Send(writer);
+            await connection.Send(writer);
+            writer.Recycle();
 
-                writer.Recycle();
-
-                mutex.WaitOne(1000);
-            }
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
@@ -68,12 +71,14 @@ namespace Infinity.Udp.Tests
         {
             Console.WriteLine("FragmentedSendTest10000");
 
+            int port = Util.GetFreePort();
+
             int count = 0;
 
             var mutex = new ManualResetEvent(false);
 
-            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
-            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
+            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, port)))
+            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, port)))
             {
                 listener.Configuration.EnableFragmentation = true;
                 listener.NewConnection += e =>
@@ -126,23 +131,28 @@ namespace Infinity.Udp.Tests
         {
             Console.WriteLine("MTUTest");
 
+            int port = Util.GetFreePort();
             int desired_mtu = 1500;
 
-            using (var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, 4296)))
-            using (var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, 4296)))
+            using var listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, port));
+            using var connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, port));
+
+            listener.Configuration.EnableFragmentation = true;
+            connection.MaximumAllowedMTU = desired_mtu;
+            listener.Start();
+
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            await connection.Connect(handshake);
+            handshake.Recycle();
+
+            // Wait until MTU reaches desired value or timeout after 5 seconds
+            var sw = Stopwatch.StartNew();
+            while (connection.MTU != desired_mtu && sw.Elapsed < TimeSpan.FromSeconds(5))
             {
-                listener.Configuration.EnableFragmentation = true;
-                connection.MaximumAllowedMTU = desired_mtu;
-                listener.Start();
-
-                var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                await connection.Connect(handshake);
-                handshake.Recycle();
-
-                Thread.Sleep(5000);
-
-                Assert.True(connection.MTU == desired_mtu);
+                await Task.Delay(50);
             }
+
+            Assert.Equal(desired_mtu, connection.MTU);
         }
     }
 }

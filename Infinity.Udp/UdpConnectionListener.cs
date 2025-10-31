@@ -1,9 +1,10 @@
-﻿using Infinity.Core;
+using Infinity.Core;
 using Infinity.Core.Exceptions;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading.Channels;
 
 namespace Infinity.Udp
 {
@@ -13,18 +14,19 @@ namespace Infinity.Udp
 
         public UdpListenerStatistics Statistics { get; private set; }
 
-        public override double AveragePing => all_connections.Values.Sum(c => c.AveragePingMs) / all_connections.Count;
+        public override double AveragePing => all_connections.IsEmpty ? 0 : all_connections.Values.Average(c => c.AveragePingMs);
         public override int ConnectionCount => all_connections.Count;
 
         private const int send_receive_buffer_size = 1024 * 1024;
 
         private Socket socket;
         private ILogger logger;
-        private Timer reliable_packet_timer;
 
         private CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
 
         private ConcurrentDictionary<EndPoint, UdpServerConnection> all_connections = new ConcurrentDictionary<EndPoint, UdpServerConnection>();
+
+        private readonly Channel<(MessageReader, EndPoint)> _incoming = Channel.CreateUnbounded<(MessageReader, EndPoint)>();
 
         public UdpConnectionListener(IPEndPoint _endpoint, IPMode _ip_mode = IPMode.IPv4, ILogger _logger = null)
         {
@@ -38,8 +40,8 @@ namespace Infinity.Udp
 
             socket.ReceiveBufferSize = send_receive_buffer_size;
             socket.SendBufferSize = send_receive_buffer_size;
-
-            reliable_packet_timer = new Timer(ManageReliablePackets, null, 100, Timeout.Infinite);
+            
+            Util.FireAndForget(ManageReliablePackets(), logger);
         }
 
         protected Socket CreateSocket(IPMode _ip_mode)
@@ -78,7 +80,7 @@ namespace Infinity.Udp
             return socket;
         }
 
-        ~UdpConnectionListener()
+        public void Stop()
         {
             cancellation_token_source.Cancel();
             Thread.Sleep(500);
@@ -96,109 +98,105 @@ namespace Infinity.Udp
                 throw new InfinityException("Could not start listening as a SocketException occurred", e);
             }
 
-            _ = Task.Run(StartListeningForData);
+            Util.FireAndForget(StartListeningForData(), logger);
+            Util.FireAndForget(ProcessIncoming(), logger);
         }
 
         private async Task StartListeningForData()
         {
             while (!cancellation_token_source.IsCancellationRequested)
             {
-                EndPoint remoteEP = EndPoint;
+                var reader = MessageReader.Get();
+                var remote = EndPoint;
+                var result = await socket.ReceiveFromAsync(reader.Buffer, SocketFlags.None, remote, cancellation_token_source.Token).ConfigureAwait(false);
+                reader.Length = result.ReceivedBytes;
+                reader.Position = 0;
+                await _incoming.Writer.WriteAsync((reader, result.RemoteEndPoint)).ConfigureAwait(false);
+            }
+        }
 
-                MessageReader reader = MessageReader.Get();
-
-                try
-                {
-                    var result = await socket.ReceiveFromAsync(reader.Buffer, SocketFlags.None, remoteEP);
-                    reader.Length = result.ReceivedBytes;
-                    reader.Position = 0;
-
-                    await ReadCallback(reader, result.RemoteEndPoint);
-                }
-                catch (SocketException sx)
-                {
-                    reader.Recycle();
-
-                    logger?.WriteError($"Socket Ex {sx.SocketErrorCode} in ReadCallback: {sx.Message}");
-
-                    Thread.Sleep(10);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    reader.Recycle();
-                    logger?.WriteError("Stopped due to: " + ex.Message);
-                    return;
-                }
+        private async Task ProcessIncoming()
+        {
+            await foreach (var (reader, remote) in _incoming.Reader.ReadAllAsync(cancellation_token_source.Token).ConfigureAwait(false))
+            {
+                await ReadCallback(reader, remote).ConfigureAwait(false);
             }
         }
 
         private async Task ReadCallback(MessageReader reader, EndPoint remote_end_point)
         {
-
-            // I'm a little concerned about a infinite loop here, but it seems like it's possible 
-            // to get 0 bytes read on UDP without the socket being shut down.
-            if (reader.Length == 0)
+            if (!cancellation_token_source.IsCancellationRequested)
             {
-                reader.Recycle();
-                logger?.WriteInfo("Received 0 bytes");
-                Thread.Sleep(10);
-                return;
-            }
-
-            bool aware = true;
-            bool is_handshake = reader.Buffer[0] == UdpSendOptionInternal.Handshake;
-
-            // If we're aware of this connection use the one already
-            // If this is a new client then connect with them!
-            UdpServerConnection connection;
-            if (!all_connections.TryGetValue(remote_end_point, out connection))
-            {
-                // Check for malformed connection attempts
-                if (!is_handshake)
+                // I'm a little concerned about a infinite loop here, but it seems like it's possible 
+                // to get 0 bytes read on UDP without the socket being shut down.
+                if (reader.Length == 0)
                 {
                     reader.Recycle();
+                    logger?.WriteInfo("Received 0 bytes");
+                    await Task.Delay(10).ConfigureAwait(false);
                     return;
                 }
 
-                if (HandshakeConnection != null && 
-                    !HandshakeConnection((IPEndPoint)remote_end_point, reader, out var response))
+                bool aware = true;
+                bool is_handshake = reader.Buffer[0] == UdpSendOptionInternal.Handshake;
+
+                // If we're aware of this connection use the one already
+                // If this is a new client then connect with them!
+                UdpServerConnection connection;
+                if (!all_connections.TryGetValue(remote_end_point, out connection))
                 {
-                    reader.Recycle();
-                    if (response != null)
+                    // Check for malformed connection attempts
+                    if (!is_handshake)
                     {
-                        await SendData(response, response.Length, remote_end_point);
+                        reader.Recycle();
+                        return;
                     }
 
-                    return;
+                    if (HandshakeConnection != null &&
+                        !HandshakeConnection((IPEndPoint)remote_end_point, reader, out var response))
+                    {
+                        reader.Recycle();
+                        if (response != null)
+                        {
+                            await SendData(response, response.Length, remote_end_point).ConfigureAwait(false);
+                        }
+
+                        return;
+                    }
+
+                    aware = false;
+                    connection = new UdpServerConnection(this, (IPEndPoint)remote_end_point, IPMode, logger);
+                    all_connections.TryAdd(remote_end_point, connection);
                 }
 
-                aware = false;
-                connection = new UdpServerConnection(this, (IPEndPoint)remote_end_point, IPMode, logger);
-                all_connections.TryAdd(remote_end_point, connection);
-            }
+                // Inform the connection of the buffer (new connections need to send an ack back to client)
+                await connection.HandleReceive(reader, reader.Length).ConfigureAwait(false);
 
-            // Inform the connection of the buffer (new connections need to send an ack back to client)
-            await connection.HandleReceive(reader, reader.Length);
-
-            if (!aware)
-            {
-                InvokeNewConnection(connection, reader);
+                if (!aware)
+                {
+                    InvokeNewConnection(connection, reader);
+                }
             }
         }
 
-        private void ManageReliablePackets(object? _state)
+        private async Task ManageReliablePackets()
         {
-            foreach (var connection in all_connections.Values)
+            while (!cancellation_token_source.IsCancellationRequested)
             {
-                connection.ManageReliablePackets();
-            }
+                try
+                {
+                    foreach (var connection in all_connections.Values)
+                    {
+                        Util.FireAndForget(connection.ManageReliablePackets(), logger);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger?.WriteError($"ManageReliablePackets error: {ex}");
+                }
 
-            try
-            {
-                reliable_packet_timer.Change(100, Timeout.Infinite);
+                await Task.Delay(100, cancellation_token_source.Token).ConfigureAwait(false);
             }
-            catch { }
         }
 
         protected override void Dispose(bool _disposing)
@@ -213,8 +211,6 @@ namespace Infinity.Udp
             try { socket.Shutdown(SocketShutdown.Both); } catch { }
             try { socket.Close(); } catch { }
             try { socket.Dispose(); } catch { }
-
-            reliable_packet_timer.Dispose();
 
             base.Dispose(_disposing);
         }
@@ -248,8 +244,7 @@ namespace Infinity.Udp
 
             try
             {
-                var segment = new ArraySegment<byte>(_bytes, 0, _length);
-                await socket.SendToAsync(_bytes, SocketFlags.None, _endpoint);
+                await socket.SendToAsync(_bytes, SocketFlags.None, _endpoint).ConfigureAwait(false);
 
                 Statistics.AddBytesSent(_length);
             }

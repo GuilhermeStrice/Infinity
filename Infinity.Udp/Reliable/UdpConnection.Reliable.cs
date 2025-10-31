@@ -1,6 +1,5 @@
 ﻿using Infinity.Core;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -13,7 +12,7 @@ namespace Infinity.Udp
 
         private int last_id_allocated = -1;
 
-        internal int ManageReliablePackets()
+        internal async Task<int> ManageReliablePackets()
         {
             int output = 0;
             if (reliable_data_packets_sent.Count > 0)
@@ -24,7 +23,7 @@ namespace Infinity.Udp
 
                     try
                     {
-                        output += packet.Resend();
+                        output += await packet.Resend().ConfigureAwait(false);
                     }
                     catch { }
                 }
@@ -42,7 +41,7 @@ namespace Infinity.Udp
 
         private async Task ReliableMessageReceive(MessageReader _reader)
         {
-            var result = await ProcessReliableReceive(_reader.Buffer, 1);
+            var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
             if (result.Item1)
             {
                 _reader.Position = 3;
@@ -68,7 +67,7 @@ namespace Infinity.Udp
 
         protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
         {
-            ushort id = (ushort)++last_id_allocated;
+            ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
             _buffer[_offset] = (byte)(id >> 8);
             _buffer[_offset + 1] = (byte)id;

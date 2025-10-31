@@ -97,7 +97,7 @@ namespace Infinity.Udp
             }
 
             // Send an acknowledgement
-            await SendAck(_id);
+            await SendAck(_id).ConfigureAwait(false);
 
             return (result, _id);
         }
