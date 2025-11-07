@@ -69,26 +69,27 @@ namespace Infinity.Udp
             Dispose(true);
         }
 
-        public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
+        public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
 #if DEBUG
             if (TestLagMs > 0)
             {
                 Thread.Sleep(TestLagMs);
-                await WriteBytesToConnectionReal(_bytes, _length);
+                await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
             }
             else
 #endif
             {
-                await WriteBytesToConnectionReal(_bytes, _length);
+                await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
+                await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
             }
         }
 
-        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        public override void WriteBytesToConnectionSync(MessageWriter _writer)
         {
             try
             {
-                int sent = socket.SendTo(_bytes, _length, SocketFlags.None, EndPoint);
+                int sent = socket.SendTo(_writer.Buffer, _writer.Length, SocketFlags.None, EndPoint);
                 Statistics.LogPacketSent(sent);
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
@@ -98,6 +99,10 @@ namespace Infinity.Udp
             catch
             {
                 // this is handles by keep alive and packet resends
+            }
+            finally
+            {
+                _writer.Recycle();
             }
         }
 
@@ -163,18 +168,14 @@ namespace Infinity.Udp
 
         private async Task SendHandshake(MessageWriter _writer, Action _acknowledge_callback)
         {
-            byte[] buffer = new byte[_writer.Length];
-            Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-            await ReliableSend(buffer, _acknowledge_callback);
+            await ReliableSend(_writer, _acknowledge_callback).ConfigureAwait(false);
         }
 
         private async Task AskConfiguration()
         {
-            byte[] buffer = new byte[3];
-            buffer[0] = UdpSendOptionInternal.AskConfiguration;
+            var writer = UdpMessageFactory.BuildAskConfirurationMessage();
 
-            await ReliableSend(buffer);
+            await ReliableSend(writer).ConfigureAwait(false);
         }
 
         private async Task ManageReliablePacketsInternal()

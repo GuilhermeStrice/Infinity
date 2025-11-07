@@ -39,8 +39,6 @@ namespace Infinity.Udp.Tests
             SetReliableId(data, 9);
             await conn.Test_Receive(data);
 
-            data.Recycle();
-
             // Both messages should be received.
             Assert.Equal(2, messagesReceived.Count);
             messagesReceived.Clear();
@@ -101,8 +99,6 @@ namespace Infinity.Udp.Tests
             }
 
             conn.Dispose();
-
-            data.Recycle();
         }
 
         [Fact]
@@ -143,8 +139,6 @@ namespace Infinity.Udp.Tests
             }
 
             conn.Dispose();
-
-            data.Recycle();
         }
 
         private static void SetReliableId(MessageWriter data, int i)

@@ -187,7 +187,6 @@ namespace Infinity.Udp.Tests
 
             var writer = UdpMessageFactory.BuildDisconnectMessage();
             connection.Disconnect("Testing", writer);
-            writer.Recycle();
 
             mutex2.WaitOne(2500);
 

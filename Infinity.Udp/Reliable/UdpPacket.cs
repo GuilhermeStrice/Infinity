@@ -29,14 +29,14 @@ namespace Infinity.Udp
 
         public Stopwatch Stopwatch = new Stopwatch();
 
-        private byte[]? buffer;
         private int retransmissions;
+        private MessageWriter writer;
         private UdpConnection? connection;
 
-        public void Set(UdpConnection _connection, byte[] _buffer, int _timeout, Action _ack_callback)
+        public void Set(UdpConnection _connection, MessageWriter _writer, int _timeout, Action _ack_callback)
         {
             connection = _connection;
-            buffer = _buffer;
+            writer = _writer;
 
             Acknowledged = false;
             NextTimeoutMs = _timeout;
@@ -50,14 +50,14 @@ namespace Infinity.Udp
         {
             if (!Acknowledged && connection != null)
             {
-                ushort id = (ushort)((buffer[1] << 8) + buffer[2]);
+                ushort id = (ushort)((writer.Buffer[1] << 8) + writer.Buffer[2]);
 
                 long lifetimeMs = Stopwatch.ElapsedMilliseconds;
                 if (lifetimeMs >= connection.configuration.DisconnectTimeoutMs)
                 {
                     if (connection.reliable_data_packets_sent.TryRemove(id, out UdpPacket self))
                     {
-                        connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {id} (size={buffer.Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
+                        connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {id} (size={writer.Length}) was not ack'd after {lifetimeMs}ms ({self.Retransmissions} resends)");
                         self.Recycle();
                     }
 
@@ -78,7 +78,7 @@ namespace Infinity.Udp
                     {
                         if (connection.reliable_data_packets_sent.TryRemove(id, out UdpPacket self))
                         {
-                            connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {id} (size={buffer.Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
+                            connection.DisconnectInternalPacket(InfinityInternalErrors.ReliablePacketWithoutResponse, $"Reliable packet {id} (size={writer.Length}) was not ack'd after {self.Retransmissions} resends ({lifetimeMs}ms)");
                             self.Recycle();
                         }
 
@@ -95,8 +95,8 @@ namespace Infinity.Udp
 
                     try
                     {
-                        connection.WriteBytesToConnection(buffer, buffer.Length);
-                        connection.Statistics.LogMessageResent(buffer.Length);
+                        await connection.WriteBytesToConnection(writer).ConfigureAwait(false);
+                        connection.Statistics.LogMessageResent(writer.Length);
 
                         return 1;
                     }
@@ -113,6 +113,7 @@ namespace Infinity.Udp
         public void Recycle()
         {
             Acknowledged = true;
+            writer.Recycle();
 
             Pools.PacketPool.PutObject(this);
         }

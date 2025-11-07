@@ -20,16 +20,23 @@ namespace Infinity.Udp
             _ = BootstrapMTU();
         }
 
-        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        public override void WriteBytesToConnectionSync(MessageWriter _writer)
         {
-            Statistics.LogPacketSent(_length);
-            Listener.SendDataSync(_bytes, _length, EndPoint);
+            try
+            {
+                Statistics.LogPacketSent(_writer.Length);
+                Listener.SendDataSync(_writer.Buffer, _writer.Length, EndPoint);
+            }
+            finally
+            {
+                _writer.Recycle();
+            }
         }
 
-        public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
+        public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
-            Statistics.LogPacketSent(_length);
-            await Listener.SendData(_bytes, _length, EndPoint);
+            Statistics.LogPacketSent(_writer.Length);
+            await Listener.SendData(_writer.Buffer, _writer.Length, EndPoint).ConfigureAwait(false);
         }
 
         public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
@@ -108,16 +115,10 @@ namespace Infinity.Udp
 
             writer.Write(configuration.EnableFragmentation);
 
-            byte[] buffer = new byte[writer.Length];
-
-            Array.Copy(writer.Buffer, 0, buffer, 0, writer.Length);
-
-            writer.Recycle();
-
-            await ReliableSend(buffer, () =>
+            await ReliableSend(writer, () =>
             {
                 InitializeKeepAliveTimer();
-            });
+            }).ConfigureAwait(false);
         }
 
         protected override async Task ReadConfiguration(MessageReader _reader)

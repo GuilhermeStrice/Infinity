@@ -32,11 +32,12 @@ namespace Infinity.Udp
             return output;
         }
 
-        protected async Task ReliableSend(byte[] _buffer, Action _ack_callback = null)
+        protected async Task ReliableSend(MessageWriter _writer, Action _ack_callback = null)
         {
-            AttachReliableID(_buffer, 1, _ack_callback);
-            await WriteBytesToConnection(_buffer, _buffer.Length);
-            Statistics.LogReliableMessageSent(_buffer.Length);
+            AttachReliableID(_writer, 1, _ack_callback);
+            await WriteBytesToConnection(_writer).ConfigureAwait(false);
+            Statistics.LogReliableMessageSent(_writer.Buffer.Length);
+            _writer.Recycle();
         }
 
         private async Task ReliableMessageReceive(MessageReader _reader)
@@ -65,12 +66,11 @@ namespace Infinity.Udp
             }
         }
 
-        protected void AttachReliableID(byte[] _buffer, int _offset, Action _ack_callback = null)
+        protected void AttachReliableID(MessageWriter _writer, int _offset, Action _ack_callback = null)
         {
             ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
-            _buffer[_offset] = (byte)(id >> 8);
-            _buffer[_offset + 1] = (byte)id;
+            _writer.Write(id);
 
             int resend_delay_ms = configuration.ResendTimeoutMs;
             if (resend_delay_ms <= 0)
@@ -82,7 +82,7 @@ namespace Infinity.Udp
             UdpPacket packet = Pools.PacketPool.GetObject();
             packet.Set(
                 this,
-                _buffer,
+                _writer,
                 resend_delay_ms,
                 _ack_callback);
 

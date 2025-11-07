@@ -26,8 +26,8 @@ namespace Infinity.Udp
             logger = _logger;
         }
 
-        public abstract Task WriteBytesToConnection(byte[] _bytes, int _length);
-        public abstract void WriteBytesToConnectionSync(byte[] _bytes, int _length);
+        public abstract Task WriteBytesToConnection(MessageWriter _writer);
+        public abstract void WriteBytesToConnectionSync(MessageWriter _writer);
 
         protected abstract Task ShareConfiguration();
         protected abstract Task ReadConfiguration(MessageReader _reader);
@@ -39,85 +39,84 @@ namespace Infinity.Udp
                 return SendErrors.Disconnected;
             }
 
-            var buffer = new byte[_writer.Length];
-            Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-            WriteBytesToConnectionSync(buffer, buffer.Length);
+            WriteBytesToConnectionSync(_writer);
 
             return SendErrors.None;
         }
 
         public override async Task<SendErrors> Send(MessageWriter _writer)
         {
-            if (state != ConnectionState.Connected)
+            try
             {
-                return SendErrors.Disconnected;
-            }
-
-            InvokeBeforeSend(_writer);
-
-            switch (_writer.Buffer[0])
-            {
-                case UdpSendOption.Reliable:
+                if (state != ConnectionState.Connected)
                 {
-                    if (_writer.Length > MTU)
-                    {
-                        throw new InfinityException("not allowed");
-                    }
-
-                    byte[] buffer = new byte[_writer.Length];
-                    Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                    await ReliableSend(buffer);
-                    break;
+                    return SendErrors.Disconnected;
                 }
-                case UdpSendOption.ReliableOrdered:
+
+                InvokeBeforeSend(_writer);
+
+                switch (_writer.Buffer[0])
                 {
-                    if (_writer.Length > MTU)
-                    {
-                        throw new InfinityException("not allowed");
-                    }
-
-                    byte[] buffer = new byte[_writer.Length];
-                    Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                    await OrderedSend(buffer);
-                    Statistics.LogReliableMessageSent(buffer.Length);
-
-                    break;
-                }
-                case UdpSendOption.Fragmented:
-                {
-                    if (configuration.EnableFragmentation)
-                    {
-                        if (_writer.Length <= MTU)
+                    case UdpSendOption.Reliable:
                         {
-                            throw new InfinityException("Message not big enough");
+                            if (_writer.Length > MTU)
+                            {
+                                throw new InfinityException("not allowed");
+                            }
+
+                            await ReliableSend(_writer).ConfigureAwait(false);
+                            _writer.Recycle();
+
+                            break;
                         }
+                    case UdpSendOption.ReliableOrdered:
+                        {
+                            if (_writer.Length > MTU)
+                            {
+                                throw new InfinityException("not allowed");
+                            }
 
-                        byte[] buffer = new byte[_writer.Length - 3];
-                        Array.Copy(_writer.Buffer, 3, buffer, 0, _writer.Length - 3);
+                            await OrderedSend(_writer).ConfigureAwait(false);
+                            Statistics.LogReliableMessageSent(_writer.Length);
+                            _writer.Recycle();
 
-                        await FragmentedSend(buffer);
-                        Statistics.LogFragmentedMessageSent(buffer.Length);
-                    }
-                    else
-                    {
-                        throw new InfinityException("Enable fragmentation to use fragmented messages");
-                    }
+                            break;
+                        }
+                    case UdpSendOption.Fragmented:
+                        {
+                            if (configuration.EnableFragmentation)
+                            {
+                                if (_writer.Length <= MTU)
+                                {
+                                    throw new InfinityException("Message not big enough");
+                                }
 
-                    break;
+                                await FragmentedSend(_writer).ConfigureAwait(false);
+                                _writer.Recycle();
+
+                                Statistics.LogFragmentedMessageSent(_writer.Length);
+                            }
+                            else
+                            {
+                                throw new InfinityException("Enable fragmentation to use fragmented messages");
+                            }
+
+                            break;
+                        }
+                    default: // applies to disconnect and unreliable
+                        {
+                            await WriteBytesToConnection(_writer).ConfigureAwait(false);
+                            _writer.Recycle();
+
+                            Statistics.LogUnreliableMessageSent(_writer.Length);
+
+                            break;
+                        }
                 }
-                default: // applies to disconnect and unreliable
-                {
-                    byte[] buffer = new byte[_writer.Length];
-                    Array.Copy(_writer.Buffer, 0, buffer, 0, _writer.Length);
-
-                    await WriteBytesToConnection(buffer, buffer.Length);
-                    Statistics.LogUnreliableMessageSent(buffer.Length);
-
-                    break;
-                }
+            }
+            finally
+            {
+                _writer.Recycle();
             }
 
             return SendErrors.None;

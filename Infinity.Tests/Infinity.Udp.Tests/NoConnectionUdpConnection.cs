@@ -37,9 +37,9 @@ namespace Infinity.Udp.Tests
             await HandleReceive(data, data.Length);
         }
 
-        public override async Task WriteBytesToConnection(byte[] _bytes, int _length)
+        public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
-            BytesSent.Add(MessageReader.Get(_bytes));
+            BytesSent.Add(MessageReader.Get(_writer.Buffer));
         }
 
         public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
@@ -60,7 +60,7 @@ namespace Infinity.Udp.Tests
         {
         }
 
-        public override void WriteBytesToConnectionSync(byte[] _bytes, int _length)
+        public override void WriteBytesToConnectionSync(MessageWriter _writer)
         {
             throw new NotImplementedException();
         }

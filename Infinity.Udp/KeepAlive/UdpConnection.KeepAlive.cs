@@ -81,13 +81,13 @@ namespace Infinity.Udp
         {
             ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
-            byte[] bytes = new byte[3];
-            bytes[0] = UdpSendOptionInternal.Ping;
-            bytes[1] = (byte)(id >> 8);
-            bytes[2] = (byte)id;
+            var writer = MessageWriter.Get();
+
+            writer.Write(UdpSendOptionInternal.Ping);
+            writer.Write(id);
 
             active_pings.AddPing(id);
-            WriteBytesToConnection(bytes, bytes.Length);
+            await WriteBytesToConnection(writer).ConfigureAwait(false);
             Statistics.LogPingSent(3);
         }
     }

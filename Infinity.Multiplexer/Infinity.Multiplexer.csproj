@@ -3,7 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Infinity.Core\Infinity.Core.csproj" />
     <ProjectReference Include="..\Infinity.Udp\Infinity.Udp.csproj" />
-    <ProjectReference Include="..\Infinity.WebSockets\Infinity.WebSockets.csproj" />
+    <ProjectReference Include="..\Infinity.Websockets\Infinity.Websockets.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

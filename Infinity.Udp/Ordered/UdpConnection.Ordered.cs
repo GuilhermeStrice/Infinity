@@ -11,13 +11,13 @@ namespace Infinity.Udp
         private volatile int send_sequence = 0;
         private volatile int receive_sequence = 0;
 
-        private async Task OrderedSend(byte[] _buffer)
+        private async Task OrderedSend(MessageWriter _writer)
         {
-            AttachReliableID(_buffer, 1);
+            AttachReliableID(_writer, 1);
 
-            _buffer[3] = (byte)send_sequence;
+            _writer.Buffer[3] = (byte)send_sequence;
 
-            await WriteBytesToConnection(_buffer, _buffer.Length);
+            await WriteBytesToConnection(_writer).ConfigureAwait(false);
 
             send_sequence = (byte)Interlocked.Increment(ref send_sequence);
         }

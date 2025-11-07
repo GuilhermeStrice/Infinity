@@ -61,15 +61,12 @@ namespace Infinity.Udp
                 }
             }
 
-            byte[] bytes = new byte[]
-            {
-                UdpSendOptionInternal.Acknowledgement,
-                (byte)(_id >> 8),
-                (byte)(_id >> 0),
-                recent_packets
-            };
+            var writer = MessageWriter.Get();
+            writer.Write(UdpSendOptionInternal.Acknowledgement);
+            writer.Write(_id);
+            writer.Write(recent_packets);
 
-            await WriteBytesToConnection(bytes, bytes.Length);
+            await WriteBytesToConnection(writer).ConfigureAwait(false);
         }
     }
 }

@@ -12,37 +12,29 @@ namespace Infinity.Udp
 
         private const byte fragment_header_size = sizeof(byte) + sizeof(ushort) + sizeof(int) + sizeof(byte) + sizeof(ushort);
 
-        private async Task FragmentedSend(byte[] _buffer)
+        private async Task FragmentedSend(MessageWriter _writer)
         {
             var fragment_size = MTU - fragment_header_size;
 
             var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
             
-            var fragments_count = (int)((_buffer.Length / (double)fragment_size) + 1);
+            var fragments_count = (int)((_writer.Buffer.Length / (double)fragment_size) + 1);
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(fragment_size, _buffer.Length - fragment_size * i);
-                var fragment_buffer = new byte[data_length + fragment_header_size];
+                var data_length = Math.Min(fragment_size, _writer.Buffer.Length - fragment_size * i);
+                var fragment_writer = MessageWriter.Get();
+                //var fragment_buffer = new byte[data_length + fragment_header_size];
 
-                fragment_buffer[0] = UdpSendOptionInternal.Fragment;
+                fragment_writer.Write(UdpSendOptionInternal.Fragment);
 
-                AttachReliableID(fragment_buffer, 1);
+                AttachReliableID(fragment_writer, 1);
 
-                fragment_buffer[3] = (byte)fragments_count;
-                fragment_buffer[4] = (byte)(fragments_count >> 8);
-                fragment_buffer[5] = (byte)(fragments_count >> 16);
-                fragment_buffer[6] = (byte)(fragments_count >> 24);
+                fragment_writer.Write(fragments_count);
+                fragment_writer.Write(fragment_id);
+                fragment_writer.Write(i);
 
-                fragment_buffer[7] = fragment_id;
-
-                // Add fragment sequence index
-                fragment_buffer[8] = (byte)i;
-                fragment_buffer[9] = (byte)(i >> 8);
-
-                Array.Copy(_buffer, fragment_size * i, fragment_buffer, fragment_header_size, data_length);
-                
-                await WriteBytesToConnection(fragment_buffer, fragment_buffer.Length);
+                await WriteBytesToConnection(fragment_writer).ConfigureAwait(false);
             }
 
             if (last_fragment_id_allocated >= byte.MaxValue)
