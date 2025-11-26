@@ -35,9 +35,8 @@ namespace Infinity.Udp
         protected async Task ReliableSend(MessageWriter _writer, Action _ack_callback = null)
         {
             AttachReliableID(_writer, 1, _ack_callback);
-            await WriteBytesToConnection(_writer).ConfigureAwait(false);
             Statistics.LogReliableMessageSent(_writer.Length);
-            _writer.Recycle();
+            await WriteBytesToConnection(_writer).ConfigureAwait(false);
         }
 
         private async Task ReliableMessageReceive(MessageReader _reader)

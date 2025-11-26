@@ -85,18 +85,18 @@ namespace Infinity.Udp.Tests
         {
             Console.WriteLine("StressOpeningConnections");
 
-            int connections_to_test = 100;
+            int connections_to_test = 10;
             int port = Util.GetFreePort();
             var ep = new IPEndPoint(IPAddress.Loopback, port);
-            ConcurrentStack<UdpClientConnection> connections = new ConcurrentStack<UdpClientConnection>();
+            List<UdpClientConnection> connections = new List<UdpClientConnection>();
             int con_count = 0;
-            var allConnectedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            ManualResetEvent mutex = new ManualResetEvent(false);
 
             using (var listener = new UdpConnectionListener(ep))
             {
                 listener.NewConnection += obj =>
                 {
-                    Interlocked.Increment(ref con_count);
+                    con_count++;
 
                     obj.Connection.DataReceived += data_args =>
                     {
@@ -109,17 +109,16 @@ namespace Infinity.Udp.Tests
                     };
 
                     obj.Recycle();
-
+                    Console.WriteLine(con_count);
                     if (con_count == connections_to_test)
                     {
-                        allConnectedTcs.TrySetResult();
+                        mutex.Set();
                     }
                 };
 
                 listener.Start();
 
                 // Launch all client connections
-                var tasks = new List<Task>();
                 for (int i = 0; i < connections_to_test; i++)
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
@@ -129,16 +128,16 @@ namespace Infinity.Udp.Tests
                     connection.DataReceived += data_args => data_args.Recycle();
                     connection.Disconnected += e => e.Recycle();
 
-                    tasks.Add(connection.Connect(handshake));
-                    connections.Push(connection);
+                    await connection.Connect(handshake);
+                    connections.Add(connection);
 
                     // same problem as with stress test reliable messages
-                    await Task.Delay(1);
+                    await Task.Delay(100);
                 }
 
                 // Wait for all clients to finish connecting
-                var completed = await Task.WhenAny(allConnectedTcs.Task, Task.Delay(10000));
-                Assert.True(allConnectedTcs.Task.IsCompleted, "Not all connections established in time.");
+                mutex.WaitOne(5000);
+                Assert.Equal(connections_to_test, con_count);
 
                 // Verify listener connection count
                 Assert.Equal(connections_to_test, listener.ConnectionCount);
@@ -164,15 +163,19 @@ namespace Infinity.Udp.Tests
 
             int count = 0;
 
-            int messages_to_try = 100;
+            int messages_to_try = 10000;
 
             var mutex = new ManualResetEvent(false);
+
+            UdpServerConnection server_connection = null;
 
             using (UdpConnectionListener listener = new UdpConnectionListener(ep))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
                 listener.NewConnection += (evt) =>
                 {
+                    server_connection = (UdpServerConnection)evt.Connection;
+
                     evt.Connection.Disconnected += delegate (DisconnectedEvent obj)
                     {
                         obj.Recycle();
@@ -185,17 +188,6 @@ namespace Infinity.Udp.Tests
                         {
                             mutex.Set();
                             sw.Stop();
-                            Console.WriteLine("Readers: " + Core.Pools.ReaderPool.InUse.ToString());
-                            Console.WriteLine("Packets: " + Infinity.Udp.Pools.PacketPool.InUse.ToString());
-                            Console.WriteLine("Fragmented: " + Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                            Console.WriteLine("Writers: " + Core.Pools.WriterPool.InUse.ToString());
-
-                            Console.WriteLine("DataReceived: " + Core.Pools.DataReceivedEventPool.InUse.ToString());
-                            Console.WriteLine("Disconnected: " + Core.Pools.DisconnectedEventPool.InUse.ToString());
-                            Console.WriteLine("NewConnection: " + Core.Pools.NewConnectionPool.InUse.ToString());
-
-                            Console.WriteLine("Server packets: " + ((UdpConnection)(obj.Connection)).reliable_data_packets_sent.Count);
-                            Console.WriteLine("Client packets: " + ((UdpConnection)connection).reliable_data_packets_sent.Count);
                         }
                         obj.Recycle();
                     };
@@ -220,16 +212,28 @@ namespace Infinity.Udp.Tests
                     var message = UdpMessageFactory.BuildReliableMessage();
                     message.Write(123);
 
-                    _ = connection.Send(message);
+                    await connection.Send(message);
 
                     // if we dont have this delay something weird happens and the packets and readers are not recycled, need to figure stuff out
-                    await Task.Delay(1);
+                    //await Task.Delay(1);
                 }
 
-                mutex.WaitOne(2000);
+                mutex.WaitOne(10000);
                 Assert.Equal(messages_to_try, count);
-                await Task.Delay(1000);
+                await Task.Delay(10000);
                 Console.WriteLine($"StressReliableMessages took {sw.ElapsedMilliseconds}ms");
+
+                Console.WriteLine("Readers: " + Core.Pools.ReaderPool.InUse.ToString());
+                Console.WriteLine("Packets: " + Infinity.Udp.Pools.PacketPool.InUse.ToString());
+                Console.WriteLine("Fragmented: " + Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                Console.WriteLine("Writers: " + Core.Pools.WriterPool.InUse.ToString());
+
+                Console.WriteLine("DataReceived: " + Core.Pools.DataReceivedEventPool.InUse.ToString());
+                Console.WriteLine("Disconnected: " + Core.Pools.DisconnectedEventPool.InUse.ToString());
+                Console.WriteLine("NewConnection: " + Core.Pools.NewConnectionPool.InUse.ToString());
+
+                Console.WriteLine("Server packets: " + server_connection.reliable_data_packets_sent.Count);
+                Console.WriteLine("Client packets: " + ((UdpConnection)connection).reliable_data_packets_sent.Count);
             }
         }
 

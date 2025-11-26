@@ -37,7 +37,7 @@ namespace Infinity.Udp.Tests
             await HandleReceive(data, data.Length);
         }
 
-        public override async Task WriteBytesToConnection(MessageWriter _writer)
+        public override async Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer)
         {
             BytesSent.Add(MessageReader.Get(_writer.Buffer, 0, _writer.Length));
         }

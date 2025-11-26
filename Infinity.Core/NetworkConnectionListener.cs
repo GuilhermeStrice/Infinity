@@ -2,7 +2,7 @@
 
 namespace Infinity.Core
 {
-    public delegate bool HandshakeCheck(IPEndPoint _endPoint, MessageReader _reader, out byte[] _response);
+    public delegate bool HandshakeCheck(IPEndPoint _endPoint, MessageReader _reader, out MessageWriter _response);
 
     public abstract class NetworkConnectionListener : IDisposable
     {

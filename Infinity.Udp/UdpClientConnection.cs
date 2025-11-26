@@ -13,8 +13,6 @@ namespace Infinity.Udp
 
         private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
 
-        private CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
-
         private readonly Channel<MessageReader> _incoming = Channel.CreateUnbounded<MessageReader>();
 
         public UdpClientConnection(ILogger _logger, IPEndPoint _remote_end_point, IPMode _ip_mode = IPMode.IPv4)
@@ -71,7 +69,7 @@ namespace Infinity.Udp
             Dispose(true);
         }
 
-        public override async Task WriteBytesToConnection(MessageWriter _writer)
+        public override async Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer = true)
         {
 #if DEBUG
             if (TestLagMs > 0)
@@ -83,6 +81,11 @@ namespace Infinity.Udp
 #endif
             {
                 await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
+            }
+
+            if (_recycle_writer)
+            {
+                _writer.Recycle();
             }
         }
 
@@ -282,8 +285,6 @@ namespace Infinity.Udp
                 InvokeDisconnected(_reason, _reader);
             }
 
-            writer.Recycle();
-
             Dispose();
         }
 
@@ -340,7 +341,6 @@ namespace Infinity.Udp
                         // send disconnect packet to server
                         var writer = UdpMessageFactory.BuildDisconnectMessage();
                         SendDisconnect(writer);
-                        writer.Recycle();
 
                         // Fire client-side Disconnected event
                         InvokeDisconnected("Disposed", null);

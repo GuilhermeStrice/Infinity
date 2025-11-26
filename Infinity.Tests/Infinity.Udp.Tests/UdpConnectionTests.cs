@@ -175,7 +175,7 @@ namespace Infinity.Udp.Tests
                 // Use TaskCompletionSource for async signaling
                 var tcs = new TaskCompletionSource();
 
-                listener.HandshakeConnection = (IPEndPoint endPoint, MessageReader input, out byte[] response) =>
+                listener.HandshakeConnection = (IPEndPoint endPoint, MessageReader input, out MessageWriter response) =>
                 {
                     response = null;
 

@@ -40,6 +40,8 @@ namespace Infinity.Udp
                 await Task.Delay(10);
             }
 
+            _writer.Recycle();
+
             if (last_fragment_id_allocated >= byte.MaxValue)
             {
                 Interlocked.Exchange(ref last_fragment_id_allocated, 0);

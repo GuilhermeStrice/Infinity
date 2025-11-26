@@ -160,7 +160,7 @@ namespace Infinity.Udp
                         reader.Recycle();
                         if (response != null)
                         {
-                            await SendData(response, response.Length, remote_end_point).ConfigureAwait(false);
+                            await SendData(response, remote_end_point).ConfigureAwait(false);
                         }
 
                         return;
@@ -227,13 +227,8 @@ namespace Infinity.Udp
         private int drop_counter = 0;
 #endif
 
-        internal async Task SendData(byte[] _bytes, int _length, EndPoint _endpoint)
+        internal async Task SendData(MessageWriter _writer, EndPoint _endpoint, bool _recycle_writer = true)
         {
-            if (_length > _bytes.Length)
-            {
-                return;
-            }
-
 #if DEBUG
             if (TestDropRate > 0)
             {
@@ -246,10 +241,10 @@ namespace Infinity.Udp
 
             try
             {
-                var segment = new ArraySegment<byte>(_bytes, 0, _length);
+                var segment = new ArraySegment<byte>(_writer.Buffer, 0, _writer.Length);
                 await socket.SendToAsync(segment, SocketFlags.None, _endpoint).ConfigureAwait(false);
 
-                Statistics.AddBytesSent(_length);
+                Statistics.AddBytesSent(_writer.Length);
             }
             catch (SocketException e)
             {
@@ -259,16 +254,15 @@ namespace Infinity.Udp
             {
                 //Keep alive timer probably ran, ignore
                 return;
+            }
+            finally
+            {
+                _writer.Recycle();
             }
         }
 
-        internal void SendDataSync(byte[] _bytes, int _length, EndPoint _endpoint)
+        internal void SendDataSync(MessageWriter _writer, EndPoint _endpoint)
         {
-            if (_length > _bytes.Length)
-            {
-                return;
-            }
-
 #if DEBUG
             if (TestDropRate > 0)
             {
@@ -281,10 +275,10 @@ namespace Infinity.Udp
 
             try
             {
-                var segment = new ArraySegment<byte>(_bytes, 0, _length);
-                socket.SendTo(_bytes, SocketFlags.None, _endpoint);
+                var segment = new ArraySegment<byte>(_writer.Buffer, 0, _writer.Length);
+                socket.SendTo(segment, SocketFlags.None, _endpoint);
 
-                Statistics.AddBytesSent(_length);
+                Statistics.AddBytesSent(_writer.Length);
             }
             catch (SocketException e)
             {
@@ -293,7 +287,12 @@ namespace Infinity.Udp
             catch (ObjectDisposedException)
             {
                 //Keep alive timer probably ran, ignore
+                _writer.Recycle();
                 return;
+            }
+            finally
+            {
+                _writer.Recycle();
             }
         }
     }

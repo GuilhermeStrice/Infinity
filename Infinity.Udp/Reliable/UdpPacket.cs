@@ -95,8 +95,8 @@ namespace Infinity.Udp
 
                     try
                     {
-                        await connection.WriteBytesToConnection(writer).ConfigureAwait(false);
                         connection.Statistics.LogMessageResent(writer.Length);
+                        await connection.WriteBytesToConnection(writer, false).ConfigureAwait(false);
 
                         return 1;
                     }

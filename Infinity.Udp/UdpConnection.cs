@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using System.Threading.Channels;
 using Infinity.Core;
 using Infinity.Core.Exceptions;
 
@@ -20,13 +20,18 @@ namespace Infinity.Udp
 
         internal UdpConnectionConfiguration configuration;
 
+        private readonly Channel<MessageWriter> _outgoing = Channel.CreateUnbounded<MessageWriter>();
+        internal CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
+
         public UdpConnection(ILogger _logger) : base()
         {
             configuration = new UdpConnectionConfiguration();
             logger = _logger;
+
+            Util.FireAndForget(SendInternal(), logger);
         }
 
-        public abstract Task WriteBytesToConnection(MessageWriter _writer);
+        public abstract Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer = true);
         public abstract void WriteBytesToConnectionSync(MessageWriter _writer);
 
         protected abstract Task ShareConfiguration();
@@ -46,11 +51,17 @@ namespace Infinity.Udp
 
         public override async Task<SendErrors> Send(MessageWriter _writer)
         {
-            try
+            await _outgoing.Writer.WriteAsync(_writer, cancellation_token_source.Token);
+            return SendErrors.None;
+        }
+
+        public async Task SendInternal()
+        {
+            await foreach (var _writer in _outgoing.Reader.ReadAllAsync(cancellation_token_source.Token).ConfigureAwait(false))
             {
                 if (state != ConnectionState.Connected)
                 {
-                    return SendErrors.Disconnected;
+                    return;
                 }
 
                 InvokeBeforeSend(_writer);
@@ -65,7 +76,6 @@ namespace Infinity.Udp
                             }
 
                             await ReliableSend(_writer).ConfigureAwait(false);
-                            _writer.Recycle();
 
                             break;
                         }
@@ -78,7 +88,6 @@ namespace Infinity.Udp
 
                             await OrderedSend(_writer).ConfigureAwait(false);
                             Statistics.LogReliableMessageSent(_writer.Length);
-                            _writer.Recycle();
 
                             break;
                         }
@@ -92,7 +101,6 @@ namespace Infinity.Udp
                                 }
 
                                 await FragmentedSend(_writer).ConfigureAwait(false);
-                                _writer.Recycle();
 
                                 Statistics.LogFragmentedMessageSent(_writer.Length);
                             }
@@ -105,21 +113,13 @@ namespace Infinity.Udp
                         }
                     default: // applies to disconnect and unreliable
                         {
-                            await WriteBytesToConnection(_writer).ConfigureAwait(false);
-                            _writer.Recycle();
-
                             Statistics.LogUnreliableMessageSent(_writer.Length);
+                            await WriteBytesToConnection(_writer).ConfigureAwait(false);
 
                             break;
                         }
                 }
             }
-            finally
-            {
-                _writer.Recycle();
-            }
-
-            return SendErrors.None;
         }
 
         protected internal virtual async Task HandleReceive(MessageReader _reader, int _bytes_received)

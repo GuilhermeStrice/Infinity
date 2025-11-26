@@ -22,21 +22,14 @@ namespace Infinity.Udp
 
         public override void WriteBytesToConnectionSync(MessageWriter _writer)
         {
-            try
-            {
-                Statistics.LogPacketSent(_writer.Length);
-                Listener.SendDataSync(_writer.Buffer, _writer.Length, EndPoint);
-            }
-            finally
-            {
-                _writer.Recycle();
-            }
+            Statistics.LogPacketSent(_writer.Length);
+            Listener.SendDataSync(_writer, EndPoint);
         }
 
-        public override async Task WriteBytesToConnection(MessageWriter _writer)
+        public override async Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer = true)
         {
             Statistics.LogPacketSent(_writer.Length);
-            await Listener.SendData(_writer.Buffer, _writer.Length, EndPoint).ConfigureAwait(false);
+            await Listener.SendData(_writer, EndPoint, _recycle_writer).ConfigureAwait(false);
         }
 
         public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
