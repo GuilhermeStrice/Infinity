@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Core
 {
-    public enum InfinityInternalErrors
+    public enum InfinityInternalErrors : byte
     {
         SocketExceptionSend,
         SocketExceptionReceive,

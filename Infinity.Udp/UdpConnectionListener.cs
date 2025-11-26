@@ -108,9 +108,11 @@ namespace Infinity.Udp
             {
                 var reader = MessageReader.Get();
                 var remote = EndPoint;
+
                 var result = await socket.ReceiveFromAsync(reader.Buffer, SocketFlags.None, remote, cancellation_token_source.Token).ConfigureAwait(false);
                 reader.Length = result.ReceivedBytes;
                 reader.Position = 0;
+
                 await _incoming.Writer.WriteAsync((reader, result.RemoteEndPoint)).ConfigureAwait(false);
             }
         }
@@ -244,7 +246,8 @@ namespace Infinity.Udp
 
             try
             {
-                await socket.SendToAsync(_bytes, SocketFlags.None, _endpoint).ConfigureAwait(false);
+                var segment = new ArraySegment<byte>(_bytes, 0, _length);
+                await socket.SendToAsync(segment, SocketFlags.None, _endpoint).ConfigureAwait(false);
 
                 Statistics.AddBytesSent(_length);
             }

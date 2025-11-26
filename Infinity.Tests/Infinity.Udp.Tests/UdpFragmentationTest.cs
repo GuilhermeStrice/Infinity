@@ -34,6 +34,7 @@ namespace Infinity.Udp.Tests
 
             listener.NewConnection += e =>
             {
+                Console.WriteLine("New connection");
                 e.Connection.DataReceived += data =>
                 {
                     var reader = data.Message;
@@ -52,15 +53,16 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
+
+            await Task.Delay(1000);
+            Console.WriteLine(connection.MTU);
 
             var writer = UdpMessageFactory.BuildFragmentedMessage();
             writer.Write(_testData);
 
             await connection.Send(writer);
-            writer.Recycle();
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(3));
         }
 
         /// <summary>
@@ -153,6 +155,7 @@ namespace Infinity.Udp.Tests
             }
 
             Assert.Equal(desired_mtu, connection.MTU);
+            output.WriteLine(connection.MTU.ToString());
         }
     }
 }

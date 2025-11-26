@@ -47,9 +47,6 @@ namespace Infinity.Udp
         public static MessageWriter BuildFragmentedMessage()
         {
             MessageWriter writer = MessageWriter.Get();
-
-            writer.Write(UdpSendOption.Fragmented);
-            writer.Position = writer.Length += 2; // reliable id
             
             return writer;
         }

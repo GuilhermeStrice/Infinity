@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Core
 {
-    public enum SendErrors
+    public enum SendErrors : byte
     {
         None,
         Disconnected,

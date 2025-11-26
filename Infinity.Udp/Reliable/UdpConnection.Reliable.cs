@@ -8,7 +8,7 @@ namespace Infinity.Udp
         /// <summary>
         ///     The packets of data that have been transmitted reliably and not acknowledged.
         /// </summary>
-        internal ConcurrentDictionary<ushort, UdpPacket> reliable_data_packets_sent = new ConcurrentDictionary<ushort, UdpPacket>();
+        public ConcurrentDictionary<ushort, UdpPacket> reliable_data_packets_sent = new ConcurrentDictionary<ushort, UdpPacket>();
 
         private int last_id_allocated = -1;
 
@@ -36,7 +36,7 @@ namespace Infinity.Udp
         {
             AttachReliableID(_writer, 1, _ack_callback);
             await WriteBytesToConnection(_writer).ConfigureAwait(false);
-            Statistics.LogReliableMessageSent(_writer.Buffer.Length);
+            Statistics.LogReliableMessageSent(_writer.Length);
             _writer.Recycle();
         }
 
@@ -70,7 +70,12 @@ namespace Infinity.Udp
         {
             ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
+            int old_position = _writer.Position;
+            _writer.Position = _offset;
+
             _writer.Write(id);
+
+            _writer.Position = old_position;
 
             int resend_delay_ms = configuration.ResendTimeoutMs;
             if (resend_delay_ms <= 0)

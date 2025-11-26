@@ -84,7 +84,6 @@ namespace Infinity.Multiplexer.Tests
             await udp_client.Connect(handshake);
             handshake.Recycle();
 
-
             // WebSocket Client
             var ws_client = new WebSocketClientConnection(logger);
             var ws_data = new byte[] { 4, 5, 6 };
@@ -99,7 +98,7 @@ namespace Infinity.Multiplexer.Tests
             ws_writer_connect.Write("ws://127.0.0.1:4296");
             await ws_client.Connect(ws_writer_connect);
 
-            Thread.Sleep(2000);
+            await Task.Delay(2000);
 
             Assert.NotNull(server_udp_connection);
             Assert.NotNull(server_ws_connection);

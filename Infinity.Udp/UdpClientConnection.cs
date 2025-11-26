@@ -3,7 +3,7 @@ using Infinity.Core.Exceptions;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using System.Threading.Channels;
 
 namespace Infinity.Udp
 {
@@ -14,6 +14,8 @@ namespace Infinity.Udp
         private ManualResetEvent connect_wait_lock = new ManualResetEvent(false);
 
         private CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
+
+        private readonly Channel<MessageReader> _incoming = Channel.CreateUnbounded<MessageReader>();
 
         public UdpClientConnection(ILogger _logger, IPEndPoint _remote_end_point, IPMode _ip_mode = IPMode.IPv4)
             : base(_logger)
@@ -81,7 +83,6 @@ namespace Infinity.Udp
 #endif
             {
                 await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
-                await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
             }
         }
 
@@ -128,6 +129,7 @@ namespace Infinity.Udp
             }
 
             Util.FireAndForget(StartListeningForData(), logger);
+            Util.FireAndForget(ProcessIncoming(), logger);
 
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             await SendHandshake(_writer, async () =>
@@ -145,6 +147,14 @@ namespace Infinity.Udp
             {
                 Dispose();
                 throw new InfinityException("Connection attempt timed out.");
+            }
+        }
+
+        private async Task ProcessIncoming()
+        {
+            await foreach (var reader in _incoming.Reader.ReadAllAsync(cancellation_token_source.Token).ConfigureAwait(false))
+            {
+                await ReadCallback(reader).ConfigureAwait(false);
             }
         }
 
@@ -205,7 +215,7 @@ namespace Infinity.Udp
                     reader.Length = bytes_received;
                     reader.Position = 0;
 
-                    await ReadCallback(reader).ConfigureAwait(false);
+                    await _incoming.Writer.WriteAsync(reader).ConfigureAwait(false);
                 }
                 catch
                 {

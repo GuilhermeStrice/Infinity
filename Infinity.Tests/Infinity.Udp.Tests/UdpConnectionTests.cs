@@ -238,6 +238,9 @@ namespace Infinity.Udp.Tests
                 var writer = UdpMessageFactory.BuildUnreliableMessage();
                 writer.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
 
+                // writers are consumed we need to copy it
+                var data_reader = writer.ToReader();
+
                 // Send the message multiple times
                 for (int i = 0; i < 4; ++i)
                 {
@@ -251,9 +254,9 @@ namespace Infinity.Udp.Tests
                 }
 
                 // Validate the received message
-                for (int i = 0; i < writer.Length; i++)
+                for (int i = 0; i < data_reader.Length; i++)
                 {
-                    Assert.Equal(writer.Buffer[i], receivedMessage!.Buffer[i]);
+                    Assert.Equal(data_reader.Buffer[i], receivedMessage!.Buffer[i]);
                 }
 
                 // Recycle resources

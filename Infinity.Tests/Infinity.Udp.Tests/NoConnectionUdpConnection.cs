@@ -39,7 +39,7 @@ namespace Infinity.Udp.Tests
 
         public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
-            BytesSent.Add(MessageReader.Get(_writer.Buffer));
+            BytesSent.Add(MessageReader.Get(_writer.Buffer, 0, _writer.Length));
         }
 
         public override async Task Connect(MessageWriter _writer, int _timeout = 5000)

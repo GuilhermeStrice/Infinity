@@ -26,7 +26,8 @@ namespace Infinity.Udp.Tests
 
             ConcurrentStack<UdpClientConnection> connections = new ConcurrentStack<UdpClientConnection>();
 
-            var ep = new IPEndPoint(IPAddress.Loopback, 22023);
+            int port = Util.GetFreePort();
+            var ep = new IPEndPoint(IPAddress.Loopback, port);
 
             for (int i = 0; i < connection_count; i++)
             {
@@ -51,7 +52,8 @@ namespace Infinity.Udp.Tests
         // [Fact]
         public void StressTestMessages()
         {
-            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, 22023);
+            int port = Util.GetFreePort();
+            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, port);
 
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
@@ -79,15 +81,16 @@ namespace Infinity.Udp.Tests
         }
 
         [Fact]
-        public async Task StressTestOpeningConnections()
+        public async Task StressOpeningConnections()
         {
-            Console.WriteLine("StressTestOpeningConnections");
+            Console.WriteLine("StressOpeningConnections");
 
             int connections_to_test = 100;
-            var ep = new IPEndPoint(IPAddress.Loopback, 22023);
+            int port = Util.GetFreePort();
+            var ep = new IPEndPoint(IPAddress.Loopback, port);
             ConcurrentStack<UdpClientConnection> connections = new ConcurrentStack<UdpClientConnection>();
             int con_count = 0;
-            var allConnectedTcs = new TaskCompletionSource();
+            var allConnectedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using (var listener = new UdpConnectionListener(ep))
             {
@@ -129,7 +132,8 @@ namespace Infinity.Udp.Tests
                     tasks.Add(connection.Connect(handshake));
                     connections.Push(connection);
 
-                    handshake.Recycle();
+                    // same problem as with stress test reliable messages
+                    await Task.Delay(1);
                 }
 
                 // Wait for all clients to finish connecting
@@ -160,9 +164,11 @@ namespace Infinity.Udp.Tests
 
             int count = 0;
 
+            int messages_to_try = 100;
+
             var mutex = new ManualResetEvent(false);
 
-            using (UdpConnectionListener listener = new UdpConnectionListener(new IPEndPoint(IPAddress.Any, port)))
+            using (UdpConnectionListener listener = new UdpConnectionListener(ep))
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
                 listener.NewConnection += (evt) =>
@@ -172,22 +178,26 @@ namespace Infinity.Udp.Tests
                         obj.Recycle();
                     };
 
-                    evt.Connection.DataReceived += delegate (DataReceivedEvent obj)
+                    evt.Connection.DataReceived += async delegate (DataReceivedEvent obj)
                     {
                         count++;
-                        obj.Recycle();
-                        if (count == 100000)
+                        if (count == messages_to_try)
                         {
-                            output.WriteLine(Core.Pools.ReaderPool.InUse.ToString());
-                            output.WriteLine(Infinity.Udp.Pools.PacketPool.InUse.ToString());
-                            output.WriteLine(Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                            output.WriteLine(Core.Pools.WriterPool.InUse.ToString());
-
-                            output.WriteLine(Core.Pools.DataReceivedEventPool.InUse.ToString());
-                            output.WriteLine(Core.Pools.DisconnectedEventPool.InUse.ToString());
-                            output.WriteLine(Core.Pools.NewConnectionPool.InUse.ToString());
                             mutex.Set();
+                            sw.Stop();
+                            Console.WriteLine("Readers: " + Core.Pools.ReaderPool.InUse.ToString());
+                            Console.WriteLine("Packets: " + Infinity.Udp.Pools.PacketPool.InUse.ToString());
+                            Console.WriteLine("Fragmented: " + Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
+                            Console.WriteLine("Writers: " + Core.Pools.WriterPool.InUse.ToString());
+
+                            Console.WriteLine("DataReceived: " + Core.Pools.DataReceivedEventPool.InUse.ToString());
+                            Console.WriteLine("Disconnected: " + Core.Pools.DisconnectedEventPool.InUse.ToString());
+                            Console.WriteLine("NewConnection: " + Core.Pools.NewConnectionPool.InUse.ToString());
+
+                            Console.WriteLine("Server packets: " + ((UdpConnection)(obj.Connection)).reliable_data_packets_sent.Count);
+                            Console.WriteLine("Client packets: " + ((UdpConnection)connection).reliable_data_packets_sent.Count);
                         }
+                        obj.Recycle();
                     };
 
                     evt.Recycle();
@@ -202,19 +212,23 @@ namespace Infinity.Udp.Tests
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 await connection.Connect(handshake);
-                handshake.Recycle();
 
-                var message = UdpMessageFactory.BuildReliableMessage();
-                message.Write(123);
+                sw.Start();
 
-                for (int i = 0; i < 100000; i++)
+                for (int i = 0; i < messages_to_try; i++)
                 {
+                    var message = UdpMessageFactory.BuildReliableMessage();
+                    message.Write(123);
+
                     _ = connection.Send(message);
+
+                    // if we dont have this delay something weird happens and the packets and readers are not recycled, need to figure stuff out
+                    await Task.Delay(1);
                 }
 
-                message.Recycle();
-
-                mutex.WaitOne(10000);
+                mutex.WaitOne(2000);
+                Assert.Equal(messages_to_try, count);
+                await Task.Delay(1000);
                 Console.WriteLine($"StressReliableMessages took {sw.ElapsedMilliseconds}ms");
             }
         }

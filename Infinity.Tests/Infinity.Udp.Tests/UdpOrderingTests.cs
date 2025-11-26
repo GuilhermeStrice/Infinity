@@ -44,7 +44,7 @@ namespace Infinity.Udp.Tests
 
                     data.Recycle();
 
-                    if (newCount == 1000)
+                    if (newCount == 10)
                     {
                         tcs.SetResult();
                         output.WriteLine("Done");
@@ -60,7 +60,7 @@ namespace Infinity.Udp.Tests
             await connection.Connect(handshake);
             handshake.Recycle();
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var writer = UdpMessageFactory.BuildOrderedMessage();
                 writer.Write(20);

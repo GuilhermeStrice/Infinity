@@ -1,6 +1,6 @@
 ﻿namespace Infinity.SNTP
 {
-    public enum NtpLeapIndicator
+    public enum NtpLeapIndicator : byte
     {
         NoWarning,
         LastMinuteHas61Seconds,

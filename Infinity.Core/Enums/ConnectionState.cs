@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Core
 {
-    public enum ConnectionState
+    public enum ConnectionState : byte
     {
         NotConnected,
         Connecting,

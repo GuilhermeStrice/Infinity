@@ -18,13 +18,12 @@ namespace Infinity.Udp
 
             var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
             
-            var fragments_count = (int)((_writer.Buffer.Length / (double)fragment_size) + 1);
+            var fragments_count = (int)Math.Ceiling(_writer.Length / (double)fragment_size);
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(fragment_size, _writer.Buffer.Length - fragment_size * i);
+                var data_length = Math.Min(fragment_size, _writer.Length - fragment_size * i);
                 var fragment_writer = MessageWriter.Get();
-                //var fragment_buffer = new byte[data_length + fragment_header_size];
 
                 fragment_writer.Write(UdpSendOptionInternal.Fragment);
 
@@ -34,7 +33,11 @@ namespace Infinity.Udp
                 fragment_writer.Write(fragment_id);
                 fragment_writer.Write(i);
 
+                int source_offset = fragment_size * i;
+                fragment_writer.Write(_writer.Buffer, source_offset, data_length);
+
                 await WriteBytesToConnection(fragment_writer).ConfigureAwait(false);
+                await Task.Delay(10);
             }
 
             if (last_fragment_id_allocated >= byte.MaxValue)
@@ -48,26 +51,21 @@ namespace Infinity.Udp
             var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
             if (result.Item1)
             {
-                _reader.Position += 3;
+                _reader.Position = 3;
 
                 var fragments_count = _reader.ReadInt32();
                 var fragmented_message_id = _reader.ReadByte();
                 var fragment_index = _reader.ReadUInt16();
 
-                UdpFragmentedMessage fragmented_message;
+                var fragmented_message = UdpFragmentedMessage.Get();
+                fragmented_message.FragmentsCount = fragments_count;
 
-                if (!fragmented_messages_received.ContainsKey(fragmented_message_id))
+                fragmented_message = fragmented_messages_received.GetOrAdd(fragmented_message_id, id =>
                 {
-                    fragmented_message = UdpFragmentedMessage.Get();
-                    fragmented_message.FragmentsCount = fragments_count;
-
-                    fragmented_messages_received.TryAdd(fragmented_message_id, fragmented_message);
-                }
-                else
-                {
-                    // reference
-                    fragmented_message = fragmented_messages_received[fragmented_message_id];
-                }
+                    var msg = UdpFragmentedMessage.Get();
+                    msg.FragmentsCount = fragments_count;
+                    return msg;
+                });
 
                 fragmented_message.Fragments.TryAdd(fragment_index, _reader);
 

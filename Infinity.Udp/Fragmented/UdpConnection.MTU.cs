@@ -84,17 +84,10 @@ namespace Infinity.Udp
             await mtu_lock.WaitAsync().ConfigureAwait(false);
             try
             {
-                var buffer = new byte[MTU];
-
-                buffer[0] = UdpSendOptionInternal.TestMTU;
-
-                buffer[mtu - 4] = (byte)mtu;
-                buffer[mtu - 3] = (byte)(mtu >> 8);
-                buffer[mtu - 2] = (byte)(mtu >> 16);
-                buffer[mtu - 1] = (byte)(mtu >> 24);
-
                 var writer = MessageWriter.Get();
-                writer.Write(buffer, 0, buffer.Length);
+
+                writer.Write(UdpSendOptionInternal.TestMTU);
+                writer.Write(mtu);
 
                 AttachReliableID(writer, 1, async () =>
                 {

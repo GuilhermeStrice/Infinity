@@ -17,6 +17,7 @@ namespace Infinity.Udp.Tests
         {
             //Setup meta stuff 
             var data = BuildData(sendOption, dataSize);
+            var data_reader = data.ToReader();
             var mutex = new ManualResetEvent(false);
 
             //Setup listener
@@ -40,16 +41,17 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             //Wait until data is received
             mutex.WaitOne(5000);
 
-            var reader = data.ToReader();
-            Assert.Equal(reader.Length, result.Message.Length);
-            for (int i = reader.Position; i < reader.Length; i++)
+            _output.WriteLine($"Expected length: {data_reader.Length}, Actual length: {result.Message.Length}");
+            _output.WriteLine($"Reader Position: {data_reader.Position}, Message Position: {result.Message.Position}");
+            _output.WriteLine($"Message Buffer Length: {result.Message.Buffer?.Length ?? 0}, Message Length: {result.Message.Length}");
+            Assert.Equal(data_reader.Length, result.Message.Length);
+            for (int i = data_reader.Position; i < data_reader.Length; i++)
             {
-                Assert.Equal(reader.Buffer[i], result.Message.Buffer[i]);
+                Assert.Equal(data_reader.Buffer[i], result.Message.Buffer[i]);
             }
 
             Assert.Equal(sendOption, result.Message.Buffer[0]);
@@ -69,6 +71,7 @@ namespace Infinity.Udp.Tests
         {
             //Setup meta stuff 
             var data = BuildData(sendOption, dataSize);
+            var data_reader = data.ToReader();
             var mutex = new ManualResetEvent(false);
             var mutex2 = new ManualResetEvent(false);
 
@@ -104,12 +107,10 @@ namespace Infinity.Udp.Tests
             //Wait until data is received
             Assert.True(mutex2.WaitOne(1000), "Timeout while sending data");
 
-            var dataReader = data.ToReader();
-
-            Assert.Equal(dataReader.Length, result.Message.Length);
-            for (int i = 3; i < dataReader.Length; i++)
+            Assert.Equal(data_reader.Length, result.Message.Length);
+            for (int i = 3; i < data_reader.Length; i++)
             {
-                Assert.Equal(dataReader.Buffer[i], result.Message.Buffer[i]);
+                Assert.Equal(data_reader.Buffer[i], result.Message.Buffer[i]);
             }
 
             Assert.Equal(sendOption, result.Message.Buffer[0]);
@@ -181,7 +182,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             mutex.WaitOne(2500);
 

@@ -1,6 +1,6 @@
 ﻿namespace Infinity.Core
 {
-    public enum IPMode
+    public enum IPMode : byte
     {
         IPv4,
         IPv6
