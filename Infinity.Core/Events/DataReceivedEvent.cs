@@ -2,6 +2,8 @@
 {
     public class DataReceivedEvent : IRecyclable
     {
+        public static ObjectPool<DataReceivedEvent> DataReceivedEventPool = new ObjectPool<DataReceivedEvent>(() => new DataReceivedEvent());
+
         public NetworkConnection? Connection;
         public MessageReader? Message;
 
@@ -11,7 +13,7 @@
 
         public static DataReceivedEvent Get()
         {
-            return Pools.DataReceivedEventPool.GetObject();
+            return DataReceivedEventPool.GetObject();
         }
 
         public void Recycle(bool _recycle_message)
@@ -24,7 +26,7 @@
             Message = null;
             Connection = null;
 
-            Pools.DataReceivedEventPool.PutObject(this);
+            DataReceivedEventPool.PutObject(this);
         }
 
         public void Recycle()

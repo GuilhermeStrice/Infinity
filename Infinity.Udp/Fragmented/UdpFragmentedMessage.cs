@@ -8,6 +8,8 @@ namespace Infinity.Udp
     /// </summary>
     public class UdpFragmentedMessage : IRecyclable
     {
+        public static ObjectPool<UdpFragmentedMessage> FragmentedMessagePool = new ObjectPool<UdpFragmentedMessage>(() => new UdpFragmentedMessage());
+
         /// <summary>
         ///     The total number of fragments expected
         /// </summary>
@@ -24,7 +26,7 @@ namespace Infinity.Udp
 
         public static UdpFragmentedMessage Get()
         {
-            return Pools.FragmentedMessagePool.GetObject();
+            return FragmentedMessagePool.GetObject();
         }
 
         public void Recycle()
@@ -36,7 +38,7 @@ namespace Infinity.Udp
 
             Fragments.Clear();
 
-            Pools.FragmentedMessagePool.PutObject(this);
+            FragmentedMessagePool.PutObject(this);
         }
     }
 }

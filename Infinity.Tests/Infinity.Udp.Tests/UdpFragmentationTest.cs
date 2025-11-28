@@ -145,7 +145,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             // Wait until MTU reaches desired value or timeout after 5 seconds
             var sw = Stopwatch.StartNew();

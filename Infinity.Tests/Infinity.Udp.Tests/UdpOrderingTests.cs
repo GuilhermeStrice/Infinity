@@ -58,7 +58,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             for (int i = 0; i < 10; i++)
             {

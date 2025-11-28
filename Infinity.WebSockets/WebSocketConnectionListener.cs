@@ -99,7 +99,7 @@
 				{
 					if (response != null)
 					{
-						await stream.WriteAsync(response, 0, response.Length);
+						await stream.WriteAsync(response.Buffer, 0, response.Length);
 					}
 					_client.Close();
 					dummyReader.Recycle();

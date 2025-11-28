@@ -4,6 +4,8 @@ namespace Infinity.Core
 {
     public class MessageWriter : IRecyclable
     {
+        public static ObjectPool<MessageWriter> WriterPool = new ObjectPool<MessageWriter>(() => new MessageWriter(Configuration.DefaultBufferSize));
+
         public byte[] Buffer { get; set; }
         public int Length { get; set; }
         public int Position { get; set; }
@@ -196,7 +198,7 @@ namespace Infinity.Core
 
         public static MessageWriter Get()
         {
-            var output = Pools.WriterPool.GetObject();
+            var output = WriterPool.GetObject();
 
             Array.Clear(output.Buffer, 0, output.Length);
             output.Length = output.Position = 0;
@@ -206,7 +208,7 @@ namespace Infinity.Core
 
         public void Recycle()
         {
-            Pools.WriterPool.PutObject(this);
+            WriterPool.PutObject(this);
         }
 
         public MessageReader ToReader()

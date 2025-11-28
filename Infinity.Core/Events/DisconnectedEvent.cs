@@ -2,6 +2,8 @@
 {
     public class DisconnectedEvent : IRecyclable
     {
+        public static ObjectPool<DisconnectedEvent> DisconnectedEventPool = new ObjectPool<DisconnectedEvent>(() => new DisconnectedEvent());
+
         public NetworkConnection? Connection;
         public MessageReader? Message;
         public string? Reason;
@@ -12,7 +14,7 @@
 
         public static DisconnectedEvent Get()
         {
-            return Pools.DisconnectedEventPool.GetObject();
+            return DisconnectedEventPool.GetObject();
         }
 
         public void Recycle(bool _recycle_message)
@@ -26,7 +28,7 @@
             Message = null;
             Reason = string.Empty;
 
-            Pools.DisconnectedEventPool.PutObject(this);
+            DisconnectedEventPool.PutObject(this);
         }
 
         public void Recycle()

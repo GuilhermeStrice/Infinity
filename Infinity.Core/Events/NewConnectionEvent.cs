@@ -2,6 +2,8 @@
 {
     public class NewConnectionEvent : IRecyclable
     {
+        public static ObjectPool<NewConnectionEvent> NewConnectionPool = new ObjectPool<NewConnectionEvent>(() => new NewConnectionEvent());
+
         public NetworkConnection? Connection;
         public MessageReader? HandshakeData;
 
@@ -11,7 +13,7 @@
 
         public static NewConnectionEvent Get()
         {
-            return Pools.NewConnectionPool.GetObject();
+            return NewConnectionPool.GetObject();
         }
 
         public void Recycle(bool _recycle_message)
@@ -27,7 +29,7 @@
             Connection = null;
             HandshakeData = null;
 
-            Pools.NewConnectionPool.PutObject(this);
+            NewConnectionPool.PutObject(this);
         }
 
         public void Recycle()

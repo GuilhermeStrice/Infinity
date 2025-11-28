@@ -18,22 +18,23 @@ namespace Infinity.Udp
 
             var fragment_id = (byte)Interlocked.Increment(ref last_fragment_id_allocated);
             
-            var fragments_count = (int)Math.Ceiling(_writer.Length / (double)fragment_size);
+            var fragments_count = (int)Math.Ceiling((_writer.Length - 1) / (double)fragment_size);
 
             for (ushort i = 0; i < fragments_count; i++)
             {
-                var data_length = Math.Min(fragment_size, _writer.Length - fragment_size * i);
+                var data_length = Math.Min(fragment_size, _writer.Length - 1 - fragment_size * i);
                 var fragment_writer = MessageWriter.Get();
 
                 fragment_writer.Write(UdpSendOptionInternal.Fragment);
 
                 AttachReliableID(fragment_writer, 1);
+                fragment_writer.Position = 3;
 
                 fragment_writer.Write(fragments_count);
                 fragment_writer.Write(fragment_id);
                 fragment_writer.Write(i);
 
-                int source_offset = fragment_size * i;
+                int source_offset = fragment_size * i + 1;
                 fragment_writer.Write(_writer.Buffer, source_offset, data_length);
 
                 await WriteBytesToConnection(fragment_writer, false).ConfigureAwait(false);
@@ -59,10 +60,7 @@ namespace Infinity.Udp
                 var fragmented_message_id = _reader.ReadByte();
                 var fragment_index = _reader.ReadUInt16();
 
-                var fragmented_message = UdpFragmentedMessage.Get();
-                fragmented_message.FragmentsCount = fragments_count;
-
-                fragmented_message = fragmented_messages_received.GetOrAdd(fragmented_message_id, id =>
+                var fragmented_message = fragmented_messages_received.GetOrAdd(fragmented_message_id, id =>
                 {
                     var msg = UdpFragmentedMessage.Get();
                     msg.FragmentsCount = fragments_count;
@@ -74,6 +72,7 @@ namespace Infinity.Udp
                 if (fragmented_message.Fragments.Count == fragments_count)
                 {
                     var writer = UdpMessageFactory.BuildFragmentedMessage();
+                    writer.Position = 3;
 
                     foreach (var fragment in fragmented_message.Fragments.OrderBy(fragment => fragment.Key))
                     {

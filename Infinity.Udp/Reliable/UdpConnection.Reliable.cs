@@ -83,7 +83,7 @@ namespace Infinity.Udp
                     UdpPacket.MinResendDelayMs, UdpPacket.MaxInitialResendDelayMs);
             }
 
-            UdpPacket packet = Pools.PacketPool.GetObject();
+            UdpPacket packet = UdpPacket.PacketPool.GetObject();
             packet.Set(
                 this,
                 _writer,

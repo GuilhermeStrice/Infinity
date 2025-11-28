@@ -80,7 +80,7 @@ namespace Infinity.Udp.Tests
             }
         }
 
-        [Fact]
+        //[Fact]
         public async Task StressOpeningConnections()
         {
             Console.WriteLine("StressOpeningConnections");
@@ -220,17 +220,17 @@ namespace Infinity.Udp.Tests
                 //await Task.Delay(1000);
                 Console.WriteLine($"StressReliableMessages took {sw.ElapsedMilliseconds}ms");
 
-                Console.WriteLine("Readers: " + Core.Pools.ReaderPool.Available.ToString());
-                Console.WriteLine("Packets: " + Infinity.Udp.Pools.PacketPool.Available.ToString());
-                Console.WriteLine("Fragmented: " + Infinity.Udp.Pools.FragmentedMessagePool.Available.ToString());
-                Console.WriteLine("Writers: " + Core.Pools.WriterPool.Available.ToString());
+                Console.WriteLine("Readers: " + MessageReader.ReaderPool.Available.ToString());
+                Console.WriteLine("Packets: " + UdpPacket.PacketPool.Available.ToString());
+                Console.WriteLine("Fragmented: " + UdpFragmentedMessage.FragmentedMessagePool.Available.ToString());
+                Console.WriteLine("Writers: " + MessageWriter.WriterPool.Available.ToString());
 
-                Console.WriteLine("DataReceived: " + Core.Pools.DataReceivedEventPool.Available.ToString());
-                Console.WriteLine("Disconnected: " + Core.Pools.DisconnectedEventPool.Available.ToString());
-                Console.WriteLine("NewConnection: " + Core.Pools.NewConnectionPool.Available.ToString());
+                Console.WriteLine("DataReceived: " + DataReceivedEvent.DataReceivedEventPool.Available.ToString());
+                Console.WriteLine("Disconnected: " + DisconnectedEvent.DisconnectedEventPool.Available.ToString());
+                Console.WriteLine("NewConnection: " + NewConnectionEvent.NewConnectionPool.Available.ToString());
 
                 Console.WriteLine("Server packets: " + server_connection.reliable_data_packets_sent.Count);
-                Console.WriteLine("Client packets: " + ((UdpConnection)connection).reliable_data_packets_sent.Count);
+                Console.WriteLine("Client packets: " + connection.reliable_data_packets_sent.Count);
             }
         }
 

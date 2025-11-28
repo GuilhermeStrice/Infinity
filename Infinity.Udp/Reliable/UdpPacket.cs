@@ -5,6 +5,8 @@ namespace Infinity.Udp
 {
     public class UdpPacket : IRecyclable
     {
+        public static ObjectPool<UdpPacket> PacketPool = new ObjectPool<UdpPacket>(() => new UdpPacket());
+
         public const int MaxInitialResendDelayMs = 300;
         public const int MinResendDelayMs = 50;
         public const int MaxAdditionalResendDelayMs = 1000;
@@ -115,7 +117,7 @@ namespace Infinity.Udp
             Acknowledged = true;
             writer.Recycle();
 
-            Pools.PacketPool.PutObject(this);
+            PacketPool.PutObject(this);
         }
     }
 }
