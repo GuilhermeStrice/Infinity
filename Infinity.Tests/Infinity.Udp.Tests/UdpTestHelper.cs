@@ -98,7 +98,6 @@ namespace Infinity.Udp.Tests
             //Connect
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             Assert.True(mutex.WaitOne(1000), "Timeout while connecting");
 
@@ -147,7 +146,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             mutex.WaitOne(2500);
 
@@ -222,7 +220,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             if (!mutex.WaitOne(TimeSpan.FromSeconds(2)))
             {

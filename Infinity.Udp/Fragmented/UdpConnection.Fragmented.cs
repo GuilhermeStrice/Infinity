@@ -36,7 +36,7 @@ namespace Infinity.Udp
                 int source_offset = fragment_size * i;
                 fragment_writer.Write(_writer.Buffer, source_offset, data_length);
 
-                await WriteBytesToConnection(fragment_writer).ConfigureAwait(false);
+                await WriteBytesToConnection(fragment_writer, false).ConfigureAwait(false);
                 await Task.Delay(10);
             }
 

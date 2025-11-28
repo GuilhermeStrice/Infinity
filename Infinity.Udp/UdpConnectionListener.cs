@@ -257,7 +257,10 @@ namespace Infinity.Udp
             }
             finally
             {
-                _writer.Recycle();
+                if (_recycle_writer)
+                {
+                    _writer.Recycle();
+                }
             }
         }
 

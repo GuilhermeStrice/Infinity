@@ -55,7 +55,6 @@ namespace Infinity.Udp.Tests
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 await connection.Connect(handshake);
-                handshake.Recycle();
 
                 // Dispose server and wait for events
                 listener.Dispose();
@@ -108,7 +107,6 @@ namespace Infinity.Udp.Tests
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 await connection.Connect(handshake);
-                handshake.Recycle();
 
                 // Wait for server to register connection
                 await Task.WhenAny(serverConnectedTcs.Task, Task.Delay(1000));
@@ -146,7 +144,6 @@ namespace Infinity.Udp.Tests
                 // Build and send handshake
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 await connection.Connect(handshake);
-                handshake.Recycle();
 
                 // Verify the connection's endpoint
                 Assert.Equal(ep, connection.EndPoint);
@@ -200,8 +197,6 @@ namespace Infinity.Udp.Tests
                 // Wait asynchronously for handshake to complete (max 2.5s)
                 var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(2500));
                 Assert.Equal(tcs.Task, completedTask); // Ensure handshake completed in time
-
-                handshake.Recycle();
             }
         }
 
@@ -233,7 +228,6 @@ namespace Infinity.Udp.Tests
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 await connection.Connect(handshake);
-                handshake.Recycle();
 
                 var writer = UdpMessageFactory.BuildUnreliableMessage();
                 writer.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
@@ -280,14 +274,7 @@ namespace Infinity.Udp.Tests
                 listener.Start();
 
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                try
-                {
-                    await connection.Connect(handshake);
-                }
-                finally
-                {
-                    handshake.Recycle();
-                }
+                await connection.Connect(handshake);
 
                 // Optional: verify connection state
                 Assert.Equal(ConnectionState.Connected, connection.State);
@@ -320,30 +307,16 @@ namespace Infinity.Udp.Tests
                 using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.Loopback, port)))
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                    try
-                    {
-                        await connection.Connect(handshake);
-                        Assert.Equal(ConnectionState.Connected, connection.State);
-                    }
-                    finally
-                    {
-                        handshake.Recycle();
-                    }
+                    await connection.Connect(handshake);
+                    Assert.Equal(ConnectionState.Connected, connection.State);
                 }
 
                 // IPv6 client
                 using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), new IPEndPoint(IPAddress.IPv6Loopback, port), IPMode.IPv6))
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
-                    try
-                    {
-                        await connection.Connect(handshake);
-                        Assert.Equal(ConnectionState.Connected, connection.State);
-                    }
-                    finally
-                    {
-                        handshake.Recycle();
-                    }
+                    await connection.Connect(handshake);
+                    Assert.Equal(ConnectionState.Connected, connection.State);
                 }
             }
         }
@@ -419,7 +392,6 @@ namespace Infinity.Udp.Tests
                 {
                     var handshake = UdpMessageFactory.BuildHandshakeMessage();
                     await connection.Connect(handshake);
-                    handshake.Recycle();
 
                     // Wait until the server sees the connection, or timeout
                     var completed = await Task.WhenAny(connectionEstablished.Task, Task.Delay(3000));
@@ -517,7 +489,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             // Small delay to let connection stabilize
             await Task.Delay(10);
@@ -552,7 +523,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             // Wait enough time for several keep-alive packets to be sent
             await Task.Delay(1000);
@@ -591,7 +561,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             // Wait asynchronously for the new connection event
             var clientConnection = await tcs.Task;
@@ -691,7 +660,6 @@ namespace Infinity.Udp.Tests
 
             var handshake = UdpMessageFactory.BuildHandshakeMessage();
             await connection.Connect(handshake);
-            handshake.Recycle();
 
             mutex.WaitOne(2500);
 

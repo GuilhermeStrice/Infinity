@@ -17,7 +17,7 @@ namespace Infinity.Udp
 
             _writer.Buffer[3] = (byte)send_sequence;
 
-            await WriteBytesToConnection(_writer).ConfigureAwait(false);
+            await WriteBytesToConnection(_writer, false).ConfigureAwait(false);
 
             send_sequence = (byte)Interlocked.Increment(ref send_sequence);
         }

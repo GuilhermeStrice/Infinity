@@ -69,8 +69,6 @@ namespace Infinity.Udp
                 InvokeDisconnected(_reason, _reader);
             }
 
-            writer.Recycle();
-
             Dispose();
         }
 
@@ -126,8 +124,6 @@ namespace Infinity.Udp
                 var writer = UdpMessageFactory.BuildDisconnectMessage();
 
                 SendDisconnect(writer);
-
-                writer.Recycle();
             }
 
             Listener.RemoveConnection(EndPoint);

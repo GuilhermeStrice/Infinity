@@ -111,7 +111,7 @@ namespace Infinity.Udp
                     await ExpandMTU().ConfigureAwait(false);
                 });
 
-                await WriteBytesToConnection(writer).ConfigureAwait(false);
+                await WriteBytesToConnection(writer, false).ConfigureAwait(false);
             }
             finally
             {

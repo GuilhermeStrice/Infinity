@@ -1,10 +1,11 @@
 ﻿using System.Collections.Concurrent;
+using Infinity.Core.Exceptions;
 
 namespace Infinity.Core
 {
     public sealed class ObjectPool<T> where T : IRecyclable
     {
-        public int InUse => pool.Count;
+        public int Available => pool.Count;
 
         private ConcurrentStack<T> pool;
 
@@ -30,10 +31,12 @@ namespace Infinity.Core
 
         public void PutObject(T item)
         {
-            if (!pool.Contains(item))
+            if (pool.Contains(item))
             {
-                pool.Push(item);
+                throw new InfinityException("Object already in pool.");
             }
+
+            pool.Push(item);
         }
     }
 }

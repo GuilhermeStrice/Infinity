@@ -213,24 +213,21 @@ namespace Infinity.Udp.Tests
                     message.Write(123);
 
                     await connection.Send(message);
-
-                    // if we dont have this delay something weird happens and the packets and readers are not recycled, need to figure stuff out
-                    //await Task.Delay(1);
                 }
 
-                mutex.WaitOne(10000);
+                mutex.WaitOne();
                 Assert.Equal(messages_to_try, count);
-                await Task.Delay(10000);
+                //await Task.Delay(1000);
                 Console.WriteLine($"StressReliableMessages took {sw.ElapsedMilliseconds}ms");
 
-                Console.WriteLine("Readers: " + Core.Pools.ReaderPool.InUse.ToString());
-                Console.WriteLine("Packets: " + Infinity.Udp.Pools.PacketPool.InUse.ToString());
-                Console.WriteLine("Fragmented: " + Infinity.Udp.Pools.FragmentedMessagePool.InUse.ToString());
-                Console.WriteLine("Writers: " + Core.Pools.WriterPool.InUse.ToString());
+                Console.WriteLine("Readers: " + Core.Pools.ReaderPool.Available.ToString());
+                Console.WriteLine("Packets: " + Infinity.Udp.Pools.PacketPool.Available.ToString());
+                Console.WriteLine("Fragmented: " + Infinity.Udp.Pools.FragmentedMessagePool.Available.ToString());
+                Console.WriteLine("Writers: " + Core.Pools.WriterPool.Available.ToString());
 
-                Console.WriteLine("DataReceived: " + Core.Pools.DataReceivedEventPool.InUse.ToString());
-                Console.WriteLine("Disconnected: " + Core.Pools.DisconnectedEventPool.InUse.ToString());
-                Console.WriteLine("NewConnection: " + Core.Pools.NewConnectionPool.InUse.ToString());
+                Console.WriteLine("DataReceived: " + Core.Pools.DataReceivedEventPool.Available.ToString());
+                Console.WriteLine("Disconnected: " + Core.Pools.DisconnectedEventPool.Available.ToString());
+                Console.WriteLine("NewConnection: " + Core.Pools.NewConnectionPool.Available.ToString());
 
                 Console.WriteLine("Server packets: " + server_connection.reliable_data_packets_sent.Count);
                 Console.WriteLine("Client packets: " + ((UdpConnection)connection).reliable_data_packets_sent.Count);
