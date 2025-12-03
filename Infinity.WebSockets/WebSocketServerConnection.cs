@@ -14,7 +14,13 @@ namespace Infinity.WebSockets
         protected override bool MaskOutgoingFrames => false;
 
         protected override bool ValidateIncomingMask(bool masked) => masked;
-        public override int MaxPayloadSize { get; set; } = 64 * 1024 * 1024; // default 64MB (can be adjusted)
+        public override int MaxPayloadSize { get; set; } = 64 * 1024 * 1024; // default 64MB
+
+        // additional handshake metadata exposed for consumers
+        public string? RequestPath { get; internal set; }
+        public string? RequestQuery { get; internal set; }
+        public IReadOnlyDictionary<string, string>? RequestHeaders { get; internal set; }
+        public string? SelectedProtocol { get; internal set; }
 
         public WebSocketServerConnection(Socket socket, ILogger? logger)
         {

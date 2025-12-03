@@ -50,10 +50,6 @@ namespace Infinity.WebSockets
             return SendErrors.None;
         }
 
-        /// <summary>
-        /// Internal helper used when we want to perform a graceful internal shutdown.
-        /// Ensures ping timer is disposed and state updated.
-        /// </summary>
         private async Task ShutdownInternalAsync(InfinityInternalErrors error, string reason)
         {
             try { shuttingDown = true; } catch { }
@@ -66,7 +62,6 @@ namespace Infinity.WebSockets
 
         protected override async Task DisconnectInternal(InfinityInternalErrors error, string reason)
         {
-            // Use the shutdown helper
             await ShutdownInternalAsync(error, reason).ConfigureAwait(false);
         }
 
@@ -127,7 +122,7 @@ namespace Infinity.WebSockets
                 lastPingTicks = DateTime.UtcNow.Ticks;
                 frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Ping, true, MaskOutgoingFrames);
                 Stream.Write(frame.Buffer, 0, frame.Length);
-                // ping is not flushed in original code; keep same behaviour (pong flushes)
+                // keep same behavior: pong reply flushes
             }
             catch { }
             finally
@@ -161,22 +156,20 @@ namespace Infinity.WebSockets
                     if (closeReceived && opcode != WebSocketOpcode.Close && opcode != WebSocketOpcode.Ping && opcode != WebSocketOpcode.Pong)
                         continue;
 
-                    // Control frame rules: must be final and payload <= 125 and not fragmented
+                    // Control frame rules
                     bool isControl = opcode == WebSocketOpcode.Close || opcode == WebSocketOpcode.Ping || opcode == WebSocketOpcode.Pong;
                     if (isControl)
                     {
                         if (!fin || payload.Length > 125)
                         {
-                            // Protocol violation
                             await CloseWithCode(1002, "Invalid control frame").ConfigureAwait(false);
                             return;
                         }
                     }
 
-                    // Validate masking (client frames must be masked; server frames must not be masked)
+                    // Validate masking
                     if (!ValidateIncomingMask(masked))
                     {
-                        // send 1002 (protocol error), flush, and shutdown
                         var cw = MessageWriter.Get();
                         cw.Write((byte)(1002 >> 8));
                         cw.Write((byte)(1002 & 0xFF));
@@ -193,22 +186,18 @@ namespace Infinity.WebSockets
                         return;
                     }
 
-                    // Handle fragmented messages (non-final frames)
+                    // Fragmentation handling
                     if (!fin)
                     {
-                        // control frames can't be fragmented (checked above)
                         if (opcode == WebSocketOpcode.Binary || opcode == WebSocketOpcode.Text)
                         {
-                            // starting a fragmented message
                             if (frag != null)
                             {
-                                // protocol error: new data frame while previous fragmented message not finished
                                 await CloseWithCode(1002, "Protocol error: nested fragmented message").ConfigureAwait(false);
                                 return;
                             }
-
                             frag ??= new List<byte>(payload.Length * 2);
-                            frag.Clear(); // reset for new fragmented message
+                            frag.Clear();
                             frag.AddRange(payload);
                             fragOpcode = opcode;
                             totalPayloadLen = payload.Length;
@@ -217,11 +206,9 @@ namespace Infinity.WebSockets
                         {
                             if (frag == null)
                             {
-                                // continuation without a started fragment => protocol error
                                 await CloseWithCode(1002, "Protocol error: unexpected continuation").ConfigureAwait(false);
                                 return;
                             }
-
                             frag.AddRange(payload);
                             totalPayloadLen += payload.Length;
                         }
@@ -231,12 +218,9 @@ namespace Infinity.WebSockets
                             await CloseWithCode(1009, "Message too big").ConfigureAwait(false);
                             return;
                         }
-
-                        // wait for remaining fragments
                         continue;
                     }
 
-                    // Handle final continuation frame (fin == true)
                     if (opcode == WebSocketOpcode.Continuation && frag != null)
                     {
                         frag.AddRange(payload);
@@ -253,14 +237,12 @@ namespace Infinity.WebSockets
                         frag = null;
                     }
 
-                    // Single-frame message size check
                     if (payload.Length > MaxPayloadSize)
                     {
                         await CloseWithCode(1009, "Message too big").ConfigureAwait(false);
                         return;
                     }
 
-                    // Process opcodes
                     switch (opcode)
                     {
                         case WebSocketOpcode.Binary:
@@ -272,7 +254,6 @@ namespace Infinity.WebSockets
                             }
                         case WebSocketOpcode.Text:
                             {
-                                // Validate UTF-8 and close with 1007 on invalid
                                 try { _ = new UTF8Encoding(false, true).GetString(payload); }
                                 catch (DecoderFallbackException)
                                 {
@@ -286,7 +267,6 @@ namespace Infinity.WebSockets
                             }
                         case WebSocketOpcode.Ping:
                             {
-                                // Respond with Pong (mirror payload), flush so client sees it
                                 var pong = WebSocketFrame.CreateFrame(payload.AsSpan(), payload.Length, WebSocketOpcode.Pong, true, MaskOutgoingFrames);
                                 try
                                 {
@@ -309,7 +289,6 @@ namespace Infinity.WebSockets
                             }
                         case WebSocketOpcode.Close:
                             {
-                                // Payload must be 0 or >=2 (close code + optional reason)
                                 if (payload.Length == 1)
                                 {
                                     await CloseWithCode(1002, "Invalid close payload length").ConfigureAwait(false);
@@ -329,7 +308,6 @@ namespace Infinity.WebSockets
 
                                 if (!closeSent)
                                 {
-                                    // Echo close
                                     var cw = MessageWriter.Get();
                                     cw.Write((byte)(code >> 8));
                                     cw.Write((byte)(code & 0xFF));
@@ -355,21 +333,12 @@ namespace Infinity.WebSockets
                                 return;
                             }
                         default:
-                            // ignore unknown opcodes per previous behavior
                             break;
                     }
                 }
             }
-            catch (IOException)
-            {
-                // treat IO timeouts/abort as normal shutdown
-                return;
-            }
-            catch (SocketException)
-            {
-                // treat socket abort/reset as normal shutdown
-                return;
-            }
+            catch (IOException) { return; }
+            catch (SocketException) { return; }
             catch (Exception ex)
             {
                 if (!shuttingDown && state == ConnectionState.Connected)
@@ -382,7 +351,6 @@ namespace Infinity.WebSockets
 
         private async Task CloseWithCode(ushort code, string reason)
         {
-            // Build close payload properly
             var cw = MessageWriter.Get();
             cw.Write((byte)(code >> 8));
             cw.Write((byte)(code & 0xFF));
@@ -402,7 +370,6 @@ namespace Infinity.WebSockets
             frame.Recycle(); cw.Recycle();
 
             closeSent = true;
-            // After sending close, perform internal shutdown (keep behavior aligned with earlier code)
             await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, reason).ConfigureAwait(false);
         }
 
@@ -412,7 +379,7 @@ namespace Infinity.WebSockets
             try { pingTimer?.Dispose(); } catch { }
         }
 
-        // Utility methods for clients (handy for client handshake)
+        // Utility methods
         protected static string ComputeWebSocketAccept(string clientKey)
         {
             string concat = clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -443,7 +410,7 @@ namespace Infinity.WebSockets
             int matched = 0;
             while (true)
             {
-                int read = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                int read = await stream.ReadAsync(buffer, 0, buffer.Length);
                 if (read <= 0) break;
                 sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
                 for (int i = 0; i < read; i++)

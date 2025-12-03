@@ -21,16 +21,15 @@ namespace Infinity.WebSockets
         private readonly ILogger? logger;
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
 
-        // Use a GUID -> connection mapping to avoid collisions and reuse issues with IPEndPoint
         private readonly ConcurrentDictionary<Guid, WebSocketServerConnection> connectionsById = new ConcurrentDictionary<Guid, WebSocketServerConnection>();
-        // Reverse map to allow RemoveConnection(IPEndPoint)
         private readonly ConcurrentDictionary<IPEndPoint, Guid> idByEndPoint = new ConcurrentDictionary<IPEndPoint, Guid>();
 
-        // Optional subprotocol negotiation: given offered protocols, return the selected one or null for none
         public Func<IReadOnlyList<string>, string?>? ProtocolSelector { get; set; }
 
-        // maximum headers to accept (protects against header flood). Adjustable if needed.
-        public int MaxHeaderBytes { get; set; } = 64 * 1024; // 64 KB
+        // Protect against very large headers
+        public int MaxHeaderBytes { get; set; } = 64 * 1024; // 64KB default
+        // Timeout (ms) for each individual ReadAsync during handshake to avoid slowloris
+        public int HandshakeReadTimeoutMs { get; set; } = 5000;
 
         public override double AveragePing
             => connectionsById.Count == 0 ? 0 : connectionsById.Values.Sum(c => c.AveragePingMs) / connectionsById.Count;
@@ -56,7 +55,6 @@ namespace Infinity.WebSockets
                 throw new InfinityException("Could not start TCP listener", e);
             }
 
-            // Start accepting loop (fire-and-forget)
             _ = Task.Run(() => AcceptLoopAsync(cts.Token));
         }
 
@@ -79,7 +77,6 @@ namespace Infinity.WebSockets
                         continue;
                     }
 
-                    // Fire-and-forget handling; pass the token so the handler can observe shutdown
                     _ = Task.Run(() => HandleClientAsync(client, token), token);
                 }
             }
@@ -89,7 +86,6 @@ namespace Infinity.WebSockets
             }
         }
 
-        // Public RemoveConnection kept for compatibility with existing code
         internal void RemoveConnection(IPEndPoint endpoint)
         {
             if (endpoint == null) return;
@@ -101,21 +97,17 @@ namespace Infinity.WebSockets
 
         private async Task HandleClientAsync(TcpClient tcpClient, CancellationToken token)
         {
-            // We will use a temporary NetworkStream for the handshake but we will not Dispose it here:
-            // the underlying socket will be passed to WebSocketServerConnection which will manage lifetime.
             NetworkStream handshakeStream = null!;
             try
             {
-                // Create a NetworkStream for the handshake with infinite timeouts (we'll enforce a read loop limit)
                 handshakeStream = new NetworkStream(tcpClient.Client, ownsSocket: false);
                 handshakeStream.ReadTimeout = Timeout.Infinite;
                 handshakeStream.WriteTimeout = Timeout.Infinite;
 
-                // Read the HTTP request headers; pass token and max header limit
                 string request;
                 try
                 {
-                    request = await ReadHeadersAsync(handshakeStream, MaxHeaderBytes, token).ConfigureAwait(false);
+                    request = await ReadHeadersAsync(handshakeStream, MaxHeaderBytes, HandshakeReadTimeoutMs, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -128,11 +120,40 @@ namespace Infinity.WebSockets
                     return;
                 }
 
-                if (string.IsNullOrEmpty(request) || !request.StartsWith("GET ", StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(request))
                 {
                     await WriteHttpErrorAsync(handshakeStream, 400, "Bad Request").ConfigureAwait(false);
                     tcpClient.Close();
                     return;
+                }
+
+                // Parse request-line and headers
+                var lines = request.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length == 0 || !lines[0].StartsWith("GET ", StringComparison.OrdinalIgnoreCase))
+                {
+                    await WriteHttpErrorAsync(handshakeStream, 400, "Bad Request").ConfigureAwait(false);
+                    tcpClient.Close();
+                    return;
+                }
+
+                // Extract path and query from request-line
+                // e.g. "GET /path?query=1 HTTP/1.1"
+                var requestLineParts = lines[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                string requestPath = "/";
+                string requestQuery = string.Empty;
+                if (requestLineParts.Length >= 2)
+                {
+                    var uriPart = requestLineParts[1];
+                    int qidx = uriPart.IndexOf('?');
+                    if (qidx >= 0)
+                    {
+                        requestPath = Uri.UnescapeDataString(uriPart.Substring(0, qidx));
+                        requestQuery = uriPart.Substring(qidx + 1);
+                    }
+                    else
+                    {
+                        requestPath = Uri.UnescapeDataString(uriPart);
+                    }
                 }
 
                 var headers = ParseHeaders(request);
@@ -143,7 +164,18 @@ namespace Infinity.WebSockets
                     return;
                 }
 
-                // Optional user handshake gate using existing pattern
+                // Host required (stronger validation)
+                if (!headers.TryGetValue("Host", out var host) || string.IsNullOrWhiteSpace(host))
+                {
+                    await WriteHttpErrorAsync(handshakeStream, 400, "Missing Host").ConfigureAwait(false);
+                    tcpClient.Close();
+                    return;
+                }
+
+                // Optional origin check hook (if you want)
+                // if (headers.TryGetValue("Origin", out var origin) && !IsOriginAllowed(origin)) { ... }
+
+                // Optional user handshake gate
                 if (HandshakeConnection != null)
                 {
                     var ep = (IPEndPoint)tcpClient.Client.RemoteEndPoint!;
@@ -168,7 +200,6 @@ namespace Infinity.WebSockets
                     }
                 }
 
-                // Compute accept and optional subprotocol
                 string accept = ComputeWebSocketAccept(secKey);
                 string? selectedProtocol = null;
                 if (headers.TryGetValue("Sec-WebSocket-Protocol", out var offered) && ProtocolSelector != null)
@@ -197,95 +228,59 @@ namespace Infinity.WebSockets
                     return;
                 }
 
-                // create server connection using underlying socket (handshakeStream not disposed here)
-                var wsConn = new WebSocketServerConnection(tcpClient.Client, logger);
+                // create server connection using underlying socket
+                var wsConn = new WebSocketServerConnection(tcpClient.Client, logger)
+                {
+                    RequestPath = requestPath,
+                    RequestQuery = requestQuery,
+                    RequestHeaders = headers,
+                    SelectedProtocol = selectedProtocol
+                };
 
-                // Add to dictionaries
                 var id = Guid.NewGuid();
                 if (wsConn.EndPoint == null)
                 {
-                    // defensive: if no remote endpoint, close
                     try { wsConn.Dispose(); } catch { }
                     tcpClient.Close();
                     return;
                 }
 
-                // store mappings
                 connectionsById.TryAdd(id, wsConn);
                 idByEndPoint.TryAdd(wsConn.EndPoint, id);
 
-                // Start receive loop and ping timer
+                // Hook up removal on disposal: ensure listener cleans up when connection is disposed
+                _ = Task.Run(() => WaitForConnectionDisposeAsync(id, wsConn));
+
                 wsConn.Start();
 
-                // Fire the NewConnection event (handshakeReader zero-length message per prior pattern)
                 var handshakeReader = MessageReader.Get();
                 handshakeReader.Length = 0;
                 InvokeNewConnection(wsConn, handshakeReader);
 
-                // Do NOT dispose handshakeStream here. The server connection owns the socket from now on.
-                // Return from handler; connection continues in wsConn's ReceiveLoop
+                // Do not dispose handshakeStream - the socket is now owned by wsConn
             }
             catch (Exception ex)
             {
                 logger?.WriteError("HandleClient failed: " + ex.Message);
                 try { tcpClient.Close(); } catch { }
             }
-            finally
-            {
-                // we intentionally do NOT dispose the handshake stream here, because the underlying Socket
-                // is now owned by the WebSocketServerConnection (which will Dispose the socket when appropriate).
-                // However, if we created handshakeStream and the handshake failed and we are going to close the socket,
-                // ensure it's closed:
-                // The code above closes tcpClient when appropriate; no extra action needed here.
-            }
         }
 
-        // Read HTTP headers until \r\n\r\n or until maxBytes exceeded. Throws on OperationCanceledException if token cancels.
-        private static async Task<string> ReadHeadersAsync(NetworkStream stream, int maxHeaderBytes, CancellationToken token)
+        private async Task WaitForConnectionDisposeAsync(Guid id, WebSocketServerConnection conn)
         {
-            var sb = new StringBuilder();
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
             try
             {
-                int matched = 0;
-                int total = 0;
-                while (!token.IsCancellationRequested)
+                // Poll until connection state is NotConnected or object disposed
+                while (conn.State == ConnectionState.Connected)
                 {
-                    int read;
-                    try
-                    {
-                        read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch
-                    {
-                        // treat as client closed/failed
-                        return string.Empty;
-                    }
-
-                    if (read <= 0) break;
-                    total += read;
-                    if (total > maxHeaderBytes)
-                    {
-                        // header too big
-                        return string.Empty;
-                    }
-
-                    sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
-                    for (int i = 0; i < read; i++)
-                    {
-                        char c = (char)buffer[i];
-                        if ((matched == 0 || matched == 2) && c == '\r') matched++;
-                        else if ((matched == 1 || matched == 3) && c == '\n') matched++;
-                        else matched = 0;
-                        if (matched == 4) return sb.ToString();
-                    }
+                    await Task.Delay(250).ConfigureAwait(false);
                 }
-                return sb.ToString();
             }
+            catch { }
             finally
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                connectionsById.TryRemove(id, out _);
+                if (conn.EndPoint != null) idByEndPoint.TryRemove(conn.EndPoint, out _);
             }
         }
 
@@ -331,6 +326,63 @@ namespace Infinity.WebSockets
             return true;
         }
 
+        // Read headers up to maxHeaderBytes; each ReadAsync has a timeout to protect against slowloris.
+        private static async Task<string> ReadHeadersAsync(NetworkStream stream, int maxHeaderBytes, int perReadTimeoutMs, CancellationToken token)
+        {
+            var sb = new StringBuilder();
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
+            try
+            {
+                int matched = 0;
+                int total = 0;
+                while (!token.IsCancellationRequested)
+                {
+                    // per-read timeout token
+                    using var readCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    if (perReadTimeoutMs > 0) readCts.CancelAfter(perReadTimeoutMs);
+
+                    int read;
+                    try
+                    {
+                        read = await stream.ReadAsync(buffer, 0, buffer.Length, readCts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        if (token.IsCancellationRequested) throw;
+                        // per-read timeout expired -> treat as handshake failure
+                        throw new IOException("Handshake read timeout");
+                    }
+                    catch
+                    {
+                        return string.Empty;
+                    }
+
+                    if (read <= 0) break;
+                    total += read;
+                    if (total > maxHeaderBytes)
+                    {
+                        // header too big
+                        return string.Empty;
+                    }
+
+                    sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
+                    for (int i = 0; i < read; i++)
+                    {
+                        char c = (char)buffer[i];
+                        if ((matched == 0 || matched == 2) && c == '\r') matched++;
+                        else if ((matched == 1 || matched == 3) && c == '\n') matched++;
+                        else matched = 0;
+                        if (matched == 4) return sb.ToString();
+                    }
+                }
+                return sb.ToString();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
         private static string ComputeWebSocketAccept(string clientKey)
         {
             string concat = clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -343,7 +395,6 @@ namespace Infinity.WebSockets
             try { cts.Cancel(); } catch { }
             try { listener.Stop(); } catch { }
 
-            // Dispose and clear connections
             foreach (var kv in connectionsById)
             {
                 try { kv.Value.Dispose(); } catch { }

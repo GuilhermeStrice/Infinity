@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Infinity.Core;
 using Infinity.Core.Exceptions;
@@ -40,7 +41,7 @@ namespace Infinity.WebSockets
             path = string.IsNullOrEmpty(uri.PathAndQuery) ? "/" : uri.PathAndQuery;
 
             client = new TcpClient { NoDelay = true };
-            var cts = new System.Threading.CancellationTokenSource(timeout);
+            var cts = new CancellationTokenSource(timeout);
             await client.ConnectAsync(host, port, cts.Token).ConfigureAwait(false);
             stream = client.GetStream();
 
@@ -80,7 +81,7 @@ namespace Infinity.WebSockets
                 AcceptedProtocol = acceptedProtocol.Trim();
 
             EndPoint = (IPEndPoint)client.Client.RemoteEndPoint!;
-            IPMode = EndPoint.AddressFamily == AddressFamily.InterNetwork ? IPMode.IPv4 : IPMode.IPv6;
+            IPMode = EndPoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? IPMode.IPv4 : IPMode.IPv6;
             State = ConnectionState.Connected;
 
             StartPingTimer();
