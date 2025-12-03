@@ -1,48 +1,461 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Infinity.Core;
+using Infinity.Core.Exceptions;
+using Infinity.WebSockets.Enums;
 
 namespace Infinity.WebSockets
 {
-    public class WebSocketConnection : NetworkConnection
+    public abstract class WebSocketConnection : NetworkConnection
     {
         internal Timer? pingTimer;
         internal ILogger? logger;
         internal long lastPingTicks;
         internal volatile bool shuttingDown;
-		internal volatile bool closeSent;
-		internal volatile bool closeReceived;
+        internal volatile bool closeSent;
+        internal volatile bool closeReceived;
 
-        public WebSocketConnection()
+        protected abstract NetworkStream Stream { get; }
+        protected abstract bool MaskOutgoingFrames { get; }
+        public abstract int MaxPayloadSize { get; set; }
+
+        public override async Task<SendErrors> Send(MessageWriter writer)
         {
+            if (state != ConnectionState.Connected || Stream == null || closeSent)
+                return SendErrors.Disconnected;
+
+            await InvokeBeforeSend(writer).ConfigureAwait(false);
+            var frame = WebSocketFrame.CreateFrame(writer.Buffer.AsSpan(0, writer.Length), writer.Length, WebSocketOpcode.Binary, true, MaskOutgoingFrames);
+            try
+            {
+                await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                await Stream.FlushAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger?.WriteError("WebSocket send failed: " + ex.Message);
+                frame.Recycle();
+                await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, "Send failed").ConfigureAwait(false);
+                return SendErrors.Disconnected;
+            }
+            finally
+            {
+                frame.Recycle();
+            }
+
+            return SendErrors.None;
         }
 
-        public override Task Connect(MessageWriter _writer, int _timeout = 5000)
+        /// <summary>
+        /// Internal helper used when we want to perform a graceful internal shutdown.
+        /// Ensures ping timer is disposed and state updated.
+        /// </summary>
+        private async Task ShutdownInternalAsync(InfinityInternalErrors error, string reason)
         {
-            throw new NotImplementedException();
+            try { shuttingDown = true; } catch { }
+            try { pingTimer?.Dispose(); } catch { }
+            OnInternalDisconnect?.Invoke(error)?.ToReader()?.Recycle();
+            State = ConnectionState.NotConnected;
+            await InvokeDisconnected(reason, null).ConfigureAwait(false);
+            Dispose();
         }
 
-        public override Task<SendErrors> Send(MessageWriter _writer)
+        protected override async Task DisconnectInternal(InfinityInternalErrors error, string reason)
         {
-            throw new NotImplementedException();
+            // Use the shutdown helper
+            await ShutdownInternalAsync(error, reason).ConfigureAwait(false);
         }
 
-        protected override async Task DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        protected override async Task DisconnectRemote(string reason, MessageReader reader)
         {
-            throw new NotImplementedException();
+            MessageWriter frame = null;
+            try
+            {
+                if (Stream != null)
+                {
+                    frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+                    await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                    await Stream.FlushAsync().ConfigureAwait(false);
+                    closeSent = true;
+                }
+            }
+            catch { }
+            finally
+            {
+                frame?.Recycle();
+                await InvokeDisconnected(reason, reader).ConfigureAwait(false);
+                Dispose();
+            }
         }
 
-        protected override async Task DisconnectRemote(string _reason, MessageReader _reader)
+        protected override bool SendDisconnect(MessageWriter writer)
         {
-            throw new NotImplementedException();
+            MessageWriter frame = null;
+            try
+            {
+                frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+                Stream?.Write(frame.Buffer, 0, frame.Length);
+                try { Stream?.Flush(); } catch { }
+                frame.Recycle();
+                closeSent = true;
+                return true;
+            }
+            catch
+            {
+                frame?.Recycle();
+                return false;
+            }
         }
 
-        protected override bool SendDisconnect(MessageWriter _writer)
+        protected override void SetState(ConnectionState newState) => state = newState;
+
+        protected void StartPingTimer(int interval = 5000)
         {
-            throw new NotImplementedException();
+            pingTimer = new Timer(_ => SendPing(), null, interval, Timeout.Infinite);
         }
 
-        protected override void SetState(ConnectionState _state)
+        private void SendPing()
         {
-            throw new NotImplementedException();
+            if (state != ConnectionState.Connected || Stream == null) return;
+            MessageWriter frame = null;
+            try
+            {
+                lastPingTicks = DateTime.UtcNow.Ticks;
+                frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Ping, true, MaskOutgoingFrames);
+                Stream.Write(frame.Buffer, 0, frame.Length);
+                // ping is not flushed in original code; keep same behaviour (pong flushes)
+            }
+            catch { }
+            finally
+            {
+                frame?.Recycle();
+                try { pingTimer?.Change(5000, Timeout.Infinite); } catch { }
+            }
+        }
+
+        protected abstract bool ValidateIncomingMask(bool masked);
+
+        protected async Task ReceiveLoop()
+        {
+            if (Stream == null) return;
+
+            List<byte>? frag = null;
+            WebSocketOpcode fragOpcode = WebSocketOpcode.Binary;
+            int totalPayloadLen = 0;
+
+            try
+            {
+                while (state == ConnectionState.Connected)
+                {
+                    if (!WebSocketFrame.TryReadFrame(Stream, out var opcode, out var fin, out var masked, out var payload))
+                    {
+                        await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, "Failed to read frame").ConfigureAwait(false);
+                        return;
+                    }
+
+                    // After close received, ignore non-control frames
+                    if (closeReceived && opcode != WebSocketOpcode.Close && opcode != WebSocketOpcode.Ping && opcode != WebSocketOpcode.Pong)
+                        continue;
+
+                    // Control frame rules: must be final and payload <= 125 and not fragmented
+                    bool isControl = opcode == WebSocketOpcode.Close || opcode == WebSocketOpcode.Ping || opcode == WebSocketOpcode.Pong;
+                    if (isControl)
+                    {
+                        if (!fin || payload.Length > 125)
+                        {
+                            // Protocol violation
+                            await CloseWithCode(1002, "Invalid control frame").ConfigureAwait(false);
+                            return;
+                        }
+                    }
+
+                    // Validate masking (client frames must be masked; server frames must not be masked)
+                    if (!ValidateIncomingMask(masked))
+                    {
+                        // send 1002 (protocol error), flush, and shutdown
+                        var cw = MessageWriter.Get();
+                        cw.Write((byte)(1002 >> 8));
+                        cw.Write((byte)(1002 & 0xFF));
+                        var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+                        try
+                        {
+                            await Stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length).ConfigureAwait(false);
+                            await Stream.FlushAsync().ConfigureAwait(false);
+                        }
+                        catch { }
+                        frameClose.Recycle(); cw.Recycle();
+                        closeSent = true;
+                        await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, "Invalid masking").ConfigureAwait(false);
+                        return;
+                    }
+
+                    // Handle fragmented messages (non-final frames)
+                    if (!fin)
+                    {
+                        // control frames can't be fragmented (checked above)
+                        if (opcode == WebSocketOpcode.Binary || opcode == WebSocketOpcode.Text)
+                        {
+                            // starting a fragmented message
+                            if (frag != null)
+                            {
+                                // protocol error: new data frame while previous fragmented message not finished
+                                await CloseWithCode(1002, "Protocol error: nested fragmented message").ConfigureAwait(false);
+                                return;
+                            }
+
+                            frag ??= new List<byte>(payload.Length * 2);
+                            frag.Clear(); // reset for new fragmented message
+                            frag.AddRange(payload);
+                            fragOpcode = opcode;
+                            totalPayloadLen = payload.Length;
+                        }
+                        else if (opcode == WebSocketOpcode.Continuation)
+                        {
+                            if (frag == null)
+                            {
+                                // continuation without a started fragment => protocol error
+                                await CloseWithCode(1002, "Protocol error: unexpected continuation").ConfigureAwait(false);
+                                return;
+                            }
+
+                            frag.AddRange(payload);
+                            totalPayloadLen += payload.Length;
+                        }
+
+                        if (totalPayloadLen > MaxPayloadSize)
+                        {
+                            await CloseWithCode(1009, "Message too big").ConfigureAwait(false);
+                            return;
+                        }
+
+                        // wait for remaining fragments
+                        continue;
+                    }
+
+                    // Handle final continuation frame (fin == true)
+                    if (opcode == WebSocketOpcode.Continuation && frag != null)
+                    {
+                        frag.AddRange(payload);
+                        totalPayloadLen += payload.Length;
+
+                        if (totalPayloadLen > MaxPayloadSize)
+                        {
+                            await CloseWithCode(1009, "Message too big").ConfigureAwait(false);
+                            return;
+                        }
+
+                        payload = frag.ToArray();
+                        opcode = fragOpcode;
+                        frag = null;
+                    }
+
+                    // Single-frame message size check
+                    if (payload.Length > MaxPayloadSize)
+                    {
+                        await CloseWithCode(1009, "Message too big").ConfigureAwait(false);
+                        return;
+                    }
+
+                    // Process opcodes
+                    switch (opcode)
+                    {
+                        case WebSocketOpcode.Binary:
+                            {
+                                var reader = MessageReader.Get(payload, 0, payload.Length);
+                                await InvokeBeforeReceive(reader).ConfigureAwait(false);
+                                await InvokeDataReceived(reader).ConfigureAwait(false);
+                                break;
+                            }
+                        case WebSocketOpcode.Text:
+                            {
+                                // Validate UTF-8 and close with 1007 on invalid
+                                try { _ = new UTF8Encoding(false, true).GetString(payload); }
+                                catch (DecoderFallbackException)
+                                {
+                                    await CloseWithCode(1007, "Invalid UTF-8").ConfigureAwait(false);
+                                    return;
+                                }
+                                var reader = MessageReader.Get(payload, 0, payload.Length);
+                                await InvokeBeforeReceive(reader).ConfigureAwait(false);
+                                await InvokeDataReceived(reader).ConfigureAwait(false);
+                                break;
+                            }
+                        case WebSocketOpcode.Ping:
+                            {
+                                // Respond with Pong (mirror payload), flush so client sees it
+                                var pong = WebSocketFrame.CreateFrame(payload.AsSpan(), payload.Length, WebSocketOpcode.Pong, true, MaskOutgoingFrames);
+                                try
+                                {
+                                    await Stream.WriteAsync(pong.Buffer, 0, pong.Length).ConfigureAwait(false);
+                                    await Stream.FlushAsync().ConfigureAwait(false);
+                                }
+                                catch { }
+                                pong.Recycle();
+                                break;
+                            }
+                        case WebSocketOpcode.Pong:
+                            {
+                                if (lastPingTicks != 0)
+                                {
+                                    var elapsed = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - lastPingTicks).TotalMilliseconds;
+                                    AveragePingMs = (float)elapsed;
+                                    lastPingTicks = 0;
+                                }
+                                break;
+                            }
+                        case WebSocketOpcode.Close:
+                            {
+                                // Payload must be 0 or >=2 (close code + optional reason)
+                                if (payload.Length == 1)
+                                {
+                                    await CloseWithCode(1002, "Invalid close payload length").ConfigureAwait(false);
+                                    return;
+                                }
+
+                                ushort code = 1000;
+                                string reason = string.Empty;
+                                if (payload.Length >= 2)
+                                {
+                                    code = (ushort)((payload[0] << 8) | payload[1]);
+                                    if (payload.Length > 2)
+                                    {
+                                        try { reason = Encoding.UTF8.GetString(payload, 2, payload.Length - 2); } catch { }
+                                    }
+                                }
+
+                                if (!closeSent)
+                                {
+                                    // Echo close
+                                    var cw = MessageWriter.Get();
+                                    cw.Write((byte)(code >> 8));
+                                    cw.Write((byte)(code & 0xFF));
+                                    if (!string.IsNullOrEmpty(reason))
+                                    {
+                                        var rb = Encoding.UTF8.GetBytes(reason);
+                                        cw.Write(rb, rb.Length);
+                                    }
+                                    var frame = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+                                    try
+                                    {
+                                        await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                                        await Stream.FlushAsync().ConfigureAwait(false);
+                                    }
+                                    catch { }
+                                    frame.Recycle(); cw.Recycle();
+                                    closeSent = true;
+                                }
+
+                                closeReceived = true;
+                                await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected,
+                                    string.IsNullOrEmpty(reason) ? "Remote closed" : reason).ConfigureAwait(false);
+                                return;
+                            }
+                        default:
+                            // ignore unknown opcodes per previous behavior
+                            break;
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                // treat IO timeouts/abort as normal shutdown
+                return;
+            }
+            catch (SocketException)
+            {
+                // treat socket abort/reset as normal shutdown
+                return;
+            }
+            catch (Exception ex)
+            {
+                if (!shuttingDown && state == ConnectionState.Connected)
+                {
+                    logger?.WriteError("WebSocket receive loop failed: " + ex.Message);
+                    await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, "Receive failed").ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task CloseWithCode(ushort code, string reason)
+        {
+            // Build close payload properly
+            var cw = MessageWriter.Get();
+            cw.Write((byte)(code >> 8));
+            cw.Write((byte)(code & 0xFF));
+            if (!string.IsNullOrEmpty(reason))
+            {
+                var rb = Encoding.UTF8.GetBytes(reason);
+                cw.Write(rb, rb.Length);
+            }
+
+            var frame = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+            try
+            {
+                await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                await Stream.FlushAsync().ConfigureAwait(false);
+            }
+            catch { }
+            frame.Recycle(); cw.Recycle();
+
+            closeSent = true;
+            // After sending close, perform internal shutdown (keep behavior aligned with earlier code)
+            await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, reason).ConfigureAwait(false);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            shuttingDown = true;
+            try { pingTimer?.Dispose(); } catch { }
+        }
+
+        // Utility methods for clients (handy for client handshake)
+        protected static string ComputeWebSocketAccept(string clientKey)
+        {
+            string concat = clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+            byte[] sha1 = System.Security.Cryptography.SHA1.HashData(Encoding.ASCII.GetBytes(concat));
+            return Convert.ToBase64String(sha1);
+        }
+
+        protected static Dictionary<string, string> ParseHeaders(string raw)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var lines = raw.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                int idx = line.IndexOf(':');
+                if (idx <= 0) continue;
+                var k = line[..idx].Trim();
+                var v = line[(idx + 1)..].Trim();
+                dict[k] = v;
+            }
+            return dict;
+        }
+
+        protected static async Task<string> ReadHeaders(NetworkStream stream)
+        {
+            var sb = new StringBuilder();
+            byte[] buffer = new byte[1024];
+            int matched = 0;
+            while (true)
+            {
+                int read = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                if (read <= 0) break;
+                sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
+                for (int i = 0; i < read; i++)
+                {
+                    char c = (char)buffer[i];
+                    if ((matched == 0 || matched == 2) && c == '\r') matched++;
+                    else if ((matched == 1 || matched == 3) && c == '\n') matched++;
+                    else matched = 0;
+                    if (matched == 4) return sb.ToString();
+                }
+            }
+            return sb.ToString();
         }
     }
 }

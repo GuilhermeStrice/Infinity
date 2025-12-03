@@ -20,6 +20,8 @@ namespace Infinity.Websockets.Tests
 		[Fact(Timeout = 10000)]
 		public async Task MessageWithinLimit_IsAccepted()
 		{
+			Configuration.MaxBufferSize = 64 * 1024;
+
 			var ep = GetFreeEndPoint();
 			var logger = new TestLogger("WS");
 			var listener = new WebSocketConnectionListener(ep, logger);
@@ -27,7 +29,6 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
-				conn.MaxMessageSize = 64 * 1024;
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
@@ -65,7 +66,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
-				conn.MaxMessageSize = 64 * 1024;
+				conn.MaxPayloadSize = 64 * 1024;
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
@@ -103,7 +104,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				serverConn = (WebSocketServerConnection)e.Connection;
-				serverConn.MaxMessageSize = 1024 * 1024;
+				serverConn.MaxPayloadSize = 1024 * 1024;
 			};
 			listener.Start();
 
@@ -137,6 +138,8 @@ namespace Infinity.Websockets.Tests
 		[Fact(Timeout = 10000)]
 		public async Task FragmentedMessageOverLimit_ServerCloses()
 		{
+			Configuration.MaxBufferSize = 1024;
+
 			var ep = GetFreeEndPoint();
 			var logger = new TestLogger("WS");
 			var listener = new WebSocketConnectionListener(ep, logger);
@@ -144,7 +147,6 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				serverConn = (WebSocketServerConnection)e.Connection;
-				serverConn.MaxMessageSize = 1024;
 			};
 			listener.Start();
 
