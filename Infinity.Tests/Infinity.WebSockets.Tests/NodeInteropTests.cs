@@ -112,7 +112,7 @@ setTimeout(()=>{}, 1e9);
 			connectWriter.Recycle();
 
 			var tcs = new TaskCompletionSource<byte[]>();
-			client.DataReceived += de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); tcs.TrySetResult(b); };
+			client.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); tcs.TrySetResult(b); };
 
 			var payload = Enumerable.Range(0, 4096).Select(i => (byte)(i % 256)).ToArray();
 			var msg = MessageWriter.Get();
@@ -123,7 +123,7 @@ setTimeout(()=>{}, 1e9);
 			var echoed = await tcs.Task;
 			Assert.Equal(payload, echoed);
 
-			client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", MessageWriter.Get());
 			try { proc.Kill(true); } catch { }
 		}
 
@@ -239,7 +239,7 @@ setTimeout(()=>{}, 1e9);
 			listener.NewConnection += e =>
 			{
 				serverConn = (WebSocketServerConnection)e.Connection;
-				serverConn.DataReceived += de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); echoedTcs.TrySetResult(b); };
+				serverConn.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); echoedTcs.TrySetResult(b); };
 			};
 			listener.Start();
 

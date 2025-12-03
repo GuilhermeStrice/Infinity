@@ -47,7 +47,7 @@ namespace Infinity.Udp.Tests
             State = ConnectionState.Connected;
         }
 
-        protected override void DisconnectRemote(string _reason, MessageReader _reader)
+        protected override async Task DisconnectRemote(string _reason, MessageReader _reader)
         {
             
         }
@@ -56,7 +56,7 @@ namespace Infinity.Udp.Tests
         {
         }
 
-        protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        protected override async Task DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {
         }
 

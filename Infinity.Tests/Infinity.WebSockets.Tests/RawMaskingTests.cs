@@ -105,7 +105,7 @@ namespace Infinity.Websockets.Tests
 			// So we simulate masked server by opening a raw socket to the client is not possible; skip this check here.
 			// We ensure client remains connected for the rest of tests.
 
-			client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", MessageWriter.Get());
 			listener.Dispose();
 		}
 	}

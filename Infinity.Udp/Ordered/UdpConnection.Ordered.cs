@@ -1,6 +1,5 @@
 ﻿using Infinity.Core;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace Infinity.Udp
 {
@@ -34,7 +33,7 @@ namespace Infinity.Udp
                 while (ordered_messages_received.TryRemove((byte)receive_sequence, out var ordered_reader))
                 {
                     ordered_reader.Position = 3;
-                    InvokeDataReceived(ordered_reader);
+                    await InvokeDataReceived(ordered_reader).ConfigureAwait(false);
 
                     receive_sequence = (byte)Interlocked.Increment(ref receive_sequence);
                 }

@@ -1,5 +1,4 @@
 ﻿using Infinity.Core;
-using System.Threading;
 
 namespace Infinity.Udp
 {

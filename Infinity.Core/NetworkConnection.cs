@@ -4,11 +4,14 @@ namespace Infinity.Core
 {
     public abstract class NetworkConnection : IDisposable
     {
-        public event Action<DataReceivedEvent>? DataReceived;
-        public event Action<DisconnectedEvent>? Disconnected;
+        public delegate Task AsyncEventHandler<TEventArgs>(TEventArgs e);
+        public delegate Task BeforeEventHandler<TEventArgs>(object? sender, TEventArgs e);
 
-        public event EventHandler<MessageWriter>? BeforeSend;
-        public event EventHandler<MessageReader>? BeforeReceive;
+        public event AsyncEventHandler<DataReceivedEvent>? DataReceived;
+        public event AsyncEventHandler<DisconnectedEvent>? Disconnected;
+
+        public event BeforeEventHandler<MessageWriter>? BeforeSend;
+        public event BeforeEventHandler<MessageReader>? BeforeReceive;
 
 #if DEBUG
         public int TestLagMs = -1;
@@ -61,11 +64,11 @@ namespace Infinity.Core
 
         public abstract Task Connect(MessageWriter _writer, int _timeout = 5000);
 
-        public void Disconnect(string _reason, MessageWriter _writer)
+        public async Task Disconnect(string _reason, MessageWriter _writer)
         {
             if (SendDisconnect(_writer))
             {
-                InvokeDisconnected(_reason, null);
+                await InvokeDisconnected(_reason, null).ConfigureAwait(false);
             }
 
             Dispose();
@@ -77,14 +80,14 @@ namespace Infinity.Core
             GC.SuppressFinalize(this);
         }
 
-        protected void InvokeDataReceived(MessageReader _reader)
+        protected async Task InvokeDataReceived(MessageReader _reader)
         {
             if (DataReceived != null)
             {
                 var @event = DataReceivedEvent.Get();
                 @event.Connection = this;
                 @event.Message = _reader;
-                DataReceived.Invoke(@event);
+                await DataReceived.Invoke(@event).ConfigureAwait(false);
             }
             else
             {
@@ -92,7 +95,7 @@ namespace Infinity.Core
             }
         }
 
-        protected void InvokeDisconnected(string _reason, MessageReader _reader)
+        protected async Task InvokeDisconnected(string _reason, MessageReader _reader)
         {
             if (Disconnected != null)
             {
@@ -100,7 +103,7 @@ namespace Infinity.Core
                 @event.Connection = this;
                 @event.Reason = _reason;
                 @event.Message = _reader;
-                Disconnected.Invoke(@event);
+                await Disconnected.Invoke(@event).ConfigureAwait(false);
             }
             else
             {
@@ -108,19 +111,25 @@ namespace Infinity.Core
             }
         }
 
-        protected void InvokeBeforeSend(MessageWriter _writer)
+        protected async Task InvokeBeforeSend(MessageWriter _writer)
         {
-            BeforeSend?.Invoke(this, _writer);
+            if (BeforeSend != null)
+            {
+                await BeforeSend.Invoke(this, _writer).ConfigureAwait(false);
+            }
         }
 
-        protected void InvokeBeforeReceive(MessageReader _reader)
+        protected async Task InvokeBeforeReceive(MessageReader _reader)
         {
-            BeforeReceive?.Invoke(this, _reader);
+            if (BeforeReceive != null)
+            {
+                await BeforeReceive.Invoke(this, _reader).ConfigureAwait(false);
+            }
         }
 
-        protected abstract void DisconnectRemote(string _reason, MessageReader _reader);
+        protected abstract Task DisconnectRemote(string _reason, MessageReader _reader);
 
-        protected abstract void DisconnectInternal(InfinityInternalErrors _error, string _reason);
+        protected abstract Task DisconnectInternal(InfinityInternalErrors _error, string _reason);
 
         protected abstract bool SendDisconnect(MessageWriter _writer);
 

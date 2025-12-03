@@ -31,7 +31,7 @@ namespace Infinity.Udp.Tests
 
             listener.NewConnection += e =>
             {
-                e.Connection.DataReceived += data =>
+                e.Connection.DataReceived += async data =>
                 {
                     data.Message.Position = 3;
                     var receivedId = data.Message.ReadByte();
@@ -63,6 +63,7 @@ namespace Infinity.Udp.Tests
             {
                 var writer = UdpMessageFactory.BuildOrderedMessage();
                 writer.Write(20);
+                
                 _ = connection.Send(writer);
             }
 

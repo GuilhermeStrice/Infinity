@@ -28,7 +28,7 @@ namespace Infinity.Websockets.Tests
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
 				conn.MaxMessageSize = 64 * 1024;
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();
@@ -66,7 +66,7 @@ namespace Infinity.Websockets.Tests
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
 				conn.MaxMessageSize = 64 * 1024;
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();

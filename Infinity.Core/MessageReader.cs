@@ -5,7 +5,7 @@ namespace Infinity.Core
 {
     public class MessageReader : IRecyclable
     {
-        public static ObjectPool<MessageReader> ReaderPool = new ObjectPool<MessageReader>(() => new MessageReader(Configuration.DefaultBufferSize));
+        public static ObjectPool<MessageReader> ReaderPool = new ObjectPool<MessageReader>(() => new MessageReader(Configuration.MaxBufferSize));
 
         public byte[]? Buffer { get; set; }
 

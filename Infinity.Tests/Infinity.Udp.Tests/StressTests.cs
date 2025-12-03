@@ -32,11 +32,11 @@ namespace Infinity.Udp.Tests
             for (int i = 0; i < connection_count; i++)
             {
                 var connection = new UdpClientConnection(new TestLogger(), ep);
-                connection.DataReceived += delegate (DataReceivedEvent obj)
+                connection.DataReceived += async delegate (DataReceivedEvent obj)
                 {
                     obj.Recycle();
                 };
-                connection.Disconnected += delegate (DisconnectedEvent obj)
+                connection.Disconnected += async delegate (DisconnectedEvent obj)
                 {
                     obj.Recycle();
                 };
@@ -57,7 +57,7 @@ namespace Infinity.Udp.Tests
 
             using (UdpConnection connection = new UdpClientConnection(new TestLogger("Client"), ep))
             {
-                connection.Disconnected += delegate (DisconnectedEvent obj)
+                connection.Disconnected += async delegate (DisconnectedEvent obj)
                 {
                     obj.Recycle();
                 };
@@ -66,15 +66,13 @@ namespace Infinity.Udp.Tests
                 connection.Connect(handshake);
                 handshake.Recycle();
 
-                var message = UdpMessageFactory.BuildReliableMessage();
-                message.Write(123);
-
                 for (int i = 0; i < 10000; i++)
                 {
+                    var message = UdpMessageFactory.BuildReliableMessage();
+                    message.Write(123);
+                
                     _ = connection.Send(message);
                 }
-
-                message.Recycle();
 
                 Thread.Sleep(3000); // wait events
             }
@@ -98,12 +96,12 @@ namespace Infinity.Udp.Tests
                 {
                     con_count++;
 
-                    obj.Connection.DataReceived += data_args =>
+                    obj.Connection.DataReceived += async data_args =>
                     {
                         data_args.Recycle();
                     };
 
-                    obj.Connection.Disconnected += e =>
+                    obj.Connection.Disconnected += async e =>
                     {
                         e.Recycle();
                     };
@@ -125,8 +123,8 @@ namespace Infinity.Udp.Tests
                     handshake.Write(new byte[5]); // add extra bytes if needed
 
                     var connection = new UdpClientConnection(new TestLogger(), ep);
-                    connection.DataReceived += data_args => data_args.Recycle();
-                    connection.Disconnected += e => e.Recycle();
+                    connection.DataReceived += async data_args => data_args.Recycle();
+                    connection.Disconnected += async e => e.Recycle();
 
                     await connection.Connect(handshake);
                     connections.Add(connection);
@@ -176,7 +174,7 @@ namespace Infinity.Udp.Tests
                 {
                     server_connection = (UdpServerConnection)evt.Connection;
 
-                    evt.Connection.Disconnected += delegate (DisconnectedEvent obj)
+                    evt.Connection.Disconnected += async delegate (DisconnectedEvent obj)
                     {
                         obj.Recycle();
                     };
@@ -195,7 +193,7 @@ namespace Infinity.Udp.Tests
                     evt.Recycle();
                 };
 
-                connection.Disconnected += delegate (DisconnectedEvent obj)
+                connection.Disconnected += async delegate (DisconnectedEvent obj)
                 {
                     obj.Recycle();
                 };

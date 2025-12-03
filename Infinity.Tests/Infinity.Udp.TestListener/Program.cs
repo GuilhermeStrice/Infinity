@@ -37,12 +37,12 @@ namespace TestListener
             }
         }
 
-        private static void Connection_Disconnected(DisconnectedEvent obj)
+        private static async Task Connection_Disconnected(DisconnectedEvent obj)
         {
             obj.Recycle();
         }
 
-        private static void Connection_DataReceived(DataReceivedEvent obj)
+        private static async Task Connection_DataReceived(DataReceivedEvent obj)
         {
             message_count++;
             if (message_count == 10000)

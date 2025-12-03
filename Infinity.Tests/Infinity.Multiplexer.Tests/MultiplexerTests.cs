@@ -45,7 +45,7 @@ namespace Infinity.Multiplexer.Tests
                     server_ws_connection = e.Connection;
                 }
 
-                e.Connection.DataReceived += (e2) =>
+                e.Connection.DataReceived += async (e2) =>
                 {
                     logger.WriteInfo("Data received");
                     if (e.Connection is UdpServerConnection)
@@ -55,7 +55,7 @@ namespace Infinity.Multiplexer.Tests
 
                         var writer = UdpMessageFactory.BuildReliableMessage();;
                         writer.Write(udp_data);
-                        e.Connection.Send(writer);
+                        await e.Connection.Send(writer);
                     }
                     else if (e.Connection is WebSocketServerConnection)
                     {
@@ -64,7 +64,7 @@ namespace Infinity.Multiplexer.Tests
 
                         var writer = MessageWriter.Get();
                         writer.Write(e2.Message.ReadBytes(e2.Message.Length));
-                        e.Connection.Send(writer);
+                        await e.Connection.Send(writer);
                     }
                 };
             };
@@ -74,7 +74,7 @@ namespace Infinity.Multiplexer.Tests
             // UDP Client
             var udp_client = new UdpClientConnection(logger, new IPEndPoint(IPAddress.Loopback, 4296));
 
-            udp_client.DataReceived += (e) =>
+            udp_client.DataReceived += async (e) =>
             {
                 clientUdpReceive.Set();
                 Assert.Equal(udp_data, e.Message.ReadBytes(e.Message.Length));
@@ -88,7 +88,7 @@ namespace Infinity.Multiplexer.Tests
             var ws_client = new WebSocketClientConnection(logger);
             var ws_data = new byte[] { 4, 5, 6 };
 
-            ws_client.DataReceived += (e) =>
+            ws_client.DataReceived += async (e) =>
             {
                 clientWsReceive.Set();
                 Assert.Equal(ws_data, e.Message.ReadBytes(e.Message.Length));
@@ -117,8 +117,8 @@ namespace Infinity.Multiplexer.Tests
             Assert.True(clientUdpReceive.WaitOne(1000));
             Assert.True(clientWsReceive.WaitOne(1000));
 
-            udp_client.Disconnect("test", MessageWriter.Get());
-            ws_client.Disconnect("test", MessageWriter.Get());
+            await udp_client.Disconnect("test", MessageWriter.Get());
+            await ws_client.Disconnect("test", MessageWriter.Get());
             listener.Dispose();
         }
     }

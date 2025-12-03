@@ -1,6 +1,5 @@
 ﻿using Infinity.Core;
 using Infinity.Core.KeepAlive;
-using System.Threading;
 
 namespace Infinity.Udp
 {   
@@ -41,10 +40,10 @@ namespace Infinity.Udp
                     if (pings_since_ack >= configuration.MissingPingsUntilDisconnect)
                     {
                         DisposeKeepAliveTimer();
-                        DisconnectInternal(
+                        await DisconnectInternal(
                             InfinityInternalErrors.PingsWithoutResponse,
                             $"Sent {pings_since_ack} pings that remote has not responded to."
-                        );
+                        ).ConfigureAwait(false);
                         return;
                     }
 

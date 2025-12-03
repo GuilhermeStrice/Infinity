@@ -196,7 +196,7 @@ namespace Infinity.Websockets.Tests
 
 			Assert.Equal("echo", client.AcceptedProtocol);
 
-			client.Disconnect("done", Infinity.Core.MessageWriter.Get());
+			await client.Disconnect("done", Infinity.Core.MessageWriter.Get());
 			listener.Dispose();
 		}
 	}

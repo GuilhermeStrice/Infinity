@@ -1,6 +1,5 @@
 ﻿using Infinity.Core;
 using System.Collections.Concurrent;
-using System.Threading;
 
 namespace Infinity.Udp
 {
@@ -87,8 +86,8 @@ namespace Infinity.Udp
 
                     reader.Position = 3;
 
-                    InvokeBeforeReceive(reader);
-                    InvokeDataReceived(reader);
+                    await InvokeBeforeReceive(reader).ConfigureAwait(false);
+                    await InvokeDataReceived(reader).ConfigureAwait(false);
 
                     // remove from dictionary
                     fragmented_messages_received.TryRemove(fragmented_message_id, out var _);

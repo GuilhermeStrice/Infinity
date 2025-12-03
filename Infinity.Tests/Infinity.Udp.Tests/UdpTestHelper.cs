@@ -31,7 +31,7 @@ namespace Infinity.Udp.Tests
 
             DataReceivedEvent? result = null;
             //Setup conneciton
-            connection.DataReceived += delegate (DataReceivedEvent a)
+            connection.DataReceived += async delegate (DataReceivedEvent a)
             {
                 _output.WriteLine("Data was received correctly.");
 
@@ -79,7 +79,7 @@ namespace Infinity.Udp.Tests
             DataReceivedEvent? result = null;
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.DataReceived += delegate (DataReceivedEvent innerArgs)
+                args.Connection.DataReceived += async delegate (DataReceivedEvent innerArgs)
                 {
                     _output.WriteLine("Data was received correctly.");
 
@@ -129,16 +129,16 @@ namespace Infinity.Udp.Tests
         {
             var mutex = new ManualResetEvent(false);
 
-            connection.Disconnected += delegate (DisconnectedEvent args)
+            connection.Disconnected += async delegate (DisconnectedEvent args)
             {
                 args.Recycle();
                 mutex.Set();
             };
 
-            listener.NewConnection += delegate (NewConnectionEvent args)
+            listener.NewConnection += async delegate (NewConnectionEvent args)
             {
                 var writer = UdpMessageFactory.BuildDisconnectMessage();
-                args.Connection.Disconnect("Testing", writer);
+                await args.Connection.Disconnect("Testing", writer);
                 args.Recycle();
             };
 
@@ -165,7 +165,7 @@ namespace Infinity.Udp.Tests
 
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnected += delegate (DisconnectedEvent args2)
+                args.Connection.Disconnected += async delegate (DisconnectedEvent args2)
                 {
                     args2.Recycle();
                     mutex2.Set();
@@ -184,7 +184,7 @@ namespace Infinity.Udp.Tests
             mutex.WaitOne(2500);
 
             var writer = UdpMessageFactory.BuildDisconnectMessage();
-            connection.Disconnect("Testing", writer);
+            await connection.Disconnect("Testing", writer);
 
             mutex2.WaitOne(2500);
 
@@ -205,7 +205,7 @@ namespace Infinity.Udp.Tests
             listener.Configuration.KeepAliveInterval = 100;
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
-                args.Connection.Disconnected += delegate (DisconnectedEvent args2)
+                args.Connection.Disconnected += async delegate (DisconnectedEvent args2)
                 {
                     args2.Recycle();
                     mutex2.Set();

@@ -64,7 +64,7 @@ namespace Infinity.Udp
                     return;
                 }
 
-                InvokeBeforeSend(_writer);
+                await InvokeBeforeSend(_writer).ConfigureAwait(false);
 
                 switch (_writer.Buffer[0])
                 {
@@ -129,7 +129,7 @@ namespace Infinity.Udp
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
                     {
-                        InvokeBeforeReceive(_reader);
+                        await InvokeBeforeReceive(_reader).ConfigureAwait(false);
                         await ReliableMessageReceive(_reader).ConfigureAwait(false);
                         Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
@@ -137,7 +137,7 @@ namespace Infinity.Udp
 
                 case UdpSendOption.ReliableOrdered:
                     {
-                        InvokeBeforeReceive(_reader);
+                        await InvokeBeforeReceive(_reader).ConfigureAwait(false);
                         await OrderedMessageReceived(_reader).ConfigureAwait(false);
                         Statistics.LogReliableMessageReceived(_bytes_received);
                         break;
@@ -202,7 +202,7 @@ namespace Infinity.Udp
                 case UdpSendOption.Disconnect:
                     {
                         _reader.Position = 1;
-                        DisconnectRemote("The remote sent a disconnect request", _reader);
+                        await DisconnectRemote("The remote sent a disconnect request", _reader).ConfigureAwait(false);
                         Statistics.LogUnreliableMessageReceived(_bytes_received);
                         break;
                     }
@@ -210,8 +210,8 @@ namespace Infinity.Udp
                 case UdpSendOption.Unreliable:
                     {
                         _reader.Position = 1;
-                        InvokeBeforeReceive(_reader);
-                        InvokeDataReceived(_reader);
+                        await InvokeBeforeReceive(_reader).ConfigureAwait(false);
+                        await InvokeDataReceived(_reader).ConfigureAwait(false);
                         Statistics.LogUnreliableMessageReceived(_bytes_received);
                         break;
                     }

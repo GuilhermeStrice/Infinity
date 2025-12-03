@@ -2,16 +2,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.IO;
 using Infinity.Core;
 using Infinity.Core.Exceptions;
 using Infinity.WebSockets.Enums;
 
 namespace Infinity.WebSockets
 {
-	public class WebSocketClientConnection : NetworkConnection
+	public class WebSocketClientConnection : WebSocketConnection
 	{
-		private readonly ILogger? logger;
 		private TcpClient? client;
 		private NetworkStream? stream;
 		private string? host;
@@ -21,14 +19,6 @@ namespace Infinity.WebSockets
 
 		public string? RequestedProtocol { get; set; }
 		public string? AcceptedProtocol { get; private set; }
-
-		public int MaxMessageSize { get; set; } = 64 * 1024 * 1024;
-
-		private Timer? pingTimer;
-		private long lastPingTicks;
-		private volatile bool shuttingDown;
-		private volatile bool closeSent;
-		private volatile bool closeReceived;
 
 		public WebSocketClientConnection(ILogger? _logger = null)
 		{
@@ -114,7 +104,7 @@ namespace Infinity.WebSockets
 				return SendErrors.Disconnected;
 			}
 
-			InvokeBeforeSend(_writer);
+			await InvokeBeforeSend(_writer).ConfigureAwait(false);
 			MessageWriter frame = WebSocketFrame.CreateFrame(_writer.Buffer.AsSpan(0, _writer.Length), _writer.Length, WebSocketOpcode.Binary, true, _mask: true);
 			try
 			{
@@ -125,7 +115,7 @@ namespace Infinity.WebSockets
 			{
 				logger?.WriteError("WebSocket send failed: " + ex.Message);
 				frame.Recycle();
-				DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Send failed");
+				await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Send failed").ConfigureAwait(false);
 				return SendErrors.Disconnected;
 			}
 			finally
@@ -136,7 +126,7 @@ namespace Infinity.WebSockets
 			return SendErrors.None;
 		}
 
-		protected override void DisconnectRemote(string _reason, MessageReader _reader)
+		protected override async Task DisconnectRemote(string _reason, MessageReader _reader)
 		{
 			MessageWriter frame = null;
 			try
@@ -151,16 +141,16 @@ namespace Infinity.WebSockets
 			finally
 			{
 				frame?.Recycle();
-				InvokeDisconnected(_reason, _reader);
+				await InvokeDisconnected(_reason, _reader).ConfigureAwait(false);
 				Dispose();
 			}
 		}
 
-		protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+		protected override async Task DisconnectInternal(InfinityInternalErrors _error, string _reason)
 		{
 			OnInternalDisconnect?.Invoke(_error)?.ToReader()?.Recycle();
 			State = ConnectionState.NotConnected;
-			InvokeDisconnected(_reason, null);
+			await InvokeDisconnected(_reason, null).ConfigureAwait(false);
 			Dispose();
 		}
 
@@ -201,7 +191,7 @@ namespace Infinity.WebSockets
 				{
 				if (!WebSocketFrame.TryReadFrame(stream, out var opcode, out var fin, out var masked, out var payload))
 					{
-						DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Failed to read frame");
+						await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Failed to read frame").ConfigureAwait(false);
 						return;
 					}
 
@@ -221,7 +211,7 @@ namespace Infinity.WebSockets
 						var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, true);
 						await stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length);
 						frameClose.Recycle(); cw.Recycle();
-						DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Masked server frame");
+						await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Masked server frame").ConfigureAwait(false);
 						return;
 					}
 
@@ -242,14 +232,14 @@ namespace Infinity.WebSockets
 							totalPayloadLen += payload.Length;
 						}
 
-						if (totalPayloadLen > MaxMessageSize)
+						if (totalPayloadLen > Configuration.MaxBufferSize)
 						{
 							var cw = MessageWriter.Get();
 							cw.Write((byte)(1009 >> 8)); cw.Write((byte)(1009 & 0xFF));
 							var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, true);
 							await stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length);
 							frameClose.Recycle(); cw.Recycle();
-							DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Message too big");
+								await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Message too big").ConfigureAwait(false);
 							return;
 						}
 						continue;
@@ -259,14 +249,14 @@ namespace Infinity.WebSockets
 					{
 						frag.AddRange(payload);
 						totalPayloadLen += payload.Length;
-						if (totalPayloadLen > MaxMessageSize)
+						if (totalPayloadLen > Configuration.MaxBufferSize)
 						{
 							var cw = MessageWriter.Get();
 							cw.Write((byte)(1009 >> 8)); cw.Write((byte)(1009 & 0xFF));
 							var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, true);
 							await stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length);
 							frameClose.Recycle(); cw.Recycle();
-							DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Message too big");
+								await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Message too big").ConfigureAwait(false);
 							return;
 						}
 						payload = frag.ToArray();
@@ -274,14 +264,14 @@ namespace Infinity.WebSockets
 						frag = null;
 					}
 
-					if (payload.Length > MaxMessageSize)
+					if (payload.Length > Configuration.MaxBufferSize)
 					{
 						var cw = MessageWriter.Get();
 						cw.Write((byte)(1009 >> 8)); cw.Write((byte)(1009 & 0xFF));
 						var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, true);
 						await stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length);
 						frameClose.Recycle(); cw.Recycle();
-						DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Message too big");
+								await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Message too big").ConfigureAwait(false);
 						return;
 					}
 
@@ -291,8 +281,8 @@ namespace Infinity.WebSockets
 						case WebSocketOpcode.Continuation:
 						{
 							var reader = MessageReader.Get(payload, 0, payload.Length);
-							InvokeBeforeReceive(reader);
-							InvokeDataReceived(reader);
+							await InvokeBeforeReceive(reader).ConfigureAwait(false);
+							await InvokeDataReceived(reader).ConfigureAwait(false);
 							break;
 						}
 						case WebSocketOpcode.Text:
@@ -309,12 +299,12 @@ namespace Infinity.WebSockets
 								var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, true);
 								await stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length);
 								frameClose.Recycle(); cw.Recycle();
-								DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Invalid UTF-8");
+										await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Invalid UTF-8").ConfigureAwait(false);
 								return;
 							}
 							var reader = MessageReader.Get(payload, 0, payload.Length);
-							InvokeBeforeReceive(reader);
-							InvokeDataReceived(reader);
+							await InvokeBeforeReceive(reader).ConfigureAwait(false);
+							await InvokeDataReceived(reader).ConfigureAwait(false);
 							break;
 						}
 						case WebSocketOpcode.Ping:
@@ -366,7 +356,7 @@ namespace Infinity.WebSockets
 							closeSent = true;
 						}
 						closeReceived = true;
-							DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, string.IsNullOrEmpty(reason) ? "Remote closed" : reason);
+										await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, string.IsNullOrEmpty(reason) ? "Remote closed" : reason).ConfigureAwait(false);
 							return;
 						}
 						default:
@@ -391,7 +381,7 @@ namespace Infinity.WebSockets
 					return;
 				}
 				logger?.WriteError("WebSocket client receive loop failed: " + ex.Message);
-				DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Receive failed");
+				await DisconnectInternal(InfinityInternalErrors.ConnectionDisconnected, "Receive failed").ConfigureAwait(false);
 			}
 		}
 

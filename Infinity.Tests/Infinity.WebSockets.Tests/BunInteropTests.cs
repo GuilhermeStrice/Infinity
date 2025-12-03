@@ -107,7 +107,7 @@ namespace Infinity.Websockets.Tests
 			connectWriter.Recycle();
 
 			var tcs = new TaskCompletionSource<byte[]>();
-			client.DataReceived += de =>
+			client.DataReceived += async de =>
 			{
 				var bytes = de.Message.ReadBytes(de.Message.BytesRemaining);
 				de.Message.Recycle();
@@ -123,7 +123,7 @@ namespace Infinity.Websockets.Tests
 			var echoed = await tcs.Task;
 			Assert.Equal(payload, echoed);
 
-			client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", MessageWriter.Get());
 			try { proc.Kill(true); } catch { }
 		}
 
@@ -145,7 +145,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				serverConn = (WebSocketServerConnection)e.Connection;
-				serverConn.DataReceived += de =>
+				serverConn.DataReceived += async de =>
 				{
 					var bytes = de.Message.ReadBytes(de.Message.BytesRemaining);
 					de.Message.Recycle();

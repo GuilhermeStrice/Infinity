@@ -2,6 +2,6 @@
 {
     public static class Configuration
     {
-        public static int DefaultBufferSize = 64000;
+        public static int MaxBufferSize = 64000;
     }
 }

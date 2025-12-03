@@ -4,7 +4,7 @@ namespace Infinity.Core
 {
     public class MessageWriter : IRecyclable
     {
-        public static ObjectPool<MessageWriter> WriterPool = new ObjectPool<MessageWriter>(() => new MessageWriter(Configuration.DefaultBufferSize));
+        public static ObjectPool<MessageWriter> WriterPool = new ObjectPool<MessageWriter>(() => new MessageWriter(Configuration.MaxBufferSize));
 
         public byte[] Buffer { get; set; }
         public int Length { get; set; }

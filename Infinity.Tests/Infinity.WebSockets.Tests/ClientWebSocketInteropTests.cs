@@ -28,7 +28,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();
@@ -67,7 +67,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();
@@ -165,7 +165,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();

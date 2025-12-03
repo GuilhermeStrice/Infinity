@@ -277,18 +277,18 @@ namespace Infinity.Udp
             return true;
         }
 
-        protected override void DisconnectRemote(string _reason, MessageReader _reader)
+        protected override async Task DisconnectRemote(string _reason, MessageReader _reader)
         {
             var writer = UdpMessageFactory.BuildDisconnectMessage();
             if (SendDisconnect(writer))
             {
-                InvokeDisconnected(_reason, _reader);
+                await InvokeDisconnected(_reason, _reader).ConfigureAwait(false);
             }
 
             Dispose();
         }
 
-        protected override void DisconnectInternal(InfinityInternalErrors _error, string _reason)
+        protected override async Task DisconnectInternal(InfinityInternalErrors _error, string _reason)
         {
             var msg = OnInternalDisconnect?.Invoke(_error);
 
@@ -297,7 +297,7 @@ namespace Infinity.Udp
                 msg = UdpMessageFactory.BuildDisconnectMessage();
             }
 
-            Disconnect(_reason, msg);
+            await Disconnect(_reason, msg).ConfigureAwait(false);
         }
 
         protected override async Task ShareConfiguration()
@@ -343,7 +343,7 @@ namespace Infinity.Udp
                         SendDisconnect(writer);
 
                         // Fire client-side Disconnected event
-                        InvokeDisconnected("Disposed", null);
+                        _ = InvokeDisconnected("Disposed", null).ConfigureAwait(false);
                     }
                 }
                 catch

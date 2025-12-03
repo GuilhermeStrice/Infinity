@@ -23,7 +23,7 @@ namespace Infinity.Udp.Tests
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
             var conn = new NoConnectionUdpConnection(new TestLogger());
-            conn.DataReceived += evt =>
+            conn.DataReceived += async evt =>
             {
                 messagesReceived.Add(evt.Message);
             };
@@ -62,7 +62,7 @@ namespace Infinity.Udp.Tests
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
             var conn = new NoConnectionUdpConnection(new TestLogger());
-            conn.DataReceived += evt =>
+            conn.DataReceived += async evt =>
             {
                 messagesReceived.Add(evt.Message);
             };
@@ -109,7 +109,7 @@ namespace Infinity.Udp.Tests
             List<MessageReader> messagesReceived = new List<MessageReader>();
 
             var conn = new NoConnectionUdpConnection(new TestLogger());
-            conn.DataReceived += evt =>
+            conn.DataReceived += async evt =>
             {
                 messagesReceived.Add(evt.Message);
             };

@@ -45,7 +45,7 @@ namespace Infinity.Udp
             if (result.Item1)
             {
                 _reader.Position = 3;
-                InvokeDataReceived(_reader);
+                await InvokeDataReceived(_reader).ConfigureAwait(false);
             }
             else
             {

@@ -35,7 +35,7 @@ namespace Infinity.Udp.Tests
             listener.NewConnection += e =>
             {
                 Console.WriteLine("New connection");
-                e.Connection.DataReceived += data =>
+                e.Connection.DataReceived += async data =>
                 {
                     var reader = data.Message;
                     reader.Position = 3; // Skip headers
@@ -85,7 +85,7 @@ namespace Infinity.Udp.Tests
                 listener.Configuration.EnableFragmentation = true;
                 listener.NewConnection += e =>
                 {
-                    e.Connection.DataReceived += data =>
+                    e.Connection.DataReceived += async data =>
                     {
                         count++;
 

@@ -38,14 +38,14 @@ namespace Infinity.Udp.Tests
                 {
                     serverConnectedTcs.SetResult();
 
-                    evt.Connection.Disconnected += (et) =>
+                    evt.Connection.Disconnected += async (et) =>
                     {
                         et.Recycle();
                         clientDisconnectedTcs.SetResult();
                     };
                 };
 
-                connection.Disconnected += (evt) =>
+                connection.Disconnected += async (evt) =>
                 {
                     evt.Recycle();
                     serverDisconnectedTcs.SetResult();
@@ -88,7 +88,7 @@ namespace Infinity.Udp.Tests
                 {
                     serverConnectedTcs.TrySetResult();
 
-                    evt.Connection.Disconnected += (et) =>
+                    evt.Connection.Disconnected += async (et) =>
                     {
                         et.Recycle();
                         serverDisconnectedTcs.TrySetResult();
@@ -97,7 +97,7 @@ namespace Infinity.Udp.Tests
                     evt.Recycle();
                 };
 
-                connection.Disconnected += (et) =>
+                connection.Disconnected += async (et) =>
                 {
                     et.Recycle();
                     clientDisconnectedTcs.TrySetResult();
@@ -215,7 +215,7 @@ namespace Infinity.Udp.Tests
 
                 listener.NewConnection += (evt) =>
                 {
-                    evt.Connection.DataReceived += (dataEvt) =>
+                    evt.Connection.DataReceived += async (dataEvt) =>
                     {
                         receivedMessage = dataEvt.Message;
                         dataEvt.Recycle(false);
@@ -229,20 +229,21 @@ namespace Infinity.Udp.Tests
                 var handshake = UdpMessageFactory.BuildHandshakeMessage();
                 await connection.Connect(handshake);
 
-                var writer = UdpMessageFactory.BuildUnreliableMessage();
-                writer.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
-
                 // writers are consumed we need to copy it
-                var data_reader = writer.ToReader();
+                MessageReader data_reader = null;
 
                 // Send the message multiple times
                 for (int i = 0; i < 4; ++i)
                 {
+                    var writer = UdpMessageFactory.BuildUnreliableMessage();
+                    writer.Write(new byte[] { 1, 2, 3, 4, 5, 6 });
+                    data_reader = writer.ToReader();
+
                     _ = connection.Send(writer);
                 }
 
                 // Wait until at least one message is received
-                if (!mutex.WaitOne(5000))
+                if (!mutex.WaitOne(500000))
                 {
                     Assert.Fail("Timeout waiting for message.");
                 }
@@ -635,7 +636,7 @@ namespace Infinity.Udp.Tests
             string received = null;
             using var mutex = new ManualResetEvent(false);
 
-            connection.Disconnected += args =>
+            connection.Disconnected += async args =>
             {
                 // We don't own the message, so read the string immediately
                 received = args.Message.ReadString();
@@ -651,7 +652,7 @@ namespace Infinity.Udp.Tests
                     await Task.Delay(100).ConfigureAwait(false);
                     var writer = UdpMessageFactory.BuildDisconnectMessage();
                     writer.Write("Goodbye");
-                    args.Connection.Disconnect("Testing", writer);
+                    await args.Connection.Disconnect("Testing", writer);
                     args.Recycle();
                 });
             };

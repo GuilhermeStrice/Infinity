@@ -29,7 +29,7 @@ namespace Infinity.Websockets.Tests
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
 				// Echo server
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();
@@ -51,7 +51,7 @@ namespace Infinity.Websockets.Tests
 			var serverConn = await serverConnTcs.Task;
 
 			var gotEchoTcs = new TaskCompletionSource<byte[]>();
-			client.DataReceived += de =>
+			client.DataReceived += async de =>
 			{
 				var r = de.Message;
 				var bytes = r.ReadBytes(r.BytesRemaining);
@@ -69,7 +69,7 @@ namespace Infinity.Websockets.Tests
 			var echoed = await gotEchoTcs.Task;
 			Assert.Equal(payload, echoed);
 
-			client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", MessageWriter.Get());
 			listener.Dispose();
 		}
 
@@ -96,7 +96,7 @@ namespace Infinity.Websockets.Tests
 
 			Assert.True(client.AveragePingMs >= 0);
 
-			client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", MessageWriter.Get());
 			listener.Dispose();
 		}
 
@@ -110,7 +110,7 @@ namespace Infinity.Websockets.Tests
 			listener.NewConnection += e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
-				conn.DataReceived += de =>
+				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
 					var w = MessageWriter.Get();
@@ -130,7 +130,7 @@ namespace Infinity.Websockets.Tests
 			var gotEchoTcs = new TaskCompletionSource<int>();
 			int expected = 60000;
 			int received = 0;
-			client.DataReceived += de =>
+			client.DataReceived += async de =>
 			{
 				received += de.Message.BytesRemaining;
 				de.Message.Recycle();
@@ -147,7 +147,7 @@ namespace Infinity.Websockets.Tests
 			var total = await gotEchoTcs.Task;
 			Assert.Equal(expected, total);
 
-			client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", MessageWriter.Get());
 			listener.Dispose();
 		}
 	}
