@@ -24,10 +24,56 @@ namespace Infinity.WebSockets
         protected override NetworkStream Stream => stream!;
         protected override bool MaskOutgoingFrames => true;
 
-        protected override bool ValidateIncomingMask(bool masked) => !masked;
+        protected override bool ValidateIncomingMask() => false;
         public override int MaxPayloadSize { get; set; } = Configuration.MaxBufferSize;
 
         public WebSocketClientConnection(ILogger? _logger = null) { logger = _logger; }
+
+        // Utility methods
+        protected static string ComputeWebSocketAccept(string clientKey)
+        {
+            string concat = clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+            byte[] sha1 = System.Security.Cryptography.SHA1.HashData(Encoding.ASCII.GetBytes(concat));
+            return Convert.ToBase64String(sha1);
+        }
+
+        protected static Dictionary<string, string> ParseHeaders(string raw)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var lines = raw.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                int idx = line.IndexOf(':');
+                if (idx <= 0) continue;
+                var k = line[..idx].Trim();
+                var v = line[(idx + 1)..].Trim();
+                dict[k] = v;
+            }
+            return dict;
+        }
+
+        protected static async Task<string> ReadHeaders(NetworkStream stream)
+        {
+            var sb = new StringBuilder();
+            byte[] buffer = new byte[1024];
+            int matched = 0;
+            while (true)
+            {
+                int read = await stream.ReadAsync(buffer, 0, buffer.Length);
+                if (read <= 0) break;
+                sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
+                for (int i = 0; i < read; i++)
+                {
+                    char c = (char)buffer[i];
+                    if ((matched == 0 || matched == 2) && c == '\r') matched++;
+                    else if ((matched == 1 || matched == 3) && c == '\n') matched++;
+                    else matched = 0;
+                    if (matched == 4) return sb.ToString();
+                }
+            }
+            return sb.ToString();
+        }
 
         public override async Task Connect(MessageWriter writer, int timeout = 5000)
         {

@@ -74,7 +74,6 @@ namespace Infinity.WebSockets
                 {
                     frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Close, true, MaskOutgoingFrames);
                     await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
-                    await Stream.FlushAsync().ConfigureAwait(false);
                     closeSent = true;
                 }
             }
@@ -113,7 +112,7 @@ namespace Infinity.WebSockets
             pingTimer = new Timer(_ => SendPing(), null, interval, Timeout.Infinite);
         }
 
-        private void SendPing()
+        private async Task SendPing()
         {
             if (state != ConnectionState.Connected || Stream == null) return;
             MessageWriter frame = null;
@@ -121,8 +120,7 @@ namespace Infinity.WebSockets
             {
                 lastPingTicks = DateTime.UtcNow.Ticks;
                 frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Ping, true, MaskOutgoingFrames);
-                Stream.Write(frame.Buffer, 0, frame.Length);
-                // keep same behavior: pong reply flushes
+                await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
             }
             catch { }
             finally
@@ -132,7 +130,7 @@ namespace Infinity.WebSockets
             }
         }
 
-        protected abstract bool ValidateIncomingMask(bool masked);
+        protected abstract bool ValidateIncomingMask();
 
         protected async Task ReceiveLoop()
         {
@@ -167,8 +165,10 @@ namespace Infinity.WebSockets
                         }
                     }
 
+                    
+
                     // Validate masking
-                    if (!ValidateIncomingMask(masked))
+                    if (!ValidateIncomingMask())
                     {
                         var cw = MessageWriter.Get();
                         cw.Write((byte)(1002 >> 8));
@@ -177,7 +177,6 @@ namespace Infinity.WebSockets
                         try
                         {
                             await Stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length).ConfigureAwait(false);
-                            await Stream.FlushAsync().ConfigureAwait(false);
                         }
                         catch { }
                         frameClose.Recycle(); cw.Recycle();
@@ -320,7 +319,6 @@ namespace Infinity.WebSockets
                                     try
                                     {
                                         await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
-                                        await Stream.FlushAsync().ConfigureAwait(false);
                                     }
                                     catch { }
                                     frame.Recycle(); cw.Recycle();
@@ -364,7 +362,6 @@ namespace Infinity.WebSockets
             try
             {
                 await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
-                await Stream.FlushAsync().ConfigureAwait(false);
             }
             catch { }
             frame.Recycle(); cw.Recycle();
@@ -377,52 +374,6 @@ namespace Infinity.WebSockets
         {
             shuttingDown = true;
             try { pingTimer?.Dispose(); } catch { }
-        }
-
-        // Utility methods
-        protected static string ComputeWebSocketAccept(string clientKey)
-        {
-            string concat = clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-            byte[] sha1 = System.Security.Cryptography.SHA1.HashData(Encoding.ASCII.GetBytes(concat));
-            return Convert.ToBase64String(sha1);
-        }
-
-        protected static Dictionary<string, string> ParseHeaders(string raw)
-        {
-            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var lines = raw.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
-            for (int i = 1; i < lines.Length; i++)
-            {
-                var line = lines[i];
-                int idx = line.IndexOf(':');
-                if (idx <= 0) continue;
-                var k = line[..idx].Trim();
-                var v = line[(idx + 1)..].Trim();
-                dict[k] = v;
-            }
-            return dict;
-        }
-
-        protected static async Task<string> ReadHeaders(NetworkStream stream)
-        {
-            var sb = new StringBuilder();
-            byte[] buffer = new byte[1024];
-            int matched = 0;
-            while (true)
-            {
-                int read = await stream.ReadAsync(buffer, 0, buffer.Length);
-                if (read <= 0) break;
-                sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
-                for (int i = 0; i < read; i++)
-                {
-                    char c = (char)buffer[i];
-                    if ((matched == 0 || matched == 2) && c == '\r') matched++;
-                    else if ((matched == 1 || matched == 3) && c == '\n') matched++;
-                    else matched = 0;
-                    if (matched == 4) return sb.ToString();
-                }
-            }
-            return sb.ToString();
         }
     }
 }

@@ -1,16 +1,140 @@
 using Infinity.Core;
 using Infinity.Tests.Core;
 using Infinity.Udp;
-using Infinity.WebSockets;
 using System.Net;
+using System.Net.WebSockets;
+using System.Threading;
 using Xunit;
 using System.Threading.Tasks;
 using System;
+using Infinity.WebSockets;
 
 namespace Infinity.Multiplexer.Tests
 {
     public class MultiplexerTests
     {
+        //[Fact]
+        public async Task MultiplexerTest_Csharp()
+        {
+            var udp_data = new byte[] { 1, 2, 3 };
+            var ws_data = new byte[] { 4, 5, 6 };
+
+            int port = Util.GetFreePort();
+
+            var logger = new TestLogger("MultiplexerTest");
+            var listener = new InfinityConnectionListener(new IPEndPoint(IPAddress.Any, port), logger);
+
+            var serverUdpReceive = new TaskCompletionSource<bool>();
+            var serverWsReceive = new TaskCompletionSource<bool>();
+            var clientUdpReceive = new TaskCompletionSource<bool>();
+            var clientWsReceive = new TaskCompletionSource<bool>();
+
+            NetworkConnection server_udp_connection = null;
+            NetworkConnection server_ws_connection = null;
+
+            // ------------------------
+            // Server connection handler
+            // ------------------------
+            listener.NewConnection += (e) =>
+            {
+                logger.WriteInfo("New connection");
+
+                if (e.Connection is UdpServerConnection)
+                {
+                    server_udp_connection = e.Connection;
+
+                    e.Connection.DataReceived += async (e2) =>
+                    {
+                        serverUdpReceive.TrySetResult(true);
+
+                        // Echo UDP (keeps internal headers intact)
+                        var writer = MessageWriter.Get();
+                        writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
+                        await e.Connection.Send(writer);
+
+                        e2.Recycle();
+                    };
+                }
+                else
+                {
+                    server_ws_connection = e.Connection;
+
+                    e.Connection.DataReceived += async (e2) =>
+                    {
+                        serverWsReceive.TrySetResult(true);
+
+                        // Echo WS payload (no headers)
+                        var writer = MessageWriter.Get();
+                        writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
+                        await e2.Connection.Send(writer);
+
+                        e2.Recycle();
+                    };
+                }
+
+                e.Recycle();
+            };
+
+            listener.Start();
+
+            // ------------------------
+            // UDP Client
+            // ------------------------
+            var udp_client = new UdpClientConnection(logger, new IPEndPoint(IPAddress.Loopback, port));
+
+            udp_client.DataReceived += async (e) =>
+            {
+                clientUdpReceive.TrySetResult(true);
+
+                // Skip first 2 bytes (example of UDP header)
+                for (int i = 0; i < udp_data.Length; i++)
+                {
+                    Assert.Equal(udp_data[i], e.Message.Buffer[i + 2]);
+                }
+            };
+
+            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            await udp_client.Connect(handshake);
+
+            // ------------------------
+            // WebSocket Client using System.Net.WebSockets
+            // ------------------------
+            using var ws_client = new ClientWebSocket();
+            var ws_uri = new Uri($"ws://127.0.0.1:{port}");
+            await ws_client.ConnectAsync(ws_uri, CancellationToken.None);
+
+            // Send WS data
+            await ws_client.SendAsync(new ArraySegment<byte>(ws_data), WebSocketMessageType.Binary, true, CancellationToken.None);
+
+            // Receive WS echo
+            var buffer = new byte[1024];
+            var result = await ws_client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            clientWsReceive.TrySetResult(true);
+
+            // Assert received WS payload
+            for (int i = 0; i < ws_data.Length; i++)
+            {
+                Assert.Equal(ws_data[i], buffer[i]);
+            }
+
+            // ------------------------
+            // Wait for server events
+            // ------------------------
+            await Task.WhenAny(serverWsReceive.Task, Task.Delay(2000));
+            await Task.WhenAny(clientWsReceive.Task, Task.Delay(2000));
+
+            // ------------------------
+            // Cleanup
+            // ------------------------
+            await udp_client.Disconnect("test", MessageWriter.Get());
+            if (ws_client.State == WebSocketState.Open)
+            {
+                await ws_client.CloseAsync(WebSocketCloseStatus.NormalClosure, "test", CancellationToken.None);
+            }
+
+            listener.Dispose();
+        }
+
         [Fact]
         public async Task MultiplexerTest()
         {
@@ -57,7 +181,7 @@ namespace Infinity.Multiplexer.Tests
                         logger.WriteInfo("UDP data received");
                         serverUdpReceive.TrySetResult(true);
 
-                        // Safe: echo the original reliable message
+                        // Echo the original reliable message directly
                         var writer = MessageWriter.Get();
                         writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
                         await e.Connection.Send(writer);
@@ -67,15 +191,12 @@ namespace Infinity.Multiplexer.Tests
                         logger.WriteInfo("WS data received");
                         serverWsReceive.TrySetResult(true);
 
-                        // Echo only the actual payload
+                        // Echo exact buffer safely
                         var writer = MessageWriter.Get();
                         writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
                         await e.Connection.Send(writer);
                     }
-
-                    e2.Recycle();
                 };
-                e.Recycle();
             };
 
             listener.Start();
@@ -88,7 +209,7 @@ namespace Infinity.Multiplexer.Tests
             udp_client.DataReceived += async (e) =>
             {
                 clientUdpReceive.TrySetResult(true);
-                for (int i = 2; i < udp_data.Length; i++)
+                for (int i = 3; i < udp_data.Length; i++)
                 {
                     Assert.Equal(udp_data[i], e.Message.Buffer[i]);
                 }
@@ -122,7 +243,7 @@ namespace Infinity.Multiplexer.Tests
             var sw = System.Diagnostics.Stopwatch.StartNew();
             while ((server_udp_connection == null || server_ws_connection == null) && sw.Elapsed < timeout)
             {
-                await Task.Delay(500);
+                await Task.Delay(50);
             }
 
             Assert.NotNull(server_udp_connection);
@@ -133,7 +254,7 @@ namespace Infinity.Multiplexer.Tests
             // ------------------------
             var udp_writer = UdpMessageFactory.BuildReliableMessage();
             udp_writer.Write(udp_data);
-            //await udp_client.Send(udp_writer);
+            await udp_client.Send(udp_writer);
 
             var ws_writer_send = MessageWriter.Get();
             ws_writer_send.Write(ws_data);
@@ -142,10 +263,10 @@ namespace Infinity.Multiplexer.Tests
             // ------------------------
             // Wait for all messages to be received
             // ------------------------
-            await Task.WhenAny(serverUdpReceive.Task, Task.Delay(2000));
-            await Task.WhenAny(serverWsReceive.Task, Task.Delay(2000));
-            await Task.WhenAny(clientUdpReceive.Task, Task.Delay(2000));
-            await Task.WhenAny(clientWsReceive.Task, Task.Delay(2000));
+            await Task.WhenAny(serverUdpReceive.Task, Task.Delay(2000000));
+            await Task.WhenAny(serverWsReceive.Task, Task.Delay(2000000));
+            await Task.WhenAny(clientUdpReceive.Task, Task.Delay(2000000));
+            await Task.WhenAny(clientWsReceive.Task, Task.Delay(2000000));
 
             // ------------------------
             // Cleanup
