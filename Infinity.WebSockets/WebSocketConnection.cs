@@ -23,6 +23,8 @@ namespace Infinity.WebSockets
         protected abstract bool MaskOutgoingFrames { get; }
         public abstract int MaxPayloadSize { get; set; }
 
+        protected abstract bool ValidateIncomingMask(bool masked);
+
         public override async Task<SendErrors> Send(MessageWriter writer)
         {
             if (state != ConnectionState.Connected || Stream == null || closeSent)
@@ -130,8 +132,6 @@ namespace Infinity.WebSockets
             }
         }
 
-        protected abstract bool ValidateIncomingMask();
-
         protected async Task ReceiveLoop()
         {
             if (Stream == null) return;
@@ -168,7 +168,7 @@ namespace Infinity.WebSockets
                     
 
                     // Validate masking
-                    if (!ValidateIncomingMask())
+                    if (!ValidateIncomingMask(masked))
                     {
                         var cw = MessageWriter.Get();
                         cw.Write((byte)(1002 >> 8));

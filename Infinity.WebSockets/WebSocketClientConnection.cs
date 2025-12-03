@@ -24,7 +24,7 @@ namespace Infinity.WebSockets
         protected override NetworkStream Stream => stream!;
         protected override bool MaskOutgoingFrames => true;
 
-        protected override bool ValidateIncomingMask() => false;
+        protected override bool ValidateIncomingMask(bool masked) => !masked;
         public override int MaxPayloadSize { get; set; } = Configuration.MaxBufferSize;
 
         public WebSocketClientConnection(ILogger? _logger = null) { logger = _logger; }
