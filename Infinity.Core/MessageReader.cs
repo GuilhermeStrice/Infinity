@@ -218,6 +218,13 @@ namespace Infinity.Core
             return Buffer[Position++];
         }
 
+        public MessageWriter ToWriter()
+        {
+            MessageWriter writer = MessageWriter.Get();
+            writer.Write(Buffer, 0, Length);
+            return writer;
+        }
+
         public static MessageReader Get(byte[] _buffer, int _offset, int _length)
         {
             MessageReader reader = Get();
