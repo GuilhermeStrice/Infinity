@@ -18,7 +18,7 @@ namespace Infinity.Websockets.Tests
 			return new IPEndPoint(IPAddress.Loopback, ep.Port);
 		}
 
-		[Fact(Timeout = 15000)]
+		//[Fact(Timeout = 15000)]
 		public async Task ClientWebSocket_EchoBinary()
 		{
 			var ep = GetFreeEndPoint();

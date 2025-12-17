@@ -31,22 +31,30 @@ namespace Infinity.WebSockets
                 return SendErrors.Disconnected;
 
             await InvokeBeforeSend(writer).ConfigureAwait(false);
-            var frame = WebSocketFrame.CreateFrame(writer.Buffer.AsSpan(0, writer.Length), writer.Length, WebSocketOpcode.Binary, true, MaskOutgoingFrames);
+
+            var frame = WebSocketFrame.CreateFrame(
+                writer.Buffer.AsSpan(0, writer.Length),
+                writer.Length,
+                WebSocketOpcode.Binary,
+                true,
+                MaskOutgoingFrames);
+
             try
             {
-                await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
-                await Stream.FlushAsync().ConfigureAwait(false);
+                await Stream.WriteAsync(frame.Buffer.AsMemory(0, frame.Length)).ConfigureAwait(false);
+                // No need to call FlushAsync for NetworkStream
             }
             catch (Exception ex)
             {
-                logger?.WriteError("WebSocket send failed: " + ex.Message);
-                frame.Recycle();
-                await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, "Send failed").ConfigureAwait(false);
+                logger?.WriteError("WebSocket send failed: " + ex.ToString());
+                await ShutdownInternalAsync(
+                    InfinityInternalErrors.ConnectionDisconnected,
+                    "Send failed").ConfigureAwait(false);
                 return SendErrors.Disconnected;
             }
             finally
             {
-                frame.Recycle();
+                frame.Recycle(); // Always recycle once
             }
 
             return SendErrors.None;
@@ -54,11 +62,23 @@ namespace Infinity.WebSockets
 
         private async Task ShutdownInternalAsync(InfinityInternalErrors error, string reason)
         {
-            try { shuttingDown = true; } catch { }
-            try { pingTimer?.Dispose(); } catch { }
+            shuttingDown = true;
+
+            try
+            {
+                pingTimer?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                logger?.WriteError("Failed to dispose ping timer: " + ex);
+            }
+
             OnInternalDisconnect?.Invoke(error)?.ToReader()?.Recycle();
+
             State = ConnectionState.NotConnected;
+
             await InvokeDisconnected(reason, null).ConfigureAwait(false);
+
             Dispose();
         }
 
@@ -70,40 +90,79 @@ namespace Infinity.WebSockets
         protected override async Task DisconnectRemote(string reason, MessageReader reader)
         {
             MessageWriter frame = null;
+
             try
             {
                 if (Stream != null)
                 {
-                    frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Close, true, MaskOutgoingFrames);
-                    await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
-                    closeSent = true;
+                    frame = WebSocketFrame.CreateFrame(
+                        ReadOnlySpan<byte>.Empty,
+                        0,
+                        WebSocketOpcode.Close,
+                        true,
+                        MaskOutgoingFrames);
+
+                    try
+                    {
+                        await Stream.WriteAsync(frame.Buffer.AsMemory(0, frame.Length)).ConfigureAwait(false);
+                        closeSent = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.WriteError("Failed to send close frame to remote: " + ex);
+                    }
                 }
             }
-            catch { }
             finally
             {
                 frame?.Recycle();
+
                 await InvokeDisconnected(reason, reader).ConfigureAwait(false);
+
                 Dispose();
             }
         }
 
         protected override bool SendDisconnect(MessageWriter writer)
         {
+            if (Stream == null || closeSent || state != ConnectionState.Connected)
+                return false;
+
             MessageWriter frame = null;
+
             try
             {
-                frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Close, true, MaskOutgoingFrames);
-                Stream?.Write(frame.Buffer, 0, frame.Length);
-                try { Stream?.Flush(); } catch { }
-                frame.Recycle();
-                closeSent = true;
-                return true;
+                frame = WebSocketFrame.CreateFrame(
+                    ReadOnlySpan<byte>.Empty,
+                    0,
+                    WebSocketOpcode.Close,
+                    true,
+                    MaskOutgoingFrames);
+
+                try
+                {
+                    Stream.Write(frame.Buffer, 0, frame.Length);
+                    try
+                    {
+                        Stream.Flush();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.WriteError("Flush failed in SendDisconnect: " + ex);
+                    }
+
+                    closeSent = true;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    logger?.WriteError("Failed to send close frame: " + ex);
+                    return false;
+                }
             }
-            catch
+            finally
             {
                 frame?.Recycle();
-                return false;
             }
         }
 
@@ -111,24 +170,45 @@ namespace Infinity.WebSockets
 
         protected void StartPingTimer(int interval = 5000)
         {
-            pingTimer = new Timer(_ => SendPing(), null, interval, Timeout.Infinite);
+            pingTimer = new Timer(async _ => await SendPing(), null, interval, Timeout.Infinite);
         }
 
         private async Task SendPing()
         {
-            if (state != ConnectionState.Connected || Stream == null) return;
+            if (state != ConnectionState.Connected || Stream == null)
+                return;
+
             MessageWriter frame = null;
+
             try
             {
                 lastPingTicks = DateTime.UtcNow.Ticks;
-                frame = WebSocketFrame.CreateFrame(ReadOnlySpan<byte>.Empty, 0, WebSocketOpcode.Ping, true, MaskOutgoingFrames);
+
+                frame = WebSocketFrame.CreateFrame(
+                    ReadOnlySpan<byte>.Empty,
+                    0,
+                    WebSocketOpcode.Ping,
+                    true,
+                    MaskOutgoingFrames);
+
                 await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                logger?.WriteError("Failed to send ping frame: " + ex);
+            }
             finally
             {
                 frame?.Recycle();
-                try { pingTimer?.Change(5000, Timeout.Infinite); } catch { }
+
+                try
+                {
+                    pingTimer?.Change(5000, Timeout.Infinite);
+                }
+                catch (Exception ex)
+                {
+                    logger?.WriteError("Failed to reschedule ping timer: " + ex);
+                }
             }
         }
 
@@ -349,31 +429,63 @@ namespace Infinity.WebSockets
 
         private async Task CloseWithCode(ushort code, string reason)
         {
+            // Prepare close payload
             var cw = MessageWriter.Get();
             cw.Write((byte)(code >> 8));
             cw.Write((byte)(code & 0xFF));
+
             if (!string.IsNullOrEmpty(reason))
             {
                 var rb = Encoding.UTF8.GetBytes(reason);
                 cw.Write(rb, rb.Length);
             }
 
-            var frame = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+            // Create WebSocket close frame
+            var frame = WebSocketFrame.CreateFrame(
+                cw.Buffer.AsSpan(0, cw.Length),
+                cw.Length,
+                WebSocketOpcode.Close,
+                true,
+                MaskOutgoingFrames);
+
             try
             {
                 await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                closeSent = true;
             }
-            catch { }
-            frame.Recycle(); cw.Recycle();
+            catch (Exception ex)
+            {
+                logger?.WriteError("Failed to send close frame: " + ex);
+            }
+            finally
+            {
+                frame?.Recycle();
+                cw?.Recycle();
+            }
 
-            closeSent = true;
-            await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, reason).ConfigureAwait(false);
+            // Shutdown connection regardless of write success
+            try
+            {
+                await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, reason).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger?.WriteError("Error during ShutdownInternalAsync in CloseWithCode: " + ex);
+            }
         }
 
         protected override void Dispose(bool disposing)
         {
             shuttingDown = true;
-            try { pingTimer?.Dispose(); } catch { }
+
+            try
+            {
+                pingTimer?.Dispose();
+            }
+            catch
+            {
+
+            }
         }
     }
 }

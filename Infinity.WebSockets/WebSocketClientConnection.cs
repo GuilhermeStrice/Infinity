@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -40,39 +41,89 @@ namespace Infinity.WebSockets
         protected static Dictionary<string, string> ParseHeaders(string raw)
         {
             var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var lines = raw.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
-            for (int i = 1; i < lines.Length; i++)
+
+            ReadOnlySpan<char> span = raw.AsSpan();
+
+            int lineStart = 0;
+            bool firstLine = true;
+
+            while (lineStart < span.Length)
             {
-                var line = lines[i];
-                int idx = line.IndexOf(':');
-                if (idx <= 0) continue;
-                var k = line[..idx].Trim();
-                var v = line[(idx + 1)..].Trim();
-                dict[k] = v;
+                int lineEnd = span.Slice(lineStart).IndexOf("\r\n");
+                if (lineEnd < 0)
+                    break;
+
+                var line = span.Slice(lineStart, lineEnd);
+                lineStart += lineEnd + 2;
+
+                // Skip request/status line
+                if (firstLine)
+                {
+                    firstLine = false;
+                    continue;
+                }
+
+                int colonIndex = line.IndexOf(':');
+                if (colonIndex <= 0)
+                    continue;
+
+                var keySpan = Util.Trim(line.Slice(0, colonIndex));
+                var valueSpan = Util.Trim(line.Slice(colonIndex + 1));
+
+                // Only allocations happen here (required)
+                dict[keySpan.ToString()] = valueSpan.ToString();
             }
+
             return dict;
         }
 
         protected static async Task<string> ReadHeaders(NetworkStream stream)
         {
-            var sb = new StringBuilder();
-            byte[] buffer = new byte[1024];
+            const int MaxHeaderBytes = 32 * 1024; // 32K reasonable size
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(MaxHeaderBytes);
+            int count = 0;
             int matched = 0;
-            while (true)
+
+            try
             {
-                int read = await stream.ReadAsync(buffer, 0, buffer.Length);
-                if (read <= 0) break;
-                sb.Append(Encoding.ASCII.GetString(buffer, 0, read));
-                for (int i = 0; i < read; i++)
+                while (count < MaxHeaderBytes)
                 {
-                    char c = (char)buffer[i];
-                    if ((matched == 0 || matched == 2) && c == '\r') matched++;
-                    else if ((matched == 1 || matched == 3) && c == '\n') matched++;
-                    else matched = 0;
-                    if (matched == 4) return sb.ToString();
+                    int read = await stream.ReadAsync(
+                        buffer, count, MaxHeaderBytes - count);
+
+                    if (read <= 0)
+                        throw new IOException("Unexpected EOF while reading headers");
+
+                    int end = count + read;
+
+                    for (int i = count; i < end; i++)
+                    {
+                        byte b = buffer[i];
+
+                        matched = b switch
+                        {
+                            (byte)'\r' when matched == 0 || matched == 2 => matched + 1,
+                            (byte)'\n' when matched == 1 || matched == 3 => matched + 1,
+                            _ => 0
+                        };
+
+                        if (matched == 4)
+                        {
+                            int headerLength = i + 1;
+                            return Encoding.Latin1.GetString(buffer, 0, headerLength);
+                        }
+                    }
+
+                    count = end;
                 }
+
+                throw new IOException("Header section too large");
             }
-            return sb.ToString();
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         public override async Task Connect(MessageWriter writer, int timeout = 5000)
