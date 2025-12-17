@@ -84,7 +84,7 @@ namespace Infinity.Core
         {
             if (DataReceived != null)
             {
-                var @event = DataReceivedEvent.Get();
+                var @event = new DataReceivedEvent();
                 @event.Connection = this;
                 @event.Message = _reader;
                 await DataReceived.Invoke(@event).ConfigureAwait(false);
@@ -99,7 +99,7 @@ namespace Infinity.Core
         {
             if (Disconnected != null)
             {
-                var @event = DisconnectedEvent.Get();
+                var @event = new DisconnectedEvent();
                 @event.Connection = this;
                 @event.Reason = _reason;
                 @event.Message = _reader;

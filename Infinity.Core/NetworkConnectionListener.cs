@@ -29,7 +29,7 @@ namespace Infinity.Core
 
         protected void InvokeNewConnection(NetworkConnection _connection, MessageReader _reader)
         {
-            var @event = NewConnectionEvent.Get();
+            var @event = new NewConnectionEvent();
             @event.Connection = _connection;
             @event.HandshakeData = _reader;
             NewConnection?.Invoke(@event);

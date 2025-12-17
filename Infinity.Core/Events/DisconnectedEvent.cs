@@ -1,21 +1,10 @@
 ﻿namespace Infinity.Core
 {
-    public class DisconnectedEvent : IRecyclable
+    public struct DisconnectedEvent
     {
-        public static ObjectPool<DisconnectedEvent> DisconnectedEventPool = new ObjectPool<DisconnectedEvent>(() => new DisconnectedEvent());
-
         public NetworkConnection? Connection;
         public MessageReader? Message;
         public string? Reason;
-
-        internal DisconnectedEvent()
-        {
-        }
-
-        public static DisconnectedEvent Get()
-        {
-            return DisconnectedEventPool.GetObject();
-        }
 
         public void Recycle(bool _recycle_message)
         {
@@ -27,8 +16,6 @@
             Connection = null;
             Message = null;
             Reason = string.Empty;
-
-            DisconnectedEventPool.PutObject(this);
         }
 
         public void Recycle()

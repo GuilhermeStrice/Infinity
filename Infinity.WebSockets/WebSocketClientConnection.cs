@@ -33,7 +33,7 @@ namespace Infinity.WebSockets
         protected static string ComputeWebSocketAccept(string clientKey)
         {
             string concat = clientKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-            byte[] sha1 = System.Security.Cryptography.SHA1.HashData(Encoding.ASCII.GetBytes(concat));
+            byte[] sha1 = SHA1.HashData(Encoding.ASCII.GetBytes(concat));
             return Convert.ToBase64String(sha1);
         }
 

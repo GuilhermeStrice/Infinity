@@ -25,7 +25,7 @@ namespace Infinity.Websockets.Tests
 			var logger = new TestLogger("WS");
 			var listener = new WebSocketConnectionListener(ep, logger);
 
-			listener.NewConnection += e =>
+			listener.NewConnection += async e =>
 			{
 				var conn = (WebSocketServerConnection)e.Connection;
 				conn.DataReceived += async de =>
@@ -33,7 +33,7 @@ namespace Infinity.Websockets.Tests
 					var r = de.Message;
 					var w = MessageWriter.Get();
 					w.Write(r.Buffer, r.Position, r.BytesRemaining);
-					_ = Task.Run(async () => { await conn.Send(w); });
+					await conn.Send(w);
 					r.Recycle();
 				};
 			};

@@ -223,10 +223,6 @@ namespace Infinity.Udp.Tests
                 Console.WriteLine("Fragmented: " + UdpFragmentedMessage.FragmentedMessagePool.Available.ToString());
                 Console.WriteLine("Writers: " + MessageWriter.WriterPool.Available.ToString());
 
-                Console.WriteLine("DataReceived: " + DataReceivedEvent.DataReceivedEventPool.Available.ToString());
-                Console.WriteLine("Disconnected: " + DisconnectedEvent.DisconnectedEventPool.Available.ToString());
-                Console.WriteLine("NewConnection: " + NewConnectionEvent.NewConnectionPool.Available.ToString());
-
                 Console.WriteLine("Server packets: " + server_connection.reliable_data_packets_sent.Count);
                 Console.WriteLine("Client packets: " + connection.reliable_data_packets_sent.Count);
             }

@@ -29,7 +29,7 @@ namespace Infinity.Udp.Tests
 
             listener.Start();
 
-            DataReceivedEvent? result = null;
+            DataReceivedEvent result = new DataReceivedEvent();
             //Setup conneciton
             connection.DataReceived += async delegate (DataReceivedEvent a)
             {
@@ -76,7 +76,7 @@ namespace Infinity.Udp.Tests
             var mutex2 = new ManualResetEvent(false);
 
             //Setup listener
-            DataReceivedEvent? result = null;
+            DataReceivedEvent result = new DataReceivedEvent();
             listener.NewConnection += delegate (NewConnectionEvent args)
             {
                 args.Connection.DataReceived += async delegate (DataReceivedEvent innerArgs)
