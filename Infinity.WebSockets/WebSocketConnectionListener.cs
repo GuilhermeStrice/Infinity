@@ -17,7 +17,7 @@ namespace Infinity.WebSockets
 {
     public class WebSocketConnectionListener : NetworkConnectionListener
     {
-        private ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        private ChunkAllocator allocator = new ChunkAllocator(1024);
 
         private readonly TcpListener listener;
         private readonly ILogger? logger;

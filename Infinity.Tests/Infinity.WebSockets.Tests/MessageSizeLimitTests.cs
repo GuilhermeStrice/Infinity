@@ -8,7 +8,7 @@ namespace Infinity.Websockets.Tests
 {
 	public class MessageSizeLimitTests
 	{
-		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+		ChunkAllocator allocator = new ChunkAllocator(1024);
 
 		private static IPEndPoint GetFreeEndPoint()
 		{

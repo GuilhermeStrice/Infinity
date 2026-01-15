@@ -68,7 +68,7 @@ namespace Infinity.Core
         {
             if (SendDisconnect(_writer))
             {
-                await InvokeDisconnected(_reason, new MessageReader(new ChunkedByteAllocator(1024))).ConfigureAwait(false);
+                await InvokeDisconnected(_reason, new MessageReader(new ChunkAllocator(1024))).ConfigureAwait(false);
             }
 
             Dispose();

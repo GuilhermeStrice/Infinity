@@ -1,3 +1,5 @@
+using Infinity.Core;
+
 namespace Infinity.WebSockets
 {
     internal static class Helpers

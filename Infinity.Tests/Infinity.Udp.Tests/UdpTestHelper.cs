@@ -6,7 +6,7 @@ namespace Infinity.Udp.Tests
 {
     public static class UdpTestHelper
     {
-        static ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        static ChunkAllocator allocator = new ChunkAllocator(1024);
 
         public static ITestOutputHelper? _output;
 

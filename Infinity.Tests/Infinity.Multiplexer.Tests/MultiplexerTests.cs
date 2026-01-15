@@ -13,7 +13,7 @@ namespace Infinity.Multiplexer.Tests
 {
     public class MultiplexerTests
     {
-        ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        ChunkAllocator allocator = new ChunkAllocator(1024);
 
         //[Fact]
         public async Task MultiplexerTest_Csharp()

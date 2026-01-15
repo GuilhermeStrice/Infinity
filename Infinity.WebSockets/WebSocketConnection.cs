@@ -12,7 +12,7 @@ namespace Infinity.WebSockets
 {
     public abstract class WebSocketConnection : NetworkConnection
     {
-        internal ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        internal ChunkAllocator allocator = new ChunkAllocator(1024);
 
         internal Timer? pingTimer;
         internal ILogger? logger;

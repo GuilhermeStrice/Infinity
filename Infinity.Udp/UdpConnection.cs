@@ -21,7 +21,7 @@ namespace Infinity.Udp
         internal UdpConnectionConfiguration configuration;
 
         private readonly Channel<MessageWriter> _outgoing = Channel.CreateUnbounded<MessageWriter>();
-        internal ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        internal ChunkAllocator allocator = new ChunkAllocator(1024);
         internal CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
 
         public UdpConnection(ILogger _logger) : base()

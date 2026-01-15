@@ -10,7 +10,7 @@ namespace Infinity.Udp
 {
     public class UdpConnectionListener : NetworkConnectionListener
     {
-        private ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        private ChunkAllocator allocator = new ChunkAllocator(1024);
 
         public UdpConnectionConfiguration Configuration { get; set; } = new UdpConnectionConfiguration(); // default config
 

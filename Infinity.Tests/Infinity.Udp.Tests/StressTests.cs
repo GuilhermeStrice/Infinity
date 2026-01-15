@@ -9,7 +9,7 @@ namespace Infinity.Udp.Tests
 {
     public class StressTests
     {
-        ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+        ChunkAllocator allocator = new ChunkAllocator(1024);
 
         ITestOutputHelper output;
 

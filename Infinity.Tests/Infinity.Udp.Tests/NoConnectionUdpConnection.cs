@@ -33,13 +33,13 @@ namespace Infinity.Udp.Tests
             byte[] buffer = new byte[msg.Length];
             Array.Copy(msg.Buffer.ToArray(), 0, buffer, 0, msg.Length);
 
-            var data = new MessageReader(new ChunkedByteAllocator(1024), buffer, 0, buffer.Length);
+            var data = new MessageReader(new ChunkAllocator(1024), buffer, 0, buffer.Length);
             await HandleReceive(data, data.Length);
         }
 
         public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
-            BytesSent.Add(new MessageReader(new ChunkedByteAllocator(1024), _writer.Buffer.ToArray(), 0, _writer.Length));
+            BytesSent.Add(new MessageReader(new ChunkAllocator(1024), _writer.Buffer.ToArray(), 0, _writer.Length));
         }
 
         public override async Task Connect(MessageWriter _writer, int _timeout = 5000)

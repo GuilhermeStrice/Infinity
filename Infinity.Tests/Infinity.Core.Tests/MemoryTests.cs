@@ -6,7 +6,7 @@ using Infinity.Core; // your namespace
 
 public class MessageWriterReaderTests
 {
-    private ChunkedByteAllocator _allocator = new ChunkedByteAllocator(1024);
+    private ChunkAllocator _allocator = new ChunkAllocator(1024);
 
     [Fact]
     public void WriteRead_Primitives_ShouldMatch()
