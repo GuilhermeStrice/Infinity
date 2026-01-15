@@ -10,6 +10,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class RawMaskingTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var l = new TcpListener(IPAddress.Loopback, 0);
@@ -96,16 +98,15 @@ namespace Infinity.Websockets.Tests
 
 			// connect our managed client
 			var client = new WebSocketClientConnection(logger);
-			var w = MessageWriter.Get();
+			var w = new MessageWriter(allocator);
 			w.Write($"ws://{ep.Address}:{ep.Port}/");
 			await client.Connect(w);
-			w.Recycle();
 
 			// Create a raw server TCP connection to same listener is complex; instead send a masked frame directly via tcp to client is not applicable.
 			// So we simulate masked server by opening a raw socket to the client is not possible; skip this check here.
 			// We ensure client remains connected for the rest of tests.
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			listener.Dispose();
 		}
 	}

@@ -21,6 +21,7 @@ namespace Infinity.Udp
         internal UdpConnectionConfiguration configuration;
 
         private readonly Channel<MessageWriter> _outgoing = Channel.CreateUnbounded<MessageWriter>();
+        internal ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
         internal CancellationTokenSource cancellation_token_source = new CancellationTokenSource();
 
         public UdpConnection(ILogger _logger) : base()
@@ -31,7 +32,7 @@ namespace Infinity.Udp
             Util.FireAndForget(SendInternal(), logger);
         }
 
-        public abstract Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer = true);
+        public abstract Task WriteBytesToConnection(MessageWriter _writer);
         public abstract void WriteBytesToConnectionSync(MessageWriter _writer);
 
         protected abstract Task ShareConfiguration();
@@ -66,7 +67,7 @@ namespace Infinity.Udp
 
                 await InvokeBeforeSend(_writer).ConfigureAwait(false);
 
-                switch (_writer.Buffer[0])
+                switch (_writer[0])
                 {
                     case UdpSendOption.Reliable:
                         {
@@ -124,7 +125,7 @@ namespace Infinity.Udp
 
         protected internal virtual async Task HandleReceive(MessageReader _reader, int _bytes_received)
         {
-            switch (_reader.Buffer[0])
+            switch (_reader[0])
             {
                 //Handle reliable receives
                 case UdpSendOption.Reliable:
@@ -147,21 +148,27 @@ namespace Infinity.Udp
                     {
                         AcknowledgementMessageReceive(_reader.Buffer, _bytes_received);
                         Statistics.LogAcknowledgementReceived(_bytes_received);
-                        _reader.Recycle();
                         break;
                     }
 
                 case UdpSendOptionInternal.Ping:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
+                        var (success, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+
+                        // Send an acknowledgement
+                        await SendAck(_id).ConfigureAwait(false);
+
                         Statistics.LogPingReceived(_bytes_received);
-                        _reader.Recycle();
                         break;
                     }
 
                 case UdpSendOptionInternal.Handshake:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
+                        var (success, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+
+                        // Send an acknowledgement
+                        await SendAck(_id).ConfigureAwait(false);
+
                         Statistics.LogHandshakeReceived(_bytes_received);
                         break;
                     }
@@ -173,29 +180,27 @@ namespace Infinity.Udp
                         break;
                     }
 
-                case UdpSendOptionInternal.TestMTU:
-                    {
-                        await MTUTestReceive(_reader).ConfigureAwait(false);
-                        Statistics.LogMTUTestMessageReceived(_bytes_received);
-                        _reader.Recycle();
-                        break;
-                    }
-
                     // sent by client
                 case UdpSendOptionInternal.AskConfiguration:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
+                        var (success, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+
+                        // Send an acknowledgement
+                        await SendAck(_id).ConfigureAwait(false);
+
                         await ShareConfiguration().ConfigureAwait(false);
-                        _reader.Recycle();
                         break;
                     }
 
                     // sent by server
                 case UdpSendOptionInternal.ShareConfiguration:
                     {
-                        await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
+                        var (success, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+
+                        // Send an acknowledgement
+                        await SendAck(_id).ConfigureAwait(false);
+
                         await ReadConfiguration(_reader).ConfigureAwait(false);
-                        _reader.Recycle();
                         break;
                     }
 
@@ -219,8 +224,6 @@ namespace Infinity.Udp
                 // Treat everything else as garbage
                 default:
                     {
-                        _reader.Recycle();
-
                         Statistics.LogGarbageMessageReceived(_bytes_received);
                         break;
                     }

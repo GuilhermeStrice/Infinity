@@ -28,7 +28,6 @@ namespace TestListener
         {
             new_con.Connection.DataReceived += Connection_DataReceived;
             new_con.Connection.Disconnected += Connection_Disconnected;
-            new_con.Recycle();
             connection_count++;
 
             if (connection_count >= 50)
@@ -39,7 +38,6 @@ namespace TestListener
 
         private static async Task Connection_Disconnected(DisconnectedEvent obj)
         {
-            obj.Recycle();
         }
 
         private static async Task Connection_DataReceived(DataReceivedEvent obj)
@@ -49,8 +47,6 @@ namespace TestListener
             {
                 Console.WriteLine("5000");
             }
-
-            obj.Recycle(true);
         }
     }
 }

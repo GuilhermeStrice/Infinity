@@ -5,6 +5,14 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
+        public int MTU
+        {
+            get
+            {
+                return 1024;
+            }
+        }
+
         private volatile int last_fragment_id_allocated = 0;
 
         private ConcurrentDictionary<byte, UdpFragmentedMessage> fragmented_messages_received = new ConcurrentDictionary<byte, UdpFragmentedMessage>();
@@ -22,7 +30,7 @@ namespace Infinity.Udp
             for (ushort i = 0; i < fragments_count; i++)
             {
                 var data_length = Math.Min(fragment_size, _writer.Length - 1 - fragment_size * i);
-                var fragment_writer = MessageWriter.Get();
+                var fragment_writer = new MessageWriter(allocator);
 
                 fragment_writer.Write(UdpSendOptionInternal.Fragment);
 
@@ -36,11 +44,9 @@ namespace Infinity.Udp
                 int source_offset = fragment_size * i + 1;
                 fragment_writer.Write(_writer.Buffer, source_offset, data_length);
 
-                await WriteBytesToConnection(fragment_writer, false).ConfigureAwait(false);
+                await WriteBytesToConnection(fragment_writer).ConfigureAwait(false);
                 await Task.Delay(10);
             }
-
-            _writer.Recycle();
 
             if (last_fragment_id_allocated >= byte.MaxValue)
             {
@@ -50,8 +56,8 @@ namespace Infinity.Udp
 
         private async Task FragmentMessageReceive(MessageReader _reader)
         {
-            var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
-            if (result.Item1)
+            var (result, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+            if (result)
             {
                 _reader.Position = 3;
 
@@ -70,7 +76,7 @@ namespace Infinity.Udp
 
                 if (fragmented_message.Fragments.Count == fragments_count)
                 {
-                    var writer = UdpMessageFactory.BuildFragmentedMessage();
+                    var writer = UdpMessageFactory.BuildFragmentedMessage(this);
                     writer.Position = 3;
 
                     foreach (var fragment in fragmented_message.Fragments.OrderBy(fragment => fragment.Key))
@@ -82,7 +88,6 @@ namespace Infinity.Udp
                     fragmented_message.Recycle();
 
                     var reader = writer.ToReader();
-                    writer.Recycle();
 
                     reader.Position = 3;
 

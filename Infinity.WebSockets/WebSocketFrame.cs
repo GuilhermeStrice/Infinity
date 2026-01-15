@@ -7,7 +7,7 @@ namespace Infinity.WebSockets
 {
 	public static class WebSocketFrame
 	{
-		public static MessageWriter CreateFrame(ReadOnlySpan<byte> _payload, int _length, WebSocketOpcode _opcode, bool _fin, bool _mask)
+		public static MessageWriter CreateFrame(WebSocketConnection connection, ReadOnlySpan<byte> _payload, int _length, WebSocketOpcode _opcode, bool _fin, bool _mask)
 		{
 			int headerLen = 2;
 			int extendedLen = 0;
@@ -23,7 +23,7 @@ namespace Infinity.WebSockets
 			int maskLen = _mask ? 4 : 0;
 			int totalLen = headerLen + extendedLen + maskLen + _length;
 			
-			MessageWriter writer = MessageWriter.Get();
+			MessageWriter writer = new MessageWriter(connection.allocator);
 			writer.Position = 0; // Use from start
 			
 			// First byte: FIN flag and opcode
@@ -65,14 +65,14 @@ namespace Infinity.WebSockets
 			// Mask key (for masking only)
 			if (_mask)
 			{
-				RandomNumberGenerator.Fill(writer.Buffer.AsSpan(writer.Position, 4));
+				RandomNumberGenerator.Fill(writer.Buffer.Slice(writer.Position, 4));
 				writer.Position += 4;
 			}
 
 			// Payload
 			if (_mask)
 			{
-				Span<byte> maskKey = writer.Buffer.AsSpan(writer.Position - 4, 4);
+				Span<byte> maskKey = writer.Buffer.Slice(writer.Position - 4, 4);
 				for (int i = 0; i < _length; i++)
 				{
 					writer.Write((byte)(_payload[i] ^ maskKey[i % 4]));
@@ -80,7 +80,7 @@ namespace Infinity.WebSockets
 			}
 			else
 			{
-				_payload.Slice(0, _length).CopyTo(writer.Buffer.AsSpan(writer.Position));
+				_payload.Slice(0, _length).CopyTo(writer.Buffer.Slice(writer.Position));
 				writer.Position += _length;
 			}
 

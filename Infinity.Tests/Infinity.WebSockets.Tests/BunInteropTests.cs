@@ -10,6 +10,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class BunInteropTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -101,29 +103,26 @@ namespace Infinity.Websockets.Tests
 
 			var logger = new TestLogger("WS");
 			var client = new WebSocketClientConnection(logger);
-			var connectWriter = MessageWriter.Get();
+			var connectWriter = new MessageWriter(allocator);
 			connectWriter.Write($"ws://{ep.Address}:{ep.Port}/");
 			await client.Connect(connectWriter);
-			connectWriter.Recycle();
 
 			var tcs = new TaskCompletionSource<byte[]>();
 			client.DataReceived += async de =>
 			{
 				var bytes = de.Message.ReadBytes(de.Message.BytesRemaining);
-				de.Message.Recycle();
 				tcs.TrySetResult(bytes);
 			};
 
 			var payload = Enumerable.Range(0, 5000).Select(i => (byte)(i % 256)).ToArray();
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await client.Send(msg);
-			msg.Recycle();
 
 			var echoed = await tcs.Task;
 			Assert.Equal(payload, echoed);
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			try { proc.Kill(true); } catch { }
 		}
 
@@ -148,7 +147,6 @@ namespace Infinity.Websockets.Tests
 				serverConn.DataReceived += async de =>
 				{
 					var bytes = de.Message.ReadBytes(de.Message.BytesRemaining);
-					de.Message.Recycle();
 					echoedTcs.TrySetResult(bytes);
 				};
 			};
@@ -177,10 +175,9 @@ namespace Infinity.Websockets.Tests
 			Assert.NotNull(serverConn);
 
 			var payload = Encoding.UTF8.GetBytes("interop-bun");
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await serverConn.Send(msg);
-			msg.Recycle();
 
 			var echoed = await echoedTcs.Task;
 			Assert.Equal(payload, echoed);

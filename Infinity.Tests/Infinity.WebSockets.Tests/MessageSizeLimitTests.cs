@@ -8,6 +8,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class MessageSizeLimitTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var l = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
@@ -32,12 +34,11 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					var toWrite = r.BytesRemaining;
-					if (toWrite > w.Buffer.Length) { r.Recycle(); w.Recycle(); return; }
+					if (toWrite > w.Buffer.Length) { return; }
 					w.Write(r.Buffer, r.Position, toWrite);
 					_ = Task.Run(async () => { await conn.Send(w); });
-					r.Recycle();
 				};
 			};
 			listener.Start();
@@ -70,12 +71,11 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					var toWrite = r.BytesRemaining;
-					if (toWrite > w.Buffer.Length) { r.Recycle(); w.Recycle(); return; }
+					if (toWrite > w.Buffer.Length) { return; }
 					w.Write(r.Buffer, r.Position, toWrite);
 					_ = Task.Run(async () => { await conn.Send(w); });
-					r.Recycle();
 				};
 			};
 			listener.Start();

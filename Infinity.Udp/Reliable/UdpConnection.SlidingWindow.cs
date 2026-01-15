@@ -12,7 +12,7 @@ namespace Infinity.Udp
 
         protected volatile ushort reliable_receive_last = ushort.MaxValue;
 
-        private async Task<(bool, ushort)> ProcessReliableReceive(byte[] _bytes, int _offset)
+        private (bool, ushort) ProcessReliableReceive(Span<byte> _bytes, int _offset)
         {
             byte b1 = _bytes[_offset];
             byte b2 = _bytes[_offset + 1];
@@ -94,9 +94,6 @@ namespace Infinity.Udp
                     result = false;
                 }
             }
-
-            // Send an acknowledgement
-            await SendAck(_id).ConfigureAwait(false);
 
             return (result, _id);
         }

@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿/*using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Infinity.Core
@@ -7,7 +7,7 @@ namespace Infinity.Core
     {
         public static ObjectPool<MessageReader> ReaderPool = new ObjectPool<MessageReader>(() => new MessageReader(Configuration.MaxBufferSize));
 
-        public byte[]? Buffer { get; set; }
+        public byte[] Buffer { get; }
 
         public int Length { get; set; }
 
@@ -215,7 +215,12 @@ namespace Infinity.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte FastByte()
         {
-            return Buffer[Position++];
+            if (Position >= Length)
+            {
+                throw new InvalidDataException("Attempted to read past message length.");
+            }
+
+            return Buffer![Position++];
         }
 
         public MessageWriter ToWriter()
@@ -228,8 +233,6 @@ namespace Infinity.Core
         public static MessageReader Get(byte[] _buffer, int _offset, int _length)
         {
             MessageReader reader = Get();
-
-            Array.Copy(_buffer, _offset, reader.Buffer, 0, _length);
 
             reader.Position = 0;
             reader.Length = _length;
@@ -260,3 +263,4 @@ namespace Infinity.Core
         }
     }
 }
+*/

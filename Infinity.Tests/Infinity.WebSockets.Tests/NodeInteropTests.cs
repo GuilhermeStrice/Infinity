@@ -10,6 +10,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class NodeInteropTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -106,24 +108,22 @@ setTimeout(()=>{}, 1e9);
 
 			var logger = new TestLogger("WS");
 			var client = new WebSocketClientConnection(logger);
-			var connectWriter = MessageWriter.Get();
+			var connectWriter = new MessageWriter(allocator);
 			connectWriter.Write($"ws://{ep.Address}:{ep.Port}/");
 			await client.Connect(connectWriter);
-			connectWriter.Recycle();
 
 			var tcs = new TaskCompletionSource<byte[]>();
-			client.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); tcs.TrySetResult(b); };
+			client.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); tcs.TrySetResult(b); };
 
 			var payload = Enumerable.Range(0, 4096).Select(i => (byte)(i % 256)).ToArray();
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await client.Send(msg);
-			msg.Recycle();
 
 			var echoed = await tcs.Task;
 			Assert.Equal(payload, echoed);
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			try { proc.Kill(true); } catch { }
 		}
 
@@ -159,10 +159,9 @@ setTimeout(()=>{}, 1e9);
 
 			var logger = new TestLogger("WS");
 			var client = new WebSocketClientConnection(logger);
-			var connectWriter = MessageWriter.Get();
+			var connectWriter = new MessageWriter(allocator);
 			connectWriter.Write($"ws://{ep.Address}:{ep.Port}/");
 			await client.Connect(connectWriter);
-			connectWriter.Recycle();
 
 			// Wait briefly for disconnect due to invalid UTF-8
 			await Task.Delay(500);
@@ -239,7 +238,7 @@ setTimeout(()=>{}, 1e9);
 			listener.NewConnection += e =>
 			{
 				serverConn = (WebSocketServerConnection)e.Connection;
-				serverConn.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); echoedTcs.TrySetResult(b); };
+				serverConn.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); echoedTcs.TrySetResult(b); };
 			};
 			listener.Start();
 
@@ -266,10 +265,9 @@ setTimeout(()=>{}, 1e9);
 			Assert.NotNull(serverConn);
 
 			var payload = Encoding.UTF8.GetBytes("node-interop");
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await serverConn!.Send(msg);
-			msg.Recycle();
 
 			var echoed = await echoedTcs.Task;
 			Assert.Equal(payload, echoed);

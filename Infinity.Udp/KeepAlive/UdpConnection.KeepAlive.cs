@@ -80,7 +80,7 @@ namespace Infinity.Udp
         {
             ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
-            var writer = MessageWriter.Get();
+            var writer = new MessageWriter(allocator);
 
             writer.Write(UdpSendOptionInternal.Ping);
             writer.Write(id);

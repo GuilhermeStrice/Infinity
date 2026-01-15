@@ -8,6 +8,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class WebSocketEndToEndTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
@@ -32,10 +34,9 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					w.Write(r.Buffer, r.Position, r.BytesRemaining);
 					_ = Task.Run(async () => { await conn.Send(w); });
-					r.Recycle();
 				};
 				serverConnTcs.TrySetResult(conn);
 			};
@@ -43,10 +44,9 @@ namespace Infinity.Websockets.Tests
 			listener.Start();
 
 			var client = new WebSocketClientConnection(logger);
-			var connectWriter = MessageWriter.Get();
+			var connectWriter = new MessageWriter(allocator);
 			connectWriter.Write($"ws://{ep.Address}:{ep.Port}/test");
 			await client.Connect(connectWriter);
-			connectWriter.Recycle();
 
 			var serverConn = await serverConnTcs.Task;
 
@@ -56,20 +56,18 @@ namespace Infinity.Websockets.Tests
 				var r = de.Message;
 				var bytes = r.ReadBytes(r.BytesRemaining);
 				gotEchoTcs.TrySetResult(bytes);
-				r.Recycle();
 			};
 
 			// Send payload
 			var payload = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await client.Send(msg);
-			msg.Recycle();
 
 			var echoed = await gotEchoTcs.Task;
 			Assert.Equal(payload, echoed);
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			listener.Dispose();
 		}
 
@@ -83,10 +81,9 @@ namespace Infinity.Websockets.Tests
 			listener.Start();
 
 			var client = new WebSocketClientConnection(logger);
-			var connectWriter = MessageWriter.Get();
+			var connectWriter = new MessageWriter(allocator);
 			connectWriter.Write($"ws://{ep.Address}:{ep.Port}/ping");
 			await client.Connect(connectWriter);
-			connectWriter.Recycle();
 
 			var sw = System.Diagnostics.Stopwatch.StartNew();
 			while (client.AveragePingMs <= 0 && sw.ElapsedMilliseconds < 8000)
@@ -96,7 +93,7 @@ namespace Infinity.Websockets.Tests
 
 			Assert.True(client.AveragePingMs >= 0);
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			listener.Dispose();
 		}
 
@@ -113,19 +110,17 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					w.Write(r.Buffer, r.Position, r.BytesRemaining);
 					_ = conn.Send(w);
-					r.Recycle();
 				};
 			};
 			listener.Start();
 
 			var client = new WebSocketClientConnection(logger);
-			var connectWriter = MessageWriter.Get();
+			var connectWriter = new MessageWriter(allocator);
 			connectWriter.Write($"ws://{ep.Address}:{ep.Port}/large");
 			await client.Connect(connectWriter);
-			connectWriter.Recycle();
 
 			var gotEchoTcs = new TaskCompletionSource<int>();
 			int expected = 60000;
@@ -133,21 +128,19 @@ namespace Infinity.Websockets.Tests
 			client.DataReceived += async de =>
 			{
 				received += de.Message.BytesRemaining;
-				de.Message.Recycle();
 				if (received >= expected) gotEchoTcs.TrySetResult(received);
 			};
 
 			var payload = new byte[expected];
 			new Random(42).NextBytes(payload);
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await client.Send(msg);
-			msg.Recycle();
 
 			var total = await gotEchoTcs.Task;
 			Assert.Equal(expected, total);
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			listener.Dispose();
 		}
 	}

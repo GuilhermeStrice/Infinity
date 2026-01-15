@@ -1,4 +1,4 @@
-﻿using System.Text;
+﻿/*using System.Text;
 
 namespace Infinity.Core
 {
@@ -6,7 +6,7 @@ namespace Infinity.Core
     {
         public static ObjectPool<MessageWriter> WriterPool = new ObjectPool<MessageWriter>(() => new MessageWriter(Configuration.MaxBufferSize));
 
-        public byte[] Buffer { get; set; }
+        public byte[] Buffer { get; }
         public int Length { get; set; }
         public int Position { get; set; }
 
@@ -167,20 +167,17 @@ namespace Infinity.Core
             WritePacked((uint)_value);
         }
 
-        public void WritePacked(uint _value)
+        public void WritePacked(uint value)
         {
             do
             {
-                byte b = (byte)(_value & 0xFF);
-                if (_value >= 0x80)
-                {
+                byte b = (byte)(value & 0x7F);
+                value >>= 7;
+                if (value != 0)
                     b |= 0x80;
-                }
-
                 Write(b);
-                _value >>= 7;
             }
-            while (_value > 0);
+            while (value != 0);
         }
         #endregion
 
@@ -200,7 +197,6 @@ namespace Infinity.Core
         {
             var output = WriterPool.GetObject();
 
-            Array.Clear(output.Buffer, 0, output.Length);
             output.Length = output.Position = 0;
 
             return output;
@@ -218,3 +214,4 @@ namespace Infinity.Core
         }
     }
 }
+*/

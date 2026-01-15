@@ -16,15 +16,15 @@ namespace Infinity.Udp
 
             _writer.Buffer[3] = (byte)send_sequence;
 
-            await WriteBytesToConnection(_writer, false).ConfigureAwait(false);
+            await WriteBytesToConnection(_writer).ConfigureAwait(false);
 
             send_sequence = (byte)Interlocked.Increment(ref send_sequence);
         }
 
         private async Task OrderedMessageReceived(MessageReader _reader)
         {
-            var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
-            if (result.Item1)
+            var (result, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+            if (result)
             {
                 byte ordered_id = _reader.Buffer[3];
 

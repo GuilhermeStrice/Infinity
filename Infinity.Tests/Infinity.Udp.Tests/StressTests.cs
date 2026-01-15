@@ -9,6 +9,8 @@ namespace Infinity.Udp.Tests
 {
     public class StressTests
     {
+        ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
         ITestOutputHelper output;
 
         public StressTests(ITestOutputHelper output)
@@ -21,7 +23,11 @@ namespace Infinity.Udp.Tests
         public void StressTestConnections()
         {
             int connection_count = 50;
-            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            
+            var handshake = new MessageWriter(allocator);
+            handshake.Write((byte)1);
+            handshake.Position = 3;
+
             handshake.Write(new byte[5]);
 
             ConcurrentStack<UdpClientConnection> connections = new ConcurrentStack<UdpClientConnection>();
@@ -34,11 +40,10 @@ namespace Infinity.Udp.Tests
                 var connection = new UdpClientConnection(new TestLogger(), ep);
                 connection.DataReceived += async delegate (DataReceivedEvent obj)
                 {
-                    obj.Recycle();
                 };
+
                 connection.Disconnected += async delegate (DisconnectedEvent obj)
                 {
-                    obj.Recycle();
                 };
 
                 _ = connection.Connect(handshake);
@@ -59,16 +64,14 @@ namespace Infinity.Udp.Tests
             {
                 connection.Disconnected += async delegate (DisconnectedEvent obj)
                 {
-                    obj.Recycle();
                 };
 
-                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                var handshake = UdpMessageFactory.BuildHandshakeMessage(connection);
                 connection.Connect(handshake);
-                handshake.Recycle();
 
                 for (int i = 0; i < 10000; i++)
                 {
-                    var message = UdpMessageFactory.BuildReliableMessage();
+                    var message = UdpMessageFactory.BuildReliableMessage(connection);
                     message.Write(123);
                 
                     _ = connection.Send(message);
@@ -98,15 +101,12 @@ namespace Infinity.Udp.Tests
 
                     obj.Connection.DataReceived += async data_args =>
                     {
-                        data_args.Recycle();
                     };
 
                     obj.Connection.Disconnected += async e =>
                     {
-                        e.Recycle();
                     };
 
-                    obj.Recycle();
                     Console.WriteLine(con_count);
                     if (con_count == connections_to_test)
                     {
@@ -119,12 +119,15 @@ namespace Infinity.Udp.Tests
                 // Launch all client connections
                 for (int i = 0; i < connections_to_test; i++)
                 {
-                    var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                    var handshake = new MessageWriter(allocator);
+                    handshake.Write((byte)1);
+                    handshake.Position = 3;
+            
                     handshake.Write(new byte[5]); // add extra bytes if needed
 
                     var connection = new UdpClientConnection(new TestLogger(), ep);
-                    connection.DataReceived += async data_args => data_args.Recycle();
-                    connection.Disconnected += async e => e.Recycle();
+                    connection.DataReceived += async data_args => {};
+                    connection.Disconnected += async e => {};
 
                     await connection.Connect(handshake);
                     connections.Add(connection);
@@ -176,7 +179,6 @@ namespace Infinity.Udp.Tests
 
                     evt.Connection.Disconnected += async delegate (DisconnectedEvent obj)
                     {
-                        obj.Recycle();
                     };
 
                     evt.Connection.DataReceived += async delegate (DataReceivedEvent obj)
@@ -187,27 +189,28 @@ namespace Infinity.Udp.Tests
                             mutex.Set();
                             sw.Stop();
                         }
-                        obj.Recycle();
                     };
-
-                    evt.Recycle();
                 };
 
                 connection.Disconnected += async delegate (DisconnectedEvent obj)
                 {
-                    obj.Recycle();
                 };
 
                 listener.Start();
 
-                var handshake = UdpMessageFactory.BuildHandshakeMessage();
+                var handshake = new MessageWriter(allocator);
+                handshake.Write((byte)1);
+                handshake.Position = 3;
+            
+                handshake.Write(new byte[5]); // add extra bytes if needed
+
                 await connection.Connect(handshake);
 
                 sw.Start();
 
                 for (int i = 0; i < messages_to_try; i++)
                 {
-                    var message = UdpMessageFactory.BuildReliableMessage();
+                    var message = UdpMessageFactory.BuildReliableMessage(connection);
                     message.Write(123);
 
                     await connection.Send(message);
@@ -218,10 +221,8 @@ namespace Infinity.Udp.Tests
                 //await Task.Delay(1000);
                 Console.WriteLine($"StressReliableMessages took {sw.ElapsedMilliseconds}ms");
 
-                Console.WriteLine("Readers: " + MessageReader.ReaderPool.Available.ToString());
                 Console.WriteLine("Packets: " + UdpPacket.PacketPool.Available.ToString());
                 Console.WriteLine("Fragmented: " + UdpFragmentedMessage.FragmentedMessagePool.Available.ToString());
-                Console.WriteLine("Writers: " + MessageWriter.WriterPool.Available.ToString());
 
                 Console.WriteLine("Server packets: " + server_connection.reliable_data_packets_sent.Count);
                 Console.WriteLine("Client packets: " + connection.reliable_data_packets_sent.Count);

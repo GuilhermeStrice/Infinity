@@ -4,7 +4,7 @@ namespace Infinity.Udp
 {
     public partial class UdpConnection
     {
-        private void AcknowledgementMessageReceive(byte[] _bytes, int _bytes_received)
+        private void AcknowledgementMessageReceive(Span<byte> _bytes, int _bytes_received)
         {
             pings_since_ack = 0;
 
@@ -60,7 +60,7 @@ namespace Infinity.Udp
                 }
             }
 
-            var writer = MessageWriter.Get();
+            var writer = new MessageWriter(allocator);
             writer.Write(UdpSendOptionInternal.Acknowledgement);
             writer.Write(_id);
             writer.Write(recent_packets);

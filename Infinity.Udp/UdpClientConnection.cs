@@ -69,44 +69,37 @@ namespace Infinity.Udp
             Dispose(true);
         }
 
-        public override async Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer = true)
+        public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
+            var manager = _writer.AsManager();
+
 #if DEBUG
             if (TestLagMs > 0)
             {
                 Thread.Sleep(TestLagMs);
-                await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
+                await WriteBytesToConnectionReal(manager.Memory, _writer.Length).ConfigureAwait(false);
             }
             else
 #endif
             {
-                await WriteBytesToConnectionReal(_writer.Buffer, _writer.Length).ConfigureAwait(false);
+                await WriteBytesToConnectionReal(manager.Memory, _writer.Length).ConfigureAwait(false);
             }
 
-            if (_recycle_writer)
-            {
-                _writer.Recycle();
-            }
+            manager.Dispose();
         }
 
         public override void WriteBytesToConnectionSync(MessageWriter _writer)
         {
             try
             {
-                int sent = socket.SendTo(_writer.Buffer, _writer.Length, SocketFlags.None, EndPoint);
+                // since we dont use this that much we dont care about copying a little here
+                var segment = new ArraySegment<byte>(_writer.Buffer.ToArray());
+                int sent = socket.SendTo(segment, SocketFlags.None, EndPoint);
                 Statistics.LogPacketSent(sent);
-            }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
-            {
-                FinishMTUExpansion();
             }
             catch
             {
                 // this is handles by keep alive and packet resends
-            }
-            finally
-            {
-                _writer.Recycle();
             }
         }
 
@@ -137,8 +130,6 @@ namespace Infinity.Udp
             // Write bytes to the server to tell it hi (and to punch a hole in our NAT, if present)
             await SendHandshake(_writer, async () =>
             {
-                await BootstrapMTU().ConfigureAwait(false);
-
                 await AskConfiguration().ConfigureAwait(false);
             }).ConfigureAwait(false);
 
@@ -161,17 +152,12 @@ namespace Infinity.Udp
             }
         }
 
-        private async Task WriteBytesToConnectionReal(byte[] _bytes, int _length)
+        private async Task WriteBytesToConnectionReal(Memory<byte> _bytes, int _length)
         {
             try
             {
-                var segment = new ArraySegment<byte>(_bytes, 0, _length);
-                int sent = await socket.SendToAsync(segment, SocketFlags.None, EndPoint).ConfigureAwait(false);
+                int sent = await socket.SendToAsync(_bytes, SocketFlags.None, EndPoint).ConfigureAwait(false);
                 Statistics.LogPacketSent(sent);
-            }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
-            {
-                FinishMTUExpansion();
             }
             catch
             {
@@ -186,7 +172,7 @@ namespace Infinity.Udp
 
         private async Task AskConfiguration()
         {
-            var writer = UdpMessageFactory.BuildAskConfirurationMessage();
+            var writer = UdpMessageFactory.BuildAskConfirurationMessage(this);
 
             await ReliableSend(writer).ConfigureAwait(false);
         }
@@ -211,19 +197,22 @@ namespace Infinity.Udp
                 }
 #endif
 
-                var reader = MessageReader.Get();
+                var reader = new MessageReader(allocator);
                 try
                 {
-                    var bytes_received = await socket.ReceiveAsync(reader.Buffer, SocketFlags.None).ConfigureAwait(false);
+                    var manager = reader.AsManager();
+                    
+                    var bytes_received = await socket.ReceiveAsync(manager.Memory, SocketFlags.None);
                     reader.Length = bytes_received;
                     reader.Position = 0;
 
                     await _incoming.Writer.WriteAsync(reader).ConfigureAwait(false);
+
+                    manager.Dispose();
                 }
                 catch
                 {
-                    // this is handles by keep alive and packet resends
-                    reader.Recycle();
+                    // this is handled by keep alive and packet resends
                 }
             }
         }
@@ -233,7 +222,6 @@ namespace Infinity.Udp
             //Exit if no bytes read, we've failed.
             if (reader.Length == 0)
             {
-                reader.Recycle();
                 return;
             }
 
@@ -279,7 +267,7 @@ namespace Infinity.Udp
 
         protected override async Task DisconnectRemote(string _reason, MessageReader _reader)
         {
-            var writer = UdpMessageFactory.BuildDisconnectMessage();
+            var writer = UdpMessageFactory.BuildDisconnectMessage(this);
             if (SendDisconnect(writer))
             {
                 await InvokeDisconnected(_reason, _reader).ConfigureAwait(false);
@@ -294,10 +282,10 @@ namespace Infinity.Udp
 
             if (msg == null)
             {
-                msg = UdpMessageFactory.BuildDisconnectMessage();
+                msg = UdpMessageFactory.BuildDisconnectMessage(this);
             }
 
-            await Disconnect(_reason, msg).ConfigureAwait(false);
+            await Disconnect(_reason, msg!.Value).ConfigureAwait(false);
         }
 
         protected override async Task ShareConfiguration()
@@ -326,8 +314,6 @@ namespace Infinity.Udp
             State = ConnectionState.Connected;
 
             InitializeKeepAliveTimer();
-
-            await DiscoverMTU().ConfigureAwait(false);
         }
 
         protected override void Dispose(bool _disposing)
@@ -339,11 +325,11 @@ namespace Infinity.Udp
                     if (State != ConnectionState.NotConnected)
                     {
                         // send disconnect packet to server
-                        var writer = UdpMessageFactory.BuildDisconnectMessage();
+                        var writer = UdpMessageFactory.BuildDisconnectMessage(this);
                         SendDisconnect(writer);
 
                         // Fire client-side Disconnected event
-                        _ = InvokeDisconnected("Disposed", null).ConfigureAwait(false);
+                        _ = InvokeDisconnected("Disposed", UdpMessageFactory.BuildEmptyReader(this)).ConfigureAwait(false);
                     }
                 }
                 catch

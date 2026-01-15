@@ -17,6 +17,8 @@ namespace Infinity.WebSockets
 {
     public class WebSocketConnectionListener : NetworkConnectionListener
     {
+        private ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
         private readonly TcpListener listener;
         private readonly ILogger? logger;
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
@@ -179,24 +181,14 @@ namespace Infinity.WebSockets
                 if (HandshakeConnection != null)
                 {
                     var ep = (IPEndPoint)tcpClient.Client.RemoteEndPoint!;
-                    var dummyReader = MessageReader.Get();
-                    try
+                    var dummyReader = new MessageReader(allocator);
+                    dummyReader.Length = 0;
+                    if (!HandshakeConnection(ep, dummyReader, out var response))
                     {
-                        dummyReader.Length = 0;
-                        if (!HandshakeConnection(ep, dummyReader, out var response))
-                        {
-                            if (response != null)
-                            {
-                                try { await handshakeStream.WriteAsync(response.Buffer, 0, response.Length, token).ConfigureAwait(false); } catch { }
-                                response.Recycle();
-                            }
-                            tcpClient.Close();
-                            return;
-                        }
-                    }
-                    finally
-                    {
-                        dummyReader.Recycle();
+                        using var manager = response.AsManager();
+                        await handshakeStream.WriteAsync(manager.Memory, token).ConfigureAwait(false);
+                        tcpClient.Close();
+                        return;
                     }
                 }
 
@@ -253,7 +245,7 @@ namespace Infinity.WebSockets
 
                 wsConn.Start();
 
-                var handshakeReader = MessageReader.Get();
+                var handshakeReader = new MessageReader(allocator);
                 handshakeReader.Length = 0;
                 InvokeNewConnection(wsConn, handshakeReader);
 

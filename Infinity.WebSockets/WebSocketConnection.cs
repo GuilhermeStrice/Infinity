@@ -12,6 +12,8 @@ namespace Infinity.WebSockets
 {
     public abstract class WebSocketConnection : NetworkConnection
     {
+        internal ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
         internal Timer? pingTimer;
         internal ILogger? logger;
         internal long lastPingTicks;
@@ -33,7 +35,8 @@ namespace Infinity.WebSockets
             await InvokeBeforeSend(writer).ConfigureAwait(false);
 
             var frame = WebSocketFrame.CreateFrame(
-                writer.Buffer.AsSpan(0, writer.Length),
+                this,
+                writer.Buffer,
                 writer.Length,
                 WebSocketOpcode.Binary,
                 true,
@@ -41,8 +44,11 @@ namespace Infinity.WebSockets
 
             try
             {
-                await Stream.WriteAsync(frame.Buffer.AsMemory(0, frame.Length)).ConfigureAwait(false);
-                // No need to call FlushAsync for NetworkStream
+                var manager = frame.AsManager();
+
+                await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
+
+                manager.Dispose();
             }
             catch (Exception ex)
             {
@@ -51,10 +57,6 @@ namespace Infinity.WebSockets
                     InfinityInternalErrors.ConnectionDisconnected,
                     "Send failed").ConfigureAwait(false);
                 return SendErrors.Disconnected;
-            }
-            finally
-            {
-                frame.Recycle(); // Always recycle once
             }
 
             return SendErrors.None;
@@ -73,11 +75,11 @@ namespace Infinity.WebSockets
                 logger?.WriteError("Failed to dispose ping timer: " + ex);
             }
 
-            OnInternalDisconnect?.Invoke(error)?.ToReader()?.Recycle();
+            OnInternalDisconnect?.Invoke(error);
 
             State = ConnectionState.NotConnected;
 
-            await InvokeDisconnected(reason, null).ConfigureAwait(false);
+            await InvokeDisconnected(reason, Helpers.BuildEmptyReader(this)).ConfigureAwait(false);
 
             Dispose();
         }
@@ -89,13 +91,14 @@ namespace Infinity.WebSockets
 
         protected override async Task DisconnectRemote(string reason, MessageReader reader)
         {
-            MessageWriter frame = null;
+            MessageWriter frame;
 
             try
             {
                 if (Stream != null)
                 {
                     frame = WebSocketFrame.CreateFrame(
+                        this,
                         ReadOnlySpan<byte>.Empty,
                         0,
                         WebSocketOpcode.Close,
@@ -104,8 +107,12 @@ namespace Infinity.WebSockets
 
                     try
                     {
-                        await Stream.WriteAsync(frame.Buffer.AsMemory(0, frame.Length)).ConfigureAwait(false);
+                        var manager = frame.AsManager();
+
+                        await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
                         closeSent = true;
+
+                        manager.Dispose();
                     }
                     catch (Exception ex)
                     {
@@ -115,8 +122,6 @@ namespace Infinity.WebSockets
             }
             finally
             {
-                frame?.Recycle();
-
                 await InvokeDisconnected(reason, reader).ConfigureAwait(false);
 
                 Dispose();
@@ -128,41 +133,35 @@ namespace Infinity.WebSockets
             if (Stream == null || closeSent || state != ConnectionState.Connected)
                 return false;
 
-            MessageWriter frame = null;
+            MessageWriter frame;
+
+            frame = WebSocketFrame.CreateFrame(
+                this,
+                ReadOnlySpan<byte>.Empty,
+                0,
+                WebSocketOpcode.Close,
+                true,
+                MaskOutgoingFrames);
 
             try
             {
-                frame = WebSocketFrame.CreateFrame(
-                    ReadOnlySpan<byte>.Empty,
-                    0,
-                    WebSocketOpcode.Close,
-                    true,
-                    MaskOutgoingFrames);
-
+                Stream.Write(frame.Buffer.ToArray(), 0, frame.Length);
                 try
                 {
-                    Stream.Write(frame.Buffer, 0, frame.Length);
-                    try
-                    {
-                        Stream.Flush();
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.WriteError("Flush failed in SendDisconnect: " + ex);
-                    }
-
-                    closeSent = true;
-                    return true;
+                    Stream.Flush();
                 }
                 catch (Exception ex)
                 {
-                    logger?.WriteError("Failed to send close frame: " + ex);
-                    return false;
+                    logger?.WriteError("Flush failed in SendDisconnect: " + ex);
                 }
+
+                closeSent = true;
+                return true;
             }
-            finally
+            catch (Exception ex)
             {
-                frame?.Recycle();
+                logger?.WriteError("Failed to send close frame: " + ex);
+                return false;
             }
         }
 
@@ -178,20 +177,25 @@ namespace Infinity.WebSockets
             if (state != ConnectionState.Connected || Stream == null)
                 return;
 
-            MessageWriter frame = null;
+            MessageWriter frame;
 
             try
             {
                 lastPingTicks = DateTime.UtcNow.Ticks;
 
                 frame = WebSocketFrame.CreateFrame(
+                    this,
                     ReadOnlySpan<byte>.Empty,
                     0,
                     WebSocketOpcode.Ping,
                     true,
                     MaskOutgoingFrames);
 
-                await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                var manager = frame.AsManager();
+
+                await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
+
+                manager.Dispose();
             }
             catch (Exception ex)
             {
@@ -199,8 +203,6 @@ namespace Infinity.WebSockets
             }
             finally
             {
-                frame?.Recycle();
-
                 try
                 {
                     pingTimer?.Change(5000, Timeout.Infinite);
@@ -250,16 +252,27 @@ namespace Infinity.WebSockets
                     // Validate masking
                     if (!ValidateIncomingMask(masked))
                     {
-                        var cw = MessageWriter.Get();
+                        var cw = new MessageWriter(allocator);
                         cw.Write((byte)(1002 >> 8));
                         cw.Write((byte)(1002 & 0xFF));
-                        var frameClose = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+                        var frameClose = WebSocketFrame.CreateFrame(
+                            this,
+                            cw.Buffer,
+                            cw.Length,
+                            WebSocketOpcode.Close,
+                            true,
+                            MaskOutgoingFrames);
+
                         try
                         {
-                            await Stream.WriteAsync(frameClose.Buffer, 0, frameClose.Length).ConfigureAwait(false);
+                            var manager = frameClose.AsManager();
+
+                            await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
+
+                            manager.Dispose();
                         }
                         catch { }
-                        frameClose.Recycle(); cw.Recycle();
+                        
                         closeSent = true;
                         await ShutdownInternalAsync(InfinityInternalErrors.ConnectionDisconnected, "Invalid masking").ConfigureAwait(false);
                         return;
@@ -326,7 +339,7 @@ namespace Infinity.WebSockets
                     {
                         case WebSocketOpcode.Binary:
                             {
-                                var reader = MessageReader.Get(payload, 0, payload.Length);
+                                var reader = new MessageReader(allocator, payload, 0, payload.Length);
                                 await InvokeBeforeReceive(reader).ConfigureAwait(false);
                                 await InvokeDataReceived(reader).ConfigureAwait(false);
                                 break;
@@ -339,21 +352,23 @@ namespace Infinity.WebSockets
                                     await CloseWithCode(1007, "Invalid UTF-8").ConfigureAwait(false);
                                     return;
                                 }
-                                var reader = MessageReader.Get(payload, 0, payload.Length);
+                                var reader = new MessageReader(allocator, payload, 0, payload.Length);
                                 await InvokeBeforeReceive(reader).ConfigureAwait(false);
                                 await InvokeDataReceived(reader).ConfigureAwait(false);
                                 break;
                             }
                         case WebSocketOpcode.Ping:
                             {
-                                var pong = WebSocketFrame.CreateFrame(payload.AsSpan(), payload.Length, WebSocketOpcode.Pong, true, MaskOutgoingFrames);
+                                var pong = WebSocketFrame.CreateFrame(this, payload.AsSpan(), payload.Length, WebSocketOpcode.Pong, true, MaskOutgoingFrames);
                                 try
                                 {
-                                    await Stream.WriteAsync(pong.Buffer, 0, pong.Length).ConfigureAwait(false);
-                                    await Stream.FlushAsync().ConfigureAwait(false);
+                                    var manager = pong.AsManager();
+
+                                    await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
+
+                                    manager.Dispose();
                                 }
                                 catch { }
-                                pong.Recycle();
                                 break;
                             }
                         case WebSocketOpcode.Pong:
@@ -387,21 +402,24 @@ namespace Infinity.WebSockets
 
                                 if (!closeSent)
                                 {
-                                    var cw = MessageWriter.Get();
+                                    var cw = new MessageWriter(allocator);
                                     cw.Write((byte)(code >> 8));
                                     cw.Write((byte)(code & 0xFF));
                                     if (!string.IsNullOrEmpty(reason))
                                     {
                                         var rb = Encoding.UTF8.GetBytes(reason);
-                                        cw.Write(rb, rb.Length);
+                                        cw.Write(rb, 0, rb.Length);
                                     }
-                                    var frame = WebSocketFrame.CreateFrame(cw.Buffer.AsSpan(0, cw.Length), cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
+                                    var frame = WebSocketFrame.CreateFrame(this, cw.Buffer, cw.Length, WebSocketOpcode.Close, true, MaskOutgoingFrames);
                                     try
                                     {
-                                        await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                                        var manager = frame.AsManager();
+
+                                        await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
+
+                                        manager.Dispose();
                                     }
                                     catch { }
-                                    frame.Recycle(); cw.Recycle();
                                     closeSent = true;
                                 }
 
@@ -430,19 +448,20 @@ namespace Infinity.WebSockets
         private async Task CloseWithCode(ushort code, string reason)
         {
             // Prepare close payload
-            var cw = MessageWriter.Get();
+            var cw = new MessageWriter(allocator);
             cw.Write((byte)(code >> 8));
             cw.Write((byte)(code & 0xFF));
 
             if (!string.IsNullOrEmpty(reason))
             {
                 var rb = Encoding.UTF8.GetBytes(reason);
-                cw.Write(rb, rb.Length);
+                cw.Write(rb, 0, rb.Length);
             }
 
             // Create WebSocket close frame
             var frame = WebSocketFrame.CreateFrame(
-                cw.Buffer.AsSpan(0, cw.Length),
+                this,
+                cw.Buffer,
                 cw.Length,
                 WebSocketOpcode.Close,
                 true,
@@ -450,17 +469,16 @@ namespace Infinity.WebSockets
 
             try
             {
-                await Stream.WriteAsync(frame.Buffer, 0, frame.Length).ConfigureAwait(false);
+                var manager = frame.AsManager();
+
+                await Stream.WriteAsync(manager.Memory).ConfigureAwait(false);
                 closeSent = true;
+
+                manager.Dispose();
             }
             catch (Exception ex)
             {
                 logger?.WriteError("Failed to send close frame: " + ex);
-            }
-            finally
-            {
-                frame?.Recycle();
-                cw?.Recycle();
             }
 
             // Shutdown connection regardless of write success

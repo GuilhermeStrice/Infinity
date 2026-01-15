@@ -13,6 +13,8 @@ namespace Infinity.Multiplexer.Tests
 {
     public class MultiplexerTests
     {
+        ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
         //[Fact]
         public async Task MultiplexerTest_Csharp()
         {
@@ -48,11 +50,9 @@ namespace Infinity.Multiplexer.Tests
                         serverUdpReceive.TrySetResult(true);
 
                         // Echo UDP (keeps internal headers intact)
-                        var writer = MessageWriter.Get();
+                        var writer = new MessageWriter(allocator);
                         writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
                         await e.Connection.Send(writer);
-
-                        e2.Recycle();
                     };
                 }
                 else
@@ -64,15 +64,11 @@ namespace Infinity.Multiplexer.Tests
                         serverWsReceive.TrySetResult(true);
 
                         // Echo WS payload (no headers)
-                        var writer = MessageWriter.Get();
+                        var writer = new MessageWriter(allocator);
                         writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
                         await e2.Connection.Send(writer);
-
-                        e2.Recycle();
                     };
                 }
-
-                e.Recycle();
             };
 
             listener.Start();
@@ -93,7 +89,7 @@ namespace Infinity.Multiplexer.Tests
                 }
             };
 
-            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage(udp_client);
             await udp_client.Connect(handshake);
 
             // ------------------------
@@ -126,7 +122,7 @@ namespace Infinity.Multiplexer.Tests
             // ------------------------
             // Cleanup
             // ------------------------
-            await udp_client.Disconnect("test", MessageWriter.Get());
+            await udp_client.Disconnect("test", new MessageWriter(allocator));
             if (ws_client.State == WebSocketState.Open)
             {
                 await ws_client.CloseAsync(WebSocketCloseStatus.NormalClosure, "test", CancellationToken.None);
@@ -182,7 +178,7 @@ namespace Infinity.Multiplexer.Tests
                         serverUdpReceive.TrySetResult(true);
 
                         // Echo the original reliable message directly
-                        var writer = MessageWriter.Get();
+                        var writer = new MessageWriter(allocator);
                         writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
                         await e.Connection.Send(writer);
                     }
@@ -192,7 +188,7 @@ namespace Infinity.Multiplexer.Tests
                         serverWsReceive.TrySetResult(true);
 
                         // Echo exact buffer safely
-                        var writer = MessageWriter.Get();
+                        var writer = new MessageWriter(allocator);
                         writer.Write(e2.Message.Buffer, 0, e2.Message.Length);
                         await e.Connection.Send(writer);
                     }
@@ -216,7 +212,7 @@ namespace Infinity.Multiplexer.Tests
             };
 
             // Connect UDP client (do NOT recycle handshake)
-            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage(udp_client);
             await udp_client.Connect(handshake);
 
             // ------------------------
@@ -232,7 +228,7 @@ namespace Infinity.Multiplexer.Tests
             };
 
             var ws_uri = $"ws://127.0.0.1:{port}";
-            var ws_writer_connect = MessageWriter.Get();
+            var ws_writer_connect = new MessageWriter(allocator);
             ws_writer_connect.Write(ws_uri);
             await ws_client.Connect(ws_writer_connect);
 
@@ -252,11 +248,11 @@ namespace Infinity.Multiplexer.Tests
             // ------------------------
             // Send test data
             // ------------------------
-            var udp_writer = UdpMessageFactory.BuildReliableMessage();
+            var udp_writer = UdpMessageFactory.BuildReliableMessage(udp_client);
             udp_writer.Write(udp_data);
             await udp_client.Send(udp_writer);
 
-            var ws_writer_send = MessageWriter.Get();
+            var ws_writer_send = new MessageWriter(allocator);
             ws_writer_send.Write(ws_data);
             await ws_client.Send(ws_writer_send);
 
@@ -271,8 +267,8 @@ namespace Infinity.Multiplexer.Tests
             // ------------------------
             // Cleanup
             // ------------------------
-            await udp_client.Disconnect("test", MessageWriter.Get());
-            await ws_client.Disconnect("test", MessageWriter.Get());
+            await udp_client.Disconnect("test", new MessageWriter(allocator));
+            await ws_client.Disconnect("test", new MessageWriter(allocator));
             listener.Dispose();
         }
     }

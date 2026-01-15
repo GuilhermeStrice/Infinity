@@ -98,7 +98,7 @@ namespace Infinity.Udp
                     try
                     {
                         connection.Statistics.LogMessageResent(writer.Length);
-                        await connection.WriteBytesToConnection(writer, false).ConfigureAwait(false);
+                        await connection.WriteBytesToConnection(writer).ConfigureAwait(false);
 
                         return 1;
                     }
@@ -115,7 +115,6 @@ namespace Infinity.Udp
         public void Recycle()
         {
             Acknowledged = true;
-            writer.Recycle();
 
             PacketPool.PutObject(this);
         }

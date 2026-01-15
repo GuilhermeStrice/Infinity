@@ -10,6 +10,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class PythonInteropTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var l = new TcpListener(IPAddress.Loopback, 0);
@@ -107,24 +109,22 @@ asyncio.run(main())
 
 			var logger = new TestLogger("WS");
 			var client = new WebSocketClientConnection(logger);
-			var connect = MessageWriter.Get();
+			var connect = new MessageWriter(allocator);
 			connect.Write($"ws://{ep.Address}:{ep.Port}/");
 			await client.Connect(connect);
-			connect.Recycle();
 
 			var tcs = new TaskCompletionSource<byte[]>();
-			client.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); tcs.TrySetResult(b); };
+			client.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); tcs.TrySetResult(b); };
 
 			var payload = Enumerable.Range(0, 2048).Select(i => (byte)(i % 256)).ToArray();
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await client.Send(msg);
-			msg.Recycle();
 
 			var echoed = await tcs.Task;
 			Assert.Equal(payload, echoed);
 
-			await client.Disconnect("done", MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			try { proc.Kill(true); } catch { }
 		}
 
@@ -152,7 +152,7 @@ asyncio.run(main())
 			listener.NewConnection += e =>
 			{
 				serverConn = (WebSocketServerConnection)e.Connection;
-				serverConn.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); de.Message.Recycle(); echoedTcs.TrySetResult(b); };
+				serverConn.DataReceived += async de => { var b = de.Message.ReadBytes(de.Message.BytesRemaining); echoedTcs.TrySetResult(b); };
 			};
 			listener.Start();
 
@@ -180,10 +180,9 @@ asyncio.run(run())
 			Assert.NotNull(serverConn);
 
 			var payload = Encoding.UTF8.GetBytes("python-interop");
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await serverConn!.Send(msg);
-			msg.Recycle();
 
 			var echoed = await echoedTcs.Task;
 			Assert.Equal(payload, echoed);

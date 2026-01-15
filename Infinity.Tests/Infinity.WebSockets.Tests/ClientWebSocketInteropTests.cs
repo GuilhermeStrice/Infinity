@@ -9,6 +9,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class ClientWebSocketInteropTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
@@ -31,10 +33,9 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					w.Write(r.Buffer, r.Position, r.BytesRemaining);
 					await conn.Send(w);
-					r.Recycle();
 				};
 			};
 			listener.Start();
@@ -70,10 +71,9 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					w.Write(r.Buffer, r.Position, r.BytesRemaining);
 					_ = Task.Run(async () => { await conn.Send(w); });
-					r.Recycle();
 				};
 			};
 			listener.Start();
@@ -115,10 +115,9 @@ namespace Infinity.Websockets.Tests
 
 			var serverConn = await ready.Task;
 			var payload = Enumerable.Range(0, 4096).Select(i => (byte)(255 - (i % 256))).ToArray();
-			var msg = MessageWriter.Get();
-			msg.Write(payload, payload.Length);
+			var msg = new MessageWriter(allocator);
+			msg.Write(payload, 0, payload.Length);
 			await serverConn.Send(msg);
-			msg.Recycle();
 
 			var buffer = new byte[8192];
 			try
@@ -168,10 +167,9 @@ namespace Infinity.Websockets.Tests
 				conn.DataReceived += async de =>
 				{
 					var r = de.Message;
-					var w = MessageWriter.Get();
+					var w = new MessageWriter(allocator);
 					w.Write(r.Buffer, r.Position, r.BytesRemaining);
 					_ = Task.Run(async () => { await conn.Send(w); });
-					r.Recycle();
 				};
 			};
 			listener.Start();
@@ -213,14 +211,13 @@ namespace Infinity.Websockets.Tests
 			Assert.NotNull(serverConn);
 
 			// send close with reason from server
-			var writer = MessageWriter.Get();
+			var writer = new MessageWriter(allocator);
 			var reason = Encoding.UTF8.GetBytes("closing");
 			writer.Write((byte)(1000 >> 8));
 			writer.Write((byte)(1000 & 0xFF));
-			writer.Write(reason, reason.Length);
-			var frame = Infinity.WebSockets.WebSocketFrame.CreateFrame(writer.Buffer.AsSpan(0, writer.Length), writer.Length, Infinity.WebSockets.Enums.WebSocketOpcode.Close, true, false);
+			writer.Write(reason, 0, reason.Length);
+			var frame = Infinity.WebSockets.WebSocketFrame.CreateFrame(new WebSocketClientConnection(), writer.Buffer.Slice(0, writer.Length), writer.Length, Infinity.WebSockets.Enums.WebSocketOpcode.Close, true, false);
 			await serverConn!.Send(frame);
-			frame.Recycle(); writer.Recycle();
 
 			var buffer = new byte[2];
 			try { await cws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); } catch { }

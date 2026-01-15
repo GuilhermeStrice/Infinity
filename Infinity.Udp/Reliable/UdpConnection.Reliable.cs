@@ -36,20 +36,16 @@ namespace Infinity.Udp
         {
             AttachReliableID(_writer, 1, _ack_callback);
             Statistics.LogReliableMessageSent(_writer.Length);
-            await WriteBytesToConnection(_writer, false).ConfigureAwait(false);
+            await WriteBytesToConnection(_writer).ConfigureAwait(false);
         }
 
         private async Task ReliableMessageReceive(MessageReader _reader)
         {
-            var result = await ProcessReliableReceive(_reader.Buffer, 1).ConfigureAwait(false);
-            if (result.Item1)
+            var (result, _id) = ProcessReliableReceive(_reader.Buffer, 1);
+            if (result)
             {
                 _reader.Position = 3;
                 await InvokeDataReceived(_reader).ConfigureAwait(false);
-            }
-            else
-            {
-                _reader.Recycle();
             }
         }
 
@@ -69,12 +65,8 @@ namespace Infinity.Udp
         {
             ushort id = (ushort)Interlocked.Increment(ref last_id_allocated);
 
-            int old_position = _writer.Position;
-            _writer.Position = _offset;
-
-            _writer.Write(id);
-
-            _writer.Position = old_position;
+            _writer[_offset] = (byte)(id >> 8);
+            _writer[_offset + 1] = (byte)id;
 
             int resend_delay_ms = configuration.ResendTimeoutMs;
             if (resend_delay_ms <= 0)

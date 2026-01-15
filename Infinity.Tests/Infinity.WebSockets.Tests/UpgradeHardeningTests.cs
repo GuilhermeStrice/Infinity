@@ -8,6 +8,8 @@ namespace Infinity.Websockets.Tests
 {
 	public class UpgradeHardeningTests
 	{
+		ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
 		private static IPEndPoint GetFreeEndPoint()
 		{
 			var l = new TcpListener(IPAddress.Loopback, 0);
@@ -189,14 +191,13 @@ namespace Infinity.Websockets.Tests
 			{
 				RequestedProtocol = "echo"
 			};
-			var w = Infinity.Core.MessageWriter.Get();
+			var w = new MessageWriter(allocator);
 			w.Write($"ws://{ep.Address}:{ep.Port}/");
 			await client.Connect(w);
-			w.Recycle();
 
 			Assert.Equal("echo", client.AcceptedProtocol);
 
-			await client.Disconnect("done", Infinity.Core.MessageWriter.Get());
+			await client.Disconnect("done", new MessageWriter(allocator));
 			listener.Dispose();
 		}
 	}

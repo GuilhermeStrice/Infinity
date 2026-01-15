@@ -31,11 +31,6 @@ namespace Infinity.Udp
 
         public void Recycle()
         {
-            foreach (var fragment in Fragments.Values)
-            {
-                fragment.Recycle();
-            }
-
             Fragments.Clear();
 
             FragmentedMessagePool.PutObject(this);

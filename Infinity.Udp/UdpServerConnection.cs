@@ -16,8 +16,6 @@ namespace Infinity.Udp
             IPMode = _ip_mode;
 
             State = ConnectionState.Connected;
-
-            _ = BootstrapMTU();
         }
 
         public override void WriteBytesToConnectionSync(MessageWriter _writer)
@@ -26,10 +24,10 @@ namespace Infinity.Udp
             Listener.SendDataSync(_writer, EndPoint);
         }
 
-        public override async Task WriteBytesToConnection(MessageWriter _writer, bool _recycle_writer = true)
+        public override async Task WriteBytesToConnection(MessageWriter _writer)
         {
             Statistics.LogPacketSent(_writer.Length);
-            await Listener.SendData(_writer, EndPoint, _recycle_writer).ConfigureAwait(false);
+            await Listener.SendData(_writer, EndPoint).ConfigureAwait(false);
         }
 
         public override async Task Connect(MessageWriter _writer, int _timeout = 5000)
@@ -63,7 +61,7 @@ namespace Infinity.Udp
 
         protected override async Task DisconnectRemote(string _reason, MessageReader _reader)
         {
-            var writer = UdpMessageFactory.BuildDisconnectMessage();
+            var writer = UdpMessageFactory.BuildDisconnectMessage(this);
             if (SendDisconnect(writer))
             {
                 await InvokeDisconnected(_reason, _reader).ConfigureAwait(false);
@@ -78,16 +76,16 @@ namespace Infinity.Udp
 
             if (msg == null)
             {
-                msg = UdpMessageFactory.BuildDisconnectMessage();
+                msg = UdpMessageFactory.BuildDisconnectMessage(this);
             }
 
-            await Disconnect(_reason, msg).ConfigureAwait(false);
+            await Disconnect(_reason, msg!.Value).ConfigureAwait(false);
         }
 
         protected override async Task ShareConfiguration()
         {
             // Connection config
-            MessageWriter writer = MessageWriter.Get();
+            MessageWriter writer = new MessageWriter(allocator);
             writer.Write(UdpSendOptionInternal.ShareConfiguration);
 
             writer.Position += 2;
@@ -121,7 +119,7 @@ namespace Infinity.Udp
         {
             if (State == ConnectionState.Connected)
             {
-                var writer = UdpMessageFactory.BuildDisconnectMessage();
+                var writer = UdpMessageFactory.BuildDisconnectMessage(this);
 
                 SendDisconnect(writer);
             }

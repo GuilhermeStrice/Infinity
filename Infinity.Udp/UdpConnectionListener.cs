@@ -10,6 +10,8 @@ namespace Infinity.Udp
 {
     public class UdpConnectionListener : NetworkConnectionListener
     {
+        private ChunkedByteAllocator allocator = new ChunkedByteAllocator(1024);
+
         public UdpConnectionConfiguration Configuration { get; set; } = new UdpConnectionConfiguration(); // default config
 
         public UdpListenerStatistics Statistics { get; private set; }
@@ -17,7 +19,7 @@ namespace Infinity.Udp
         public override double AveragePing => all_connections.IsEmpty ? 0 : all_connections.Values.Average(c => c.AveragePingMs);
         public override int ConnectionCount => all_connections.Count;
 
-        private const int send_receive_buffer_size = 1024 * 1024;
+        private const int send_receive_buffer_size = 1024;
 
         private Socket socket;
         private ILogger logger;
@@ -106,14 +108,21 @@ namespace Infinity.Udp
         {
             while (!cancellation_token_source.IsCancellationRequested)
             {
-                var reader = MessageReader.Get();
-                var remote = EndPoint;
+                var reader = new MessageReader(allocator);
+                
+                EndPoint remote = IPMode == IPMode.IPv4
+                    ? new IPEndPoint(IPAddress.Any, 0)
+                    : new IPEndPoint(IPAddress.IPv6Any, 0);
 
-                var result = await socket.ReceiveFromAsync(reader.Buffer, SocketFlags.None, remote, cancellation_token_source.Token).ConfigureAwait(false);
+                var manager = reader.AsManager();
+
+                var result = await socket.ReceiveFromAsync(manager.Memory, SocketFlags.None, remote, cancellation_token_source.Token).ConfigureAwait(false);
                 reader.Length = result.ReceivedBytes;
                 reader.Position = 0;
 
                 await _incoming.Writer.WriteAsync((reader, result.RemoteEndPoint)).ConfigureAwait(false);
+
+                manager.Dispose();
             }
         }
 
@@ -133,14 +142,13 @@ namespace Infinity.Udp
                 // to get 0 bytes read on UDP without the socket being shut down.
                 if (reader.Length == 0)
                 {
-                    reader.Recycle();
                     logger?.WriteInfo("Received 0 bytes");
                     await Task.Delay(10).ConfigureAwait(false);
                     return;
                 }
 
                 bool aware = true;
-                bool is_handshake = reader.Buffer[0] == UdpSendOptionInternal.Handshake;
+                bool is_handshake = reader[0] == UdpSendOptionInternal.Handshake;
 
                 // If we're aware of this connection use the one already
                 // If this is a new client then connect with them!
@@ -150,18 +158,13 @@ namespace Infinity.Udp
                     // Check for malformed connection attempts
                     if (!is_handshake)
                     {
-                        reader.Recycle();
                         return;
                     }
 
                     if (HandshakeConnection != null &&
                         !HandshakeConnection((IPEndPoint)remote_end_point, reader, out var response))
                     {
-                        reader.Recycle();
-                        if (response != null)
-                        {
-                            await SendData(response, remote_end_point).ConfigureAwait(false);
-                        }
+                        await SendData(response, remote_end_point).ConfigureAwait(false);
 
                         return;
                     }
@@ -227,7 +230,7 @@ namespace Infinity.Udp
         private int drop_counter = 0;
 #endif
 
-        internal async Task SendData(MessageWriter _writer, EndPoint _endpoint, bool _recycle_writer = true)
+        internal async Task SendData(MessageWriter _writer, EndPoint _endpoint)
         {
 #if DEBUG
             if (TestDropRate > 0)
@@ -241,10 +244,13 @@ namespace Infinity.Udp
 
             try
             {
-                var segment = new ArraySegment<byte>(_writer.Buffer, 0, _writer.Length);
-                await socket.SendToAsync(segment, SocketFlags.None, _endpoint).ConfigureAwait(false);
+                var manager = _writer.AsManager();
+
+                await socket.SendToAsync(manager.Memory, SocketFlags.None, _endpoint);
 
                 Statistics.AddBytesSent(_writer.Length);
+
+                manager.Dispose();
             }
             catch (SocketException e)
             {
@@ -254,13 +260,6 @@ namespace Infinity.Udp
             {
                 //Keep alive timer probably ran, ignore
                 return;
-            }
-            finally
-            {
-                if (_recycle_writer)
-                {
-                    _writer.Recycle();
-                }
             }
         }
 
@@ -278,8 +277,7 @@ namespace Infinity.Udp
 
             try
             {
-                var segment = new ArraySegment<byte>(_writer.Buffer, 0, _writer.Length);
-                socket.SendTo(segment, SocketFlags.None, _endpoint);
+                socket.SendTo(_writer.Buffer, SocketFlags.None, _endpoint);
 
                 Statistics.AddBytesSent(_writer.Length);
             }
@@ -290,12 +288,7 @@ namespace Infinity.Udp
             catch (ObjectDisposedException)
             {
                 //Keep alive timer probably ran, ignore
-                _writer.Recycle();
                 return;
-            }
-            finally
-            {
-                _writer.Recycle();
             }
         }
     }

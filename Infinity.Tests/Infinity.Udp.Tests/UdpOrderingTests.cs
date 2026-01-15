@@ -42,26 +42,22 @@ namespace Infinity.Udp.Tests
                     int newCount = Interlocked.Increment(ref count);
                     output.WriteLine(newCount.ToString());
 
-                    data.Recycle();
-
                     if (newCount == 10)
                     {
                         tcs.SetResult();
                         output.WriteLine("Done");
                     }
                 };
-
-                e.Recycle();
             };
 
             listener.Start();
 
-            var handshake = UdpMessageFactory.BuildHandshakeMessage();
+            var handshake = UdpMessageFactory.BuildHandshakeMessage(connection);
             await connection.Connect(handshake);
 
             for (int i = 0; i < 10; i++)
             {
-                var writer = UdpMessageFactory.BuildOrderedMessage();
+                var writer = UdpMessageFactory.BuildOrderedMessage(connection);
                 writer.Write(20);
                 
                 _ = connection.Send(writer);

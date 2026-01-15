@@ -28,7 +28,7 @@ namespace Infinity.Udp.Tests
                 messagesReceived.Add(evt.Message);
             };
 
-            var data = UdpMessageFactory.BuildReliableMessage();
+            var data = UdpMessageFactory.BuildReliableMessage(conn);
 
             Assert.Equal(ushort.MaxValue, conn.ReliableReceiveLast);
 
@@ -46,11 +46,6 @@ namespace Infinity.Udp.Tests
             Assert.Equal(2, conn.BytesSent.Count);
             conn.BytesSent.Clear();
 
-            foreach (var msg in messagesReceived)
-            {
-                msg.Recycle();
-            }
-
             conn.Dispose();
         }
 
@@ -67,7 +62,7 @@ namespace Infinity.Udp.Tests
                 messagesReceived.Add(evt.Message);
             };
 
-            var data = UdpMessageFactory.BuildReliableMessage();
+            var data = UdpMessageFactory.BuildReliableMessage(conn);
 
             for (int i = 0; i < ushort.MaxValue * 2; ++i)
             {
@@ -93,11 +88,6 @@ namespace Infinity.Udp.Tests
                 conn.BytesSent.Clear();
             }
 
-            foreach (var msg in messagesReceived)
-            {
-                msg.Recycle();
-            }
-
             conn.Dispose();
         }
 
@@ -114,7 +104,7 @@ namespace Infinity.Udp.Tests
                 messagesReceived.Add(evt.Message);
             };
 
-            var data = UdpMessageFactory.BuildReliableMessage();
+            var data = UdpMessageFactory.BuildReliableMessage(conn);
 
             SetReliableId(data, 1);
             await conn.Test_Receive(data);
@@ -132,11 +122,6 @@ namespace Infinity.Udp.Tests
             Assert.Equal(0, test);
             // The packet before that was.
             Assert.Equal(1, (recentPackets >> 1) & 1);
-
-            foreach (var msg in messagesReceived)
-            {
-                msg.Recycle();
-            }
 
             conn.Dispose();
         }

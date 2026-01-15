@@ -68,7 +68,7 @@ namespace Infinity.Core
         {
             if (SendDisconnect(_writer))
             {
-                await InvokeDisconnected(_reason, null).ConfigureAwait(false);
+                await InvokeDisconnected(_reason, new MessageReader(new ChunkedByteAllocator(1024))).ConfigureAwait(false);
             }
 
             Dispose();
@@ -89,10 +89,6 @@ namespace Infinity.Core
                 @event.Message = _reader;
                 await DataReceived.Invoke(@event).ConfigureAwait(false);
             }
-            else
-            {
-                _reader?.Recycle();
-            }
         }
 
         protected async Task InvokeDisconnected(string _reason, MessageReader _reader)
@@ -104,10 +100,6 @@ namespace Infinity.Core
                 @event.Reason = _reason;
                 @event.Message = _reader;
                 await Disconnected.Invoke(@event).ConfigureAwait(false);
-            }
-            else
-            {
-                _reader?.Recycle();
             }
         }
 

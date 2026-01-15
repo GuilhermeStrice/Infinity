@@ -130,7 +130,6 @@ namespace Infinity.WebSockets
         {
             var reader = writer.ToReader();
             string url = reader.ReadString();
-            reader.Recycle();
 
             var uri = new Uri(url);
             host = uri.Host;
